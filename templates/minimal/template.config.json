@@ -1,0 +1,13 @@
+{
+  "id": "minimal",
+  "name": "Minimal",
+  "description": "Clean, minimal portfolio with focus on project content",
+  "version": "1.0.0",
+  "supportedPages": ["home", "about", "projects", "project-detail", "contact"],
+  "defaultSettings": {
+    "primaryColor": "#2563eb",
+    "fontFamily": "Inter",
+    "showGitHubStats": true,
+    "showTechStack": true
+  }
+}
