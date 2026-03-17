@@ -1,11 +1,9 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ["pdf-parse"],
   },
   webpack: (config) => {
-    // pdf-parse uses test files that reference fs
     config.resolve.alias.canvas = false;
     return config;
   },
