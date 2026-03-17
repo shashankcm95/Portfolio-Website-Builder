@@ -1,4 +1,8 @@
-import { ExternalLink, Star, GitBranch, Play } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { ExternalLink, Star, GitBranch } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,29 +13,96 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/page-header";
+import { PipelineStatus } from "@/components/pipeline/pipeline-status";
+import { FactList } from "@/components/pipeline/fact-list";
+import { NarrativeView } from "@/components/pipeline/narrative-view";
 
-// TODO: Replace with actual project data fetched by projectId
-const project = {
-  repoName: "example-project",
-  repoUrl: "https://github.com/user/example-project",
-  description: "An example project repository.",
-  language: "TypeScript",
-  stars: 42,
-  status: "pending" as const,
-};
+interface ProjectData {
+  id: string;
+  repoName: string;
+  repoOwner: string;
+  repoUrl: string;
+  pipelineStatus: string;
+  repoMetadata: {
+    description?: string;
+    language?: string;
+    stargazers_count?: number;
+    default_branch?: string;
+  } | null;
+  facts: Array<{
+    id: string;
+    claim: string;
+    category: string;
+    confidence: number;
+    evidenceType: string;
+    evidenceRef: string;
+    evidenceText: string;
+    isVerified: boolean;
+  }>;
+  sections: Array<{
+    id: string;
+    sectionType: string;
+    variant: string;
+    content: string;
+    isUserEdited: boolean;
+    userContent?: string;
+  }>;
+}
 
-export default function ProjectDetailPage({
-  params,
-}: {
-  params: { portfolioId: string; projectId: string };
-}) {
+export default function ProjectDetailPage() {
+  const params = useParams<{ portfolioId: string; projectId: string }>();
+  const [project, setProject] = useState<ProjectData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  async function fetchProject() {
+    try {
+      const res = await fetch(
+        `/api/portfolios/${params.portfolioId}/projects/${params.projectId}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setProject(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch project:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchProject();
+  }, [params.portfolioId, params.projectId]);
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <Skeleton className="h-10 w-48" />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Skeleton className="h-48" />
+          <Skeleton className="h-48" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <p className="text-muted-foreground">Project not found.</p>
+      </div>
+    );
+  }
+
+  const meta = project.repoMetadata;
+
   return (
     <div className="space-y-8">
-      {/* Project header */}
       <PageHeader
         title={project.repoName}
-        description={project.description}
+        description={meta?.description || ""}
         action={
           <Button variant="outline" asChild>
             <a
@@ -54,86 +125,59 @@ export default function ProjectDetailPage({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5">
-                <Star className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{project.stars} stars</span>
-              </div>
+              {meta?.stargazers_count !== undefined && (
+                <div className="flex items-center gap-1.5">
+                  <Star className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{meta.stargazers_count} stars</span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5">
                 <GitBranch className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">main</span>
+                <span className="text-sm">{meta?.default_branch || "main"}</span>
               </div>
             </div>
             <Separator />
-            <div>
-              <p className="text-sm text-muted-foreground">Language</p>
-              <Badge variant="outline" className="mt-1">
-                {project.language}
-              </Badge>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Description</p>
-              <p className="text-sm mt-1">{project.description}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* AI Analysis */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">AI Analysis</CardTitle>
-            <CardDescription>
-              AI-extracted facts and insights from your codebase.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {project.status === "pending" ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <p className="text-sm text-muted-foreground mb-4">
-                  No analysis has been run yet. Click the button below to start.
-                </p>
-                <Button>
-                  <Play className="mr-2 h-4 w-4" />
-                  Run Analysis
-                </Button>
-              </div>
-            ) : (
-              /* TODO: Display actual AI analysis results */
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Analysis results will appear here.
-                </p>
+            {meta?.language && (
+              <div>
+                <p className="text-sm text-muted-foreground">Language</p>
+                <Badge variant="outline" className="mt-1">
+                  {meta.language}
+                </Badge>
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Pipeline Status */}
+        <PipelineStatus
+          portfolioId={params.portfolioId}
+          projectId={params.projectId}
+          initialStatus={project.pipelineStatus}
+        />
       </div>
 
+      {/* Facts */}
+      {project.facts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Extracted Facts</CardTitle>
+            <CardDescription>
+              AI-extracted facts verified against your codebase.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FactList facts={project.facts} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Generated Narratives */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Generated Narratives</CardTitle>
-          <CardDescription>
-            AI-generated content for your portfolio based on code analysis.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {project.status === "pending" ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <p className="text-sm text-muted-foreground">
-                {/* TODO: Show generated narratives after analysis completes */}
-                Run an analysis first to generate portfolio narratives.
-              </p>
-            </div>
-          ) : (
-            /* TODO: Display actual generated narratives */
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Generated narratives will appear here after analysis.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {project.sections.length > 0 && (
+        <NarrativeView
+          projectId={params.projectId}
+          sections={project.sections}
+        />
+      )}
     </div>
   );
 }

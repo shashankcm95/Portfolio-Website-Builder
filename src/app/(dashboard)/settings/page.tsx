@@ -1,4 +1,4 @@
-import { Github, Upload, AlertTriangle } from "lucide-react";
+import { Github, AlertTriangle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,8 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/layout/page-header";
+import { getCurrentUser } from "@/lib/auth/session";
+import { ResumeUploadForm } from "@/components/resume/upload-form";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const user = await getCurrentUser();
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -26,18 +30,16 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Profile</CardTitle>
-            <CardDescription>Your account information.</CardDescription>
+            <CardDescription>Your account information from GitHub.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Name</Label>
-              {/* TODO: Replace with actual user data */}
-              <Input value="User Name" readOnly className="bg-muted" />
+              <Input value={user?.name ?? "—"} readOnly className="bg-muted" />
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
-              {/* TODO: Replace with actual user data */}
-              <Input value="user@example.com" readOnly className="bg-muted" />
+              <Input value={user?.email ?? "—"} readOnly className="bg-muted" />
             </div>
           </CardContent>
         </Card>
@@ -50,46 +52,30 @@ export default function SettingsPage() {
               GitHub
             </CardTitle>
             <CardDescription>
-              Connect your GitHub account to import repositories.
+              Your GitHub account is connected via OAuth.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {/* TODO: Show actual connection status */}
-              <Badge variant="outline">Not connected</Badge>
+              {user?.githubUsername ? (
+                <Badge variant="outline">@{user.githubUsername}</Badge>
+              ) : (
+                <Badge variant="secondary">Connected</Badge>
+              )}
             </div>
-            <Button variant="outline">
-              {/* TODO: Wire up GitHub OAuth connection */}
-              Connect GitHub
-            </Button>
           </CardContent>
         </Card>
 
         {/* Resume section */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Resume
-            </CardTitle>
+            <CardTitle className="text-lg">Resume</CardTitle>
             <CardDescription>
               Upload your resume to enrich your portfolio with experience data.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* TODO: Wire up file upload functionality */}
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8">
-              <Upload className="h-8 w-8 text-muted-foreground mb-3" />
-              <p className="text-sm font-medium mb-1">
-                Drop your resume here or click to upload
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Supports PDF and DOCX files up to 10MB
-              </p>
-              <Button variant="outline" size="sm" className="mt-4">
-                Choose File
-              </Button>
-            </div>
+            <ResumeUploadForm />
           </CardContent>
         </Card>
 
@@ -108,7 +94,6 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <Button variant="destructive" disabled>
-              {/* TODO: Wire up account deletion with confirmation dialog */}
               Delete Account
             </Button>
           </CardContent>
