@@ -3,6 +3,11 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { portfolios, projects } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import {
+  MAX_GREETING_CHARS,
+  MAX_STARTER_CHARS,
+  MAX_STARTERS,
+} from "@/lib/chatbot/types";
 
 async function getAuthenticatedPortfolio(portfolioId: string) {
   const session = await auth();
@@ -57,7 +62,18 @@ export async function PATCH(
   }
 
   const updates = await req.json();
-  const allowedFields = ["name", "slug", "templateId", "settings", "status"];
+  const allowedFields = [
+    "name",
+    "slug",
+    "templateId",
+    "settings",
+    "status",
+    // Phase 5 — visitor chatbot toggle. Boolean only; coerced below.
+    "chatbotEnabled",
+    // Phase 5.2 — owner-authored greeting + starter chips.
+    "chatbotGreeting",
+    "chatbotStarters",
+  ];
   const filteredUpdates: Record<string, any> = {};
 
   for (const key of allowedFields) {
@@ -65,6 +81,84 @@ export async function PATCH(
       filteredUpdates[key] = updates[key];
     }
   }
+  if ("chatbotEnabled" in filteredUpdates) {
+    filteredUpdates.chatbotEnabled = Boolean(filteredUpdates.chatbotEnabled);
+  }
+
+  // Phase 5.2 validation — greeting is a nullable string ≤ MAX_GREETING_CHARS;
+  // starters is an array of up to MAX_STARTERS strings, each ≤ MAX_STARTER_CHARS.
+  if ("chatbotGreeting" in filteredUpdates) {
+    const g = filteredUpdates.chatbotGreeting;
+    if (g === null || g === "") {
+      filteredUpdates.chatbotGreeting = null;
+    } else if (typeof g !== "string") {
+      return NextResponse.json(
+        { error: "chatbotGreeting must be a string or null" },
+        { status: 400 }
+      );
+    } else {
+      const trimmed = g.trim();
+      if (trimmed.length > MAX_GREETING_CHARS) {
+        return NextResponse.json(
+          { error: `chatbotGreeting exceeds ${MAX_GREETING_CHARS} characters` },
+          { status: 400 }
+        );
+      }
+      // Reject control chars (tabs OK; newlines OK; other C0 rejected) to
+      // prevent pathological formatting in owner-authored text.
+      if (/[\x00-\x08\x0B-\x1F\x7F]/.test(trimmed)) {
+        return NextResponse.json(
+          { error: "chatbotGreeting contains disallowed control characters" },
+          { status: 400 }
+        );
+      }
+      filteredUpdates.chatbotGreeting = trimmed.length === 0 ? null : trimmed;
+    }
+  }
+
+  if ("chatbotStarters" in filteredUpdates) {
+    const s = filteredUpdates.chatbotStarters;
+    if (!Array.isArray(s)) {
+      return NextResponse.json(
+        { error: "chatbotStarters must be an array" },
+        { status: 400 }
+      );
+    }
+    if (s.length > MAX_STARTERS) {
+      return NextResponse.json(
+        { error: `chatbotStarters accepts at most ${MAX_STARTERS} items` },
+        { status: 400 }
+      );
+    }
+    const cleaned: string[] = [];
+    for (const item of s) {
+      if (typeof item !== "string") {
+        return NextResponse.json(
+          { error: "chatbotStarters items must be strings" },
+          { status: 400 }
+        );
+      }
+      const t = item.trim();
+      if (t.length === 0) continue; // silently drop blanks
+      if (t.length > MAX_STARTER_CHARS) {
+        return NextResponse.json(
+          {
+            error: `chatbotStarters items must be ≤ ${MAX_STARTER_CHARS} characters`,
+          },
+          { status: 400 }
+        );
+      }
+      if (/[\x00-\x08\x0B-\x1F\x7F]/.test(t)) {
+        return NextResponse.json(
+          { error: "chatbotStarters items contain disallowed control characters" },
+          { status: 400 }
+        );
+      }
+      cleaned.push(t);
+    }
+    filteredUpdates.chatbotStarters = cleaned;
+  }
+
   filteredUpdates.updatedAt = new Date();
 
   const [updated] = await db
