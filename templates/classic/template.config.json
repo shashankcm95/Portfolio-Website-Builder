@@ -1,0 +1,13 @@
+{
+  "id": "classic",
+  "name": "Classic",
+  "description": "Editorial-style portfolio with serif typography, warm tones, and a split hero",
+  "version": "1.0.0",
+  "supportedPages": ["home", "about", "projects", "project-detail", "contact"],
+  "defaultSettings": {
+    "primaryColor": "#a16207",
+    "fontFamily": "Playfair Display",
+    "showGitHubStats": true,
+    "showTechStack": true
+  }
+}

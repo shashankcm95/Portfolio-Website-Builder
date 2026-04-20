@@ -1,0 +1,26 @@
+# Phase 6 — App-level robots rules.
+#
+# Applies only to THIS deploy (the portfolio-builder app itself).
+# Published user portfolios serve their own robots.txt from the
+# generator output and allow full crawling.
+
+User-agent: *
+
+# Don't index share-preview URLs — they're meant to be passed around
+# privately, not discovered. `public/robots.txt` is a soft signal;
+# `/share/*` routes also inject <meta name="robots" content="noindex">.
+Disallow: /share/
+
+# Owner chatbot iframe + bootstrap script — not interesting to crawlers
+# and potentially embarrassing if snapshotted mid-load.
+Disallow: /embed/
+
+# Private API surface.
+Disallow: /api/
+
+# Dashboard + auth flows.
+Disallow: /dashboard/
+Disallow: /portfolios/
+Disallow: /sign-in
+Disallow: /sign-out
+Disallow: /settings

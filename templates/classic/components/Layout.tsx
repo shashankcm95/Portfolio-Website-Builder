@@ -23,7 +23,8 @@ export function Layout({
   const title = `${basics.name} — ${basics.label}`;
   const description = basics.summary.substring(0, 160);
   const siteUrl = meta.siteUrl || "";
-  // Phase 6 — dynamic OG image preferred; fall back to avatar.
+  // Phase 6 — dynamic OG image preferred; fall back to the owner's
+  // avatar so the published site still unfurls in social previews.
   const ogImage = meta.ogImageUrl || basics.avatar;
 
   const navLinks = [
@@ -51,6 +52,10 @@ export function Layout({
         <meta property="og:type" content="website" />
         {siteUrl && <meta property="og:url" content={siteUrl} />}
         {ogImage && <meta property="og:image" content={ogImage} />}
+        {/* Phase 6 — declared dimensions + alt so scrapers index the image
+            correctly. When the dynamic OG endpoint renders at 1200×630,
+            these match. When falling back to the avatar, the dimensions
+            are still plausible defaults for scraper preview frames. */}
         {ogImage && <meta property="og:image:width" content="1200" />}
         {ogImage && <meta property="og:image:height" content="630" />}
         {ogImage && (
@@ -74,7 +79,7 @@ export function Layout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=Source+Sans+3:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
 
@@ -141,8 +146,8 @@ export function Layout({
           />
         )}
 
-        {/* Phase 6 — Analytics beacon. Omitted when NEXT_PUBLIC_APP_URL
-            isn't configured. */}
+        {/* Phase 6 — Analytics beacon. Fire-and-forget pageview on load.
+            Omitted when NEXT_PUBLIC_APP_URL isn't configured. */}
         {meta.analyticsEndpoint && meta.analyticsPortfolioId && (
           <script
             dangerouslySetInnerHTML={{

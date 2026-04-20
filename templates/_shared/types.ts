@@ -12,6 +12,25 @@ export interface ProfileData {
     templateId: string;
     portfolioSlug: string;
     siteUrl: string;
+    /**
+     * Phase 6 — absolute URL to the dynamic OG image for this
+     * portfolio, e.g. `{APP_URL}/api/og?portfolioId=X&v=<hash>`.
+     * Null when NEXT_PUBLIC_APP_URL isn't configured at build time;
+     * Layout.tsx falls back to the owner's avatar for og:image in that
+     * case (matches the Phase-4 behavior).
+     */
+    ogImageUrl?: string | null;
+    /**
+     * Phase 6 — absolute URL to the analytics ingest endpoint, e.g.
+     * `{APP_URL}/api/events/track`. When null/empty, the template
+     * omits the beacon script entirely.
+     */
+    analyticsEndpoint?: string | null;
+    /**
+     * Phase 6 — the portfolio id the analytics beacon sends with each
+     * event. Required alongside `analyticsEndpoint`.
+     */
+    analyticsPortfolioId?: string | null;
   };
 
   basics: {
