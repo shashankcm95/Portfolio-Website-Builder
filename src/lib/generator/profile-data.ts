@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { portfolios, projects } from "@/lib/db/schema";
+import { embeddings, portfolios, projects } from "@/lib/db/schema";
 import type {
   ProfileData,
   Project,
@@ -114,6 +114,29 @@ export async function assembleProfileData(
   // ── Extract summary ────────────────────────────────────────────────────
   const summary = extractSummary(resumeJson, user);
 
+  // ── Phase 5: chatbot gate ──────────────────────────────────────────────
+  // The embed script is only injected when ALL of:
+  //   (a) NEXT_PUBLIC_APP_URL is set (we need an origin to point the
+  //       published site back at our app)
+  //   (b) the owner has chatbotEnabled=true on the portfolio
+  //   (c) at least one embedding row exists for this portfolio
+  //       (prevents shipping a broken chatbot when the pipeline hasn't
+  //        produced a retrieval corpus yet).
+  const chatbotEmbed = await buildChatbotEmbed(portfolioId, portfolio);
+
+  // ── Phase 6: dynamic OG image URL ──────────────────────────────────────
+  // Only set when NEXT_PUBLIC_APP_URL is configured at build time. The
+  // `v` cache-buster is derived from a content-hash proxy so social
+  // scrapers fetch a fresh image after meaningful edits. Uses updatedAt
+  // as the poor-man's hash — cheap, stable across same-state rebuilds.
+  const ogImageUrl = buildOgImageUrl(portfolioId, portfolio.updatedAt);
+
+  // ── Phase 6: analytics beacon ──────────────────────────────────────────
+  // Same NEXT_PUBLIC_APP_URL gate — if we can't hit ourselves from the
+  // published site, we don't inject the beacon script.
+  const { analyticsEndpoint, analyticsPortfolioId } =
+    buildAnalyticsConfig(portfolioId);
+
   // ── Assemble ProfileData ───────────────────────────────────────────────
   const profileData: ProfileData = {
     meta: {
@@ -121,6 +144,9 @@ export async function assembleProfileData(
       templateId: portfolio.templateId || "minimal",
       portfolioSlug: portfolio.slug,
       siteUrl: "",
+      ogImageUrl,
+      analyticsEndpoint,
+      analyticsPortfolioId,
     },
     basics: {
       name: user.name || user.githubUsername || "Portfolio",
@@ -135,9 +161,85 @@ export async function assembleProfileData(
     projects: projectList,
     experience: experience.length > 0 ? experience : undefined,
     education: education.length > 0 ? education : undefined,
+    chatbot: chatbotEmbed ?? undefined,
   };
 
   return profileData;
+}
+
+/**
+ * Phase 6 — Build the dynamic OG image URL that the published site's
+ * meta tags point at. Returns null when NEXT_PUBLIC_APP_URL isn't set
+ * (template falls back to `basics.avatar`). The `v` cache-buster
+ * encodes `portfolio.updatedAt` so social scrapers fetch a fresh image
+ * after meaningful edits.
+ */
+function buildOgImageUrl(
+  portfolioId: string,
+  updatedAt: Date | null | undefined
+): string | null {
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
+  if (!appUrl) return null;
+  const v = updatedAt
+    ? String(Math.floor(new Date(updatedAt).getTime() / 1000))
+    : "0";
+  return `${appUrl}/api/og?portfolioId=${encodeURIComponent(portfolioId)}&v=${v}`;
+}
+
+/**
+ * Phase 6 — Analytics beacon endpoint + portfolio id. Both null when
+ * NEXT_PUBLIC_APP_URL isn't set (template omits the script).
+ */
+function buildAnalyticsConfig(portfolioId: string): {
+  analyticsEndpoint: string | null;
+  analyticsPortfolioId: string | null;
+} {
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
+  if (!appUrl) {
+    return { analyticsEndpoint: null, analyticsPortfolioId: null };
+  }
+  return {
+    analyticsEndpoint: `${appUrl}/api/events/track`,
+    analyticsPortfolioId: portfolioId,
+  };
+}
+
+/**
+ * Resolve the ProfileData.chatbot block if (and only if) the gates pass.
+ * Returns null when any gate fails — template then omits the script.
+ */
+async function buildChatbotEmbed(
+  portfolioId: string,
+  portfolio: { id: string; chatbotEnabled: boolean }
+): Promise<ProfileData["chatbot"] | null> {
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
+  if (!appUrl) return null;
+  if (!portfolio.chatbotEnabled) return null;
+
+  // Probe for at least one embedding row. The retrieval corpus lives on
+  // the `embeddings` table joined to projects by projectId.
+  const projectIds = (
+    await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(eq(projects.portfolioId, portfolioId))
+  ).map((r) => r.id);
+
+  if (projectIds.length === 0) return null;
+
+  const [any] = await db
+    .select({ id: embeddings.id })
+    .from(embeddings)
+    .where(inArray(embeddings.projectId, projectIds))
+    .limit(1);
+
+  if (!any) return null;
+
+  return {
+    enabled: true,
+    apiEndpoint: `${appUrl}/chatbot-embed.js`,
+    portfolioId,
+  };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -165,12 +267,18 @@ function mapFactCategoryToSkillCategory(
 
 function buildProject(proj: {
   id: string;
-  repoUrl: string;
-  repoName: string;
+  repoUrl: string | null;
+  repoName: string | null;
   displayName: string | null;
   displayOrder: number | null;
   isFeatured: boolean | null;
   repoMetadata: unknown;
+  // Wave 3B: manual (non-GitHub) project fields
+  sourceType?: string | null;
+  manualDescription?: string | null;
+  externalUrl?: string | null;
+  imageUrl?: string | null;
+  techStack?: unknown;
   facts: Array<{
     claim: string;
     category: string;
@@ -186,6 +294,7 @@ function buildProject(proj: {
   }>;
 }): Project {
   const metadata = proj.repoMetadata as Record<string, unknown> | null;
+  const isManual = proj.sourceType === "manual";
 
   // Build sections, preferring user-edited content
   const sections = buildSections(proj.generatedSections);
@@ -197,21 +306,30 @@ function buildProject(proj: {
     evidenceRef: f.evidenceRef || undefined,
   }));
 
-  // Extract tech stack from metadata or facts
-  const techStack = extractTechStack(proj.facts, metadata);
+  // For manual projects: user-supplied description replaces AI-generated
+  // sections; tech stack comes from the user's techStack JSON column, not
+  // from extracted facts/topics (there are none).
+  const manualTechStack =
+    isManual && Array.isArray(proj.techStack)
+      ? (proj.techStack as string[])
+      : undefined;
+  const techStack =
+    manualTechStack ?? extractTechStack(proj.facts, metadata);
+
+  const fallbackDescription = isManual
+    ? proj.manualDescription ?? ""
+    : (metadata?.description as string) ?? "";
 
   return {
     id: proj.id,
-    name: proj.displayName || proj.repoName,
-    repoUrl: proj.repoUrl,
-    description:
-      sections.summary || (metadata?.description as string) || "",
+    name: proj.displayName || proj.repoName || "Untitled Project",
+    repoUrl: proj.repoUrl ?? proj.externalUrl ?? "",
+    description: sections.summary || fallbackDescription,
     techStack,
     isFeatured: proj.isFeatured ?? false,
     displayOrder: proj.displayOrder ?? 0,
     sections: {
-      summary:
-        sections.summary || (metadata?.description as string) || "",
+      summary: sections.summary || fallbackDescription,
       architecture: sections.architecture,
       techNarrative: sections["tech-narrative"],
       recruiterPitch: sections["recruiter-pitch"],
@@ -226,7 +344,7 @@ function buildProject(proj: {
       license: extractLicense(metadata),
     },
     facts: projectFacts,
-    screenshot: undefined,
+    screenshot: proj.imageUrl ?? undefined,
   };
 }
 

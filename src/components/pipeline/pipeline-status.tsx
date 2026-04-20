@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { NextStepBanner } from "@/components/ui/next-step-banner";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ const STEP_LABELS: Record<string, string> = {
   fact_extract: "Extract Facts",
   narrative_generate: "Generate Narratives",
   claim_verify: "Verify Claims",
+  storyboard_generate: "Build Guided Tour",
 };
 
 const POLL_INTERVAL_MS = 2000;
@@ -114,20 +116,19 @@ export function PipelineStatus({
 
   // ── Derived state ──
 
-  const isRunning = pipelineState
-    ? pipelineState.steps.some((s) => s.status === "running")
-    : false;
+  const steps = pipelineState?.steps ?? [];
+  const hasSteps = steps.length > 0;
+
+  const isRunning = steps.some((s) => s.status === "running");
 
   const isCompleted = pipelineState?.completedAt != null && !pipelineState.error;
   const isFailed = pipelineState?.error != null;
 
-  const completedCount = pipelineState
-    ? pipelineState.steps.filter(
-        (s) => s.status === "completed" || s.status === "skipped"
-      ).length
-    : 0;
+  const completedCount = steps.filter(
+    (s) => s.status === "completed" || s.status === "skipped"
+  ).length;
 
-  const totalSteps = pipelineState ? pipelineState.steps.length : 7;
+  const totalSteps = hasSteps ? steps.length : 7;
   const progressPercent = Math.round((completedCount / totalSteps) * 100);
 
   // ── Fetch status ──
@@ -204,7 +205,7 @@ export function PipelineStatus({
   // ── Render ──
 
   const showStartButton =
-    !pipelineState && !isStarting && initialStatus !== "running";
+    !hasSteps && !isStarting && initialStatus !== "running";
   const showRetryButton = isFailed;
 
   return (
@@ -219,7 +220,7 @@ export function PipelineStatus({
 
       <CardContent className="space-y-4">
         {/* Progress bar */}
-        {pipelineState && (
+        {hasSteps && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Overall Progress</span>
@@ -229,12 +230,12 @@ export function PipelineStatus({
           </div>
         )}
 
-        {pipelineState && <Separator />}
+        {hasSteps && <Separator />}
 
         {/* Step list */}
-        {pipelineState ? (
+        {hasSteps ? (
           <div className="space-y-1">
-            {pipelineState.steps.map((step, index) => (
+            {steps.map((step, index) => (
               <div key={step.name}>
                 <div
                   className={cn(
@@ -246,7 +247,7 @@ export function PipelineStatus({
                   {/* Vertical connector line */}
                   <div className="relative flex flex-col items-center">
                     <StatusIcon status={step.status} />
-                    {index < pipelineState.steps.length - 1 && (
+                    {index < steps.length - 1 && (
                       <div
                         className={cn(
                           "absolute top-6 h-4 w-px",
@@ -303,7 +304,7 @@ export function PipelineStatus({
         )}
 
         {/* Loading state while starting */}
-        {isStarting && !pipelineState && (
+        {isStarting && !hasSteps && (
           <div className="flex items-center justify-center gap-2 py-8">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
@@ -357,6 +358,19 @@ export function PipelineStatus({
           </div>
         )}
       </CardFooter>
+
+      {/* Post-completion next-step prompt */}
+      {isCompleted && (
+        <div className="px-6 pb-6">
+          <NextStepBanner
+            tone="success"
+            title="Analysis complete — your narratives are ready."
+            description="Preview the generated portfolio, or deploy it live now."
+            cta="See Preview"
+            href={`/portfolios/${portfolioId}?tab=preview`}
+          />
+        </div>
+      )}
     </Card>
   );
 }

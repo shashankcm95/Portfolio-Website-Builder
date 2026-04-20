@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Briefcase,
   LayoutDashboard,
@@ -36,6 +37,7 @@ const navItems = [
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   return (
     <>
@@ -90,14 +92,23 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
         {/* User info */}
         <div className="flex items-center gap-3 px-6 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-            <User className="h-4 w-4 text-muted-foreground" />
-          </div>
+          {session?.user?.image ? (
+            <img
+              src={session.user.image}
+              alt=""
+              className="h-8 w-8 rounded-full"
+            />
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+              <User className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
           <div className="flex-1 overflow-hidden">
-            {/* TODO: Replace with actual user data */}
-            <p className="truncate text-sm font-medium">User Name</p>
+            <p className="truncate text-sm font-medium">
+              {session?.user?.name ?? "User"}
+            </p>
             <p className="truncate text-xs text-muted-foreground">
-              user@example.com
+              {session?.user?.email ?? ""}
             </p>
           </div>
         </div>

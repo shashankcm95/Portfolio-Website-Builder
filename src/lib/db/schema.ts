@@ -26,6 +26,19 @@ export const users = pgTable("users", {
   resumeJson: jsonb("resume_json"),
   resumeFilename: text("resume_filename"),
   onboardingStep: text("onboarding_step").default("initial"),
+  // Phase 3.5 — Bring-your-own-key LLM provider. All columns nullable:
+  //   `null` everywhere = no BYOK; factory falls back to platform env.
+  //   `byokKeyEncrypted` is AES-256-GCM ciphertext via `src/lib/crypto/secret-box`.
+  byokProvider: text("byok_provider"), // "openai" | "anthropic"
+  byokKeyEncrypted: text("byok_key_encrypted"),
+  byokModel: text("byok_model"),
+  byokKeyLastValidatedAt: timestamp("byok_key_last_validated_at", {
+    withTimezone: true,
+  }),
+  byokKeyLastFailureAt: timestamp("byok_key_last_failure_at", {
+    withTimezone: true,
+  }),
+  byokKeyLastFailureReason: text("byok_key_last_failure_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
@@ -45,6 +58,16 @@ export const portfolios = pgTable(
     profileData: jsonb("profile_data"),
     status: text("status").default("draft"),
     settings: jsonb("settings").default("{}"),
+    // Phase 5 — visitor chatbot toggle. Default-on for new portfolios; the
+    // published static site's embed script is gated on this + env +
+    // at-least-one embedding row. Owners can flip off in settings.
+    chatbotEnabled: boolean("chatbot_enabled").notNull().default(true),
+    // Phase 5.2 — owner-authored greeting (first assistant message when
+    // the visitor opens the widget). Null = use generic placeholder.
+    chatbotGreeting: text("chatbot_greeting"),
+    // Phase 5.2 — up to 3 starter-question chips shown above the input
+    // on an empty transcript. Empty array = no chips.
+    chatbotStarters: jsonb("chatbot_starters").notNull().default("[]"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
@@ -63,20 +86,68 @@ export const projects = pgTable("projects", {
   portfolioId: uuid("portfolio_id")
     .notNull()
     .references(() => portfolios.id, { onDelete: "cascade" }),
-  repoUrl: text("repo_url").notNull(),
-  repoOwner: text("repo_owner").notNull(),
-  repoName: text("repo_name").notNull(),
+  // Nullable — manual projects (sourceType = "manual") have no GitHub repo
+  repoUrl: text("repo_url"),
+  repoOwner: text("repo_owner"),
+  repoName: text("repo_name"),
   displayName: text("display_name"),
   displayOrder: integer("display_order").default(0),
   isVisible: boolean("is_visible").default(true),
   isFeatured: boolean("is_featured").default(false),
   repoMetadata: jsonb("repo_metadata"),
+  // Wave 3B: non-GitHub projects (design work, NDA case studies, etc.)
+  sourceType: text("source_type").notNull().default("github"),
+  manualDescription: text("manual_description"),
+  imageUrl: text("image_url"),
+  externalUrl: text("external_url"),
+  techStack: jsonb("tech_stack").default("[]"),
   pipelineStatus: text("pipeline_status").default("pending"),
   pipelineError: text("pipeline_error"),
   lastAnalyzed: timestamp("last_analyzed", { withTimezone: true }),
+  // Phase 1: Credibility Signals — data-only trust floor sourced from GitHub REST API.
+  // Bundle is always read together; jsonb keeps iteration flexible without migrations.
+  credibilitySignals: jsonb("credibility_signals"),
+  credibilityFetchedAt: timestamp("credibility_fetched_at", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
+
+// ─── Project Demos (Phase 4) ─────────────────────────────────────────────────
+//
+// Zero-or-more ordered demo rows per project. `type` is a cached DemoType
+// stamped at save time by `src/lib/demos/platform-detect.ts`. A project's
+// rendered demo is derived from the full list via `toRenderMode` — single
+// URL or an image/GIF slideshow.
+
+export const projectDemos = pgTable(
+  "project_demos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    type: text("type").notNull(), // DemoType: youtube/loom/vimeo/video/image/gif/other
+    title: text("title"), // optional, ≤120 chars
+    order: integer("order").notNull(), // 0-indexed slide position
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    // Phase 4.2 — oEmbed enrichment cache. Populated best-effort after
+    // PUT /demo within a 3s window; null means "not yet enriched" (or
+    // provider unreachable, or non-oEmbedable type).
+    thumbnailUrl: text("thumbnail_url"),
+    oembedTitle: text("oembed_title"),
+    oembedFetchedAt: timestamp("oembed_fetched_at", { withTimezone: true }),
+  },
+  (t) => ({
+    projectIdIdx: index("project_demos_project_id_idx").on(t.projectId),
+    projectIdOrderIdx: uniqueIndex("project_demos_project_id_order_idx").on(
+      t.projectId,
+      t.order
+    ),
+  })
+);
 
 // ─── Repo Sources ────────────────────────────────────────────────────────────
 
@@ -275,17 +346,164 @@ export const embeddings = pgTable(
 
 // ─── Chatbot Sessions ────────────────────────────────────────────────────────
 
-export const chatbotSessions = pgTable("chatbot_sessions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  portfolioId: uuid("portfolio_id")
-    .notNull()
-    .references(() => portfolios.id, { onDelete: "cascade" }),
-  visitorId: text("visitor_id"),
-  messages: jsonb("messages").default("[]"),
-  metadata: jsonb("metadata").default("{}"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
+export const chatbotSessions = pgTable(
+  "chatbot_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    portfolioId: uuid("portfolio_id")
+      .notNull()
+      .references(() => portfolios.id, { onDelete: "cascade" }),
+    visitorId: text("visitor_id"),
+    messages: jsonb("messages").default("[]"),
+    metadata: jsonb("metadata").default("{}"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    portfolioIdIdx: index("chatbot_sessions_portfolio_id_idx").on(
+      table.portfolioId
+    ),
+    // Phase 5 — lets POST /api/chatbot/message upsert the row for a
+    // (portfolio, visitor) pair without a secondary lookup.
+    portfolioVisitorIdx: index("chatbot_sessions_portfolio_visitor_idx").on(
+      table.portfolioId,
+      table.visitorId
+    ),
+  })
+);
+
+// ─── Phase 6 — Share Tokens ─────────────────────────────────────────────────
+
+/**
+ * Unauthenticated share links for draft portfolios. Owner generates a
+ * token; anyone holding the URL `/share/<token>` sees a read-only
+ * preview of the portfolio (even unpublished drafts). Soft-revocable
+ * via `revokedAt`; optional `expiresAt` for time-bounded shares.
+ */
+export const shareTokens = pgTable(
+  "share_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    portfolioId: uuid("portfolio_id")
+      .notNull()
+      .references(() => portfolios.id, { onDelete: "cascade" }),
+    // 24-char Crockford base32, unique across the whole table.
+    token: text("token").notNull().unique(),
+    // Optional owner-authored nickname ("for Jane Doe", "interview prep").
+    label: text("label"),
+    // Null = never expires.
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    // Null = still active. Soft-revoke instead of delete so we keep the
+    // view-count history the owner might care about.
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    viewCount: integer("view_count").notNull().default(0),
+    lastViewedAt: timestamp("last_viewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    portfolioIdIdx: index("share_tokens_portfolio_id_idx").on(
+      table.portfolioId
+    ),
+  })
+);
+
+// ─── Phase 6 — Visitor Events ───────────────────────────────────────────────
+
+/**
+ * Lightweight pageview / chatbot analytics on published portfolios.
+ * No visitorId, no IP, no cookie — only coarse user-agent bucket +
+ * 2-char country from Cloudflare's `CF-IPCountry`. Owners see aggregate
+ * pageview counts + top paths + top referrers in the Analytics tab.
+ */
+export const visitorEvents = pgTable(
+  "visitor_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    portfolioId: uuid("portfolio_id")
+      .notNull()
+      .references(() => portfolios.id, { onDelete: "cascade" }),
+    // "pageview" | "chatbot_opened" | "chatbot_message"
+    eventType: text("event_type").notNull(),
+    path: text("path"),
+    // Sanitized Referer header (origin only — strip query strings).
+    referrer: text("referrer"),
+    // "desktop" | "mobile" | "bot" | "other"
+    userAgentBucket: text("user_agent_bucket"),
+    // 2-char ISO country code (nullable when CF header absent).
+    country: text("country"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    portfolioCreatedIdx: index("visitor_events_portfolio_created_idx").on(
+      table.portfolioId,
+      table.createdAt
+    ),
+  })
+);
+
+// ─── Phase 6 — Pipeline Jobs (history) ──────────────────────────────────────
+
+/**
+ * Durable history of pipeline orchestrator runs. One row per
+ * `startPipeline(projectId)`. Lives alongside the existing in-memory
+ * orchestrator state so observability can persist restarts without
+ * the pipeline becoming DB-coupled. All writes are fire-and-forget.
+ */
+export const pipelineJobs = pgTable(
+  "pipeline_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Matches the orchestrator's in-memory jobId (a UUID).
+    jobId: text("job_id").notNull().unique(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    // "running" | "completed" | "failed"
+    status: text("status").notNull(),
+    error: text("error"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    projectIdIdx: index("pipeline_jobs_project_id_idx").on(table.projectId),
+    createdAtIdx: index("pipeline_jobs_created_at_idx").on(table.createdAt),
+  })
+);
+
+/**
+ * One row per step within a pipeline job. Captures timing + LLM usage
+ * + cost (in micro-USD to stay integer-safe). `jobId` is an app-level
+ * FK to `pipelineJobs.jobId` (not a Drizzle relation — keeps writes
+ * trivially decoupled from the orchestrator's state machine).
+ */
+export const pipelineStepRuns = pgTable(
+  "pipeline_step_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: text("job_id").notNull(),
+    stepName: text("step_name").notNull(),
+    // "pending" | "running" | "completed" | "failed" | "skipped"
+    status: text("status").notNull(),
+    error: text("error"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    // LLM usage when the step made a provider call. Null when the step
+    // is pure code (e.g., repo_fetch).
+    modelUsed: text("model_used"),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    // Cost in micro-USD (1e-6 USD). Integer avoids float drift across
+    // aggregation. UI presents as USD with 4 decimals.
+    costUsdMicros: integer("cost_usd_micros"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    jobIdIdx: index("pipeline_step_runs_job_id_idx").on(table.jobId),
+  })
+);
 
 // ─── Relations ───────────────────────────────────────────────────────────────
 
@@ -302,6 +520,30 @@ export const portfoliosRelations = relations(portfolios, ({ one, many }) => ({
   deployments: many(deployments),
   domains: many(domains),
   chatbotSessions: many(chatbotSessions),
+  shareTokens: many(shareTokens),
+  visitorEvents: many(visitorEvents),
+}));
+
+// Phase 6 — reverse relations for the new tables.
+export const shareTokensRelations = relations(shareTokens, ({ one }) => ({
+  portfolio: one(portfolios, {
+    fields: [shareTokens.portfolioId],
+    references: [portfolios.id],
+  }),
+}));
+
+export const visitorEventsRelations = relations(visitorEvents, ({ one }) => ({
+  portfolio: one(portfolios, {
+    fields: [visitorEvents.portfolioId],
+    references: [portfolios.id],
+  }),
+}));
+
+export const pipelineJobsRelations = relations(pipelineJobs, ({ one }) => ({
+  project: one(projects, {
+    fields: [pipelineJobs.projectId],
+    references: [projects.id],
+  }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({

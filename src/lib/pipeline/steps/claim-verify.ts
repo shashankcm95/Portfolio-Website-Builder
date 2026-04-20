@@ -1,4 +1,4 @@
-import { callClaudeStructured } from "@/lib/ai/claude";
+import type { LlmClient } from "@/lib/ai/providers/types";
 import {
   verificationResultSchema,
   type VerificationResult,
@@ -22,7 +22,8 @@ export interface ClaimVerifyInput {
  * and returns verification results for each claim.
  */
 export async function verifyClaims(
-  input: ClaimVerifyInput
+  input: ClaimVerifyInput,
+  llm: LlmClient
 ): Promise<VerificationResult> {
   const systemPrompt = getClaimVerificationSystemPrompt();
 
@@ -43,7 +44,7 @@ export async function verifyClaims(
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await callClaudeStructured<unknown>({
+      const result = await llm.structured<unknown>({
         systemPrompt,
         userPrompt:
           attempt === 0

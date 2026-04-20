@@ -1,4 +1,4 @@
-import { callClaudeStructured } from "@/lib/ai/claude";
+import type { LlmClient } from "@/lib/ai/providers/types";
 import {
   narrativeResultSchema,
   type NarrativeResult,
@@ -21,7 +21,8 @@ export interface NarrativeGenerateInput {
  * from verified facts and project context.
  */
 export async function generateNarratives(
-  input: NarrativeGenerateInput
+  input: NarrativeGenerateInput,
+  llm: LlmClient
 ): Promise<NarrativeResult> {
   const systemPrompt = getNarrativeGenerationSystemPrompt();
 
@@ -43,7 +44,7 @@ export async function generateNarratives(
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await callClaudeStructured<unknown>({
+      const result = await llm.structured<unknown>({
         systemPrompt,
         userPrompt:
           attempt === 0

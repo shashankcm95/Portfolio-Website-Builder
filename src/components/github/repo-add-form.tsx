@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -12,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Star,
   Loader2,
@@ -20,6 +22,8 @@ import {
   ExternalLink,
   Plus,
   GitFork,
+  Github,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -212,13 +216,26 @@ export function RepoAddForm({ portfolioId, onProjectAdded }: RepoAddFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Add Repository</CardTitle>
+        <CardTitle className="text-lg">Add Project</CardTitle>
         <CardDescription>
-          Paste a GitHub repository URL to add it to your portfolio
+          Import from GitHub, or add a non-GitHub project manually
+          (design work, NDA-covered case studies, etc.)
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <Tabs defaultValue="github" className="px-6 pb-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="github">
+            <Github className="mr-2 h-4 w-4" />
+            GitHub Import
+          </TabsTrigger>
+          <TabsTrigger value="manual">
+            <FileText className="mr-2 h-4 w-4" />
+            Manual
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="github" className="mt-4 space-y-4">
         {/* URL Input */}
         <div className="flex gap-2">
           <div className="flex-1">
@@ -379,34 +396,230 @@ export function RepoAddForm({ portfolioId, onProjectAdded }: RepoAddFormProps) {
             </div>
           </div>
         )}
-      </CardContent>
 
-      <CardFooter className="flex justify-between">
-        {step === "preview" && validationResult ? (
-          <>
-            <Button variant="outline" onClick={resetForm}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddToPortfolio} disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add to Portfolio
-                </>
-              )}
-            </Button>
-          </>
-        ) : step === "success" ? (
-          <Button variant="outline" onClick={resetForm} className="ml-auto">
-            Add Another
-          </Button>
-        ) : null}
-      </CardFooter>
+          {/* GitHub tab footer */}
+          <div className="flex justify-between pt-2">
+            {step === "preview" && validationResult ? (
+              <>
+                <Button variant="outline" onClick={resetForm}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddToPortfolio} disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add to Portfolio
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : step === "success" ? (
+              <Button variant="outline" onClick={resetForm} className="ml-auto">
+                Add Another
+              </Button>
+            ) : null}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="manual" className="mt-4">
+          <ManualProjectForm
+            portfolioId={portfolioId}
+            onProjectAdded={onProjectAdded}
+          />
+        </TabsContent>
+      </Tabs>
     </Card>
+  );
+}
+
+// ─── Manual Project Form ────────────────────────────────────────────────────
+
+function ManualProjectForm({
+  portfolioId,
+  onProjectAdded,
+}: {
+  portfolioId: string;
+  onProjectAdded?: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [externalUrl, setExternalUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [techStackRaw, setTechStackRaw] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const reset = useCallback(() => {
+    setName("");
+    setDescription("");
+    setExternalUrl("");
+    setImageUrl("");
+    setTechStackRaw("");
+    setError(null);
+    setSuccess(false);
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    setError(null);
+    if (!name.trim()) {
+      setError("Project name is required");
+      return;
+    }
+    if (!description.trim()) {
+      setError("Description is required");
+      return;
+    }
+
+    const techStack = techStackRaw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/portfolios/${portfolioId}/projects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceType: "manual",
+          name: name.trim(),
+          description: description.trim(),
+          externalUrl: externalUrl.trim() || undefined,
+          imageUrl: imageUrl.trim() || undefined,
+          techStack,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Request failed (${res.status})`);
+      }
+      setSuccess(true);
+      onProjectAdded?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add project");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    name,
+    description,
+    externalUrl,
+    imageUrl,
+    techStackRaw,
+    portfolioId,
+    onProjectAdded,
+  ]);
+
+  if (success) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4 flex items-start gap-3">
+          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-green-600 dark:text-green-400">
+              Project added!
+            </p>
+            <p className="text-sm text-muted-foreground">
+              It will show up in your portfolio without any GitHub analysis.
+            </p>
+          </div>
+        </div>
+        <Button variant="outline" onClick={reset}>
+          Add another
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="manual-name">Project name</Label>
+        <Input
+          id="manual-name"
+          placeholder="Acme Redesign"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={submitting}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="manual-desc">Description</Label>
+        <textarea
+          id="manual-desc"
+          className="min-h-[96px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          placeholder="A 2-3 sentence summary of the work — what it was, your role, the outcome."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          disabled={submitting}
+        />
+        <p className="text-xs text-muted-foreground">
+          This replaces the auto-generated GitHub-based narrative. Write it as
+          you want it to appear on your portfolio.
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="manual-url">External URL (optional)</Label>
+          <Input
+            id="manual-url"
+            type="url"
+            placeholder="https://example.com/case-study"
+            value={externalUrl}
+            onChange={(e) => setExternalUrl(e.target.value)}
+            disabled={submitting}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="manual-image">Image URL (optional)</Label>
+          <Input
+            id="manual-image"
+            type="url"
+            placeholder="https://…/cover.png"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            disabled={submitting}
+          />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="manual-tech">Tech stack (optional)</Label>
+        <Input
+          id="manual-tech"
+          placeholder="Figma, Framer, React"
+          value={techStackRaw}
+          onChange={(e) => setTechStackRaw(e.target.value)}
+          disabled={submitting}
+        />
+        <p className="text-xs text-muted-foreground">Comma-separated.</p>
+      </div>
+
+      {error && (
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
+
+      <Button onClick={handleSubmit} disabled={submitting}>
+        {submitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Adding...
+          </>
+        ) : (
+          <>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Project
+          </>
+        )}
+      </Button>
+    </div>
   );
 }

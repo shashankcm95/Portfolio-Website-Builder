@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle2,
   AlertCircle,
@@ -11,6 +11,11 @@ import {
   Eye,
   Users,
   Code2,
+  ChevronDown,
+  ChevronRight,
+  FileCode,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -48,6 +53,30 @@ interface NarrativeViewProps {
 
 type VariantFilter = "recruiter" | "engineer";
 
+interface ClaimRow {
+  id: string;
+  sentenceIndex: number;
+  sentenceText: string;
+  factIds: string[];
+  verification: string;
+  confidence: number | null;
+}
+
+interface FactRow {
+  id: string;
+  claim: string;
+  category: string;
+  confidence: number;
+  evidenceType: string;
+  evidenceRef: string | null;
+  evidenceText: string | null;
+}
+
+interface ClaimMapData {
+  claimsBySection: Record<string, ClaimRow[]>;
+  facts: FactRow[];
+}
+
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const SECTION_TYPE_LABELS: Record<string, string> = {
@@ -68,88 +97,172 @@ const SECTION_TYPE_ORDER = [
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/**
- * Simple inline claim highlighting. Wraps sentences with verification
- * markers in colored indicators. This is a client-side approximation;
- * in a real implementation the claim map would provide precise indices.
- */
-function renderContentWithClaims(content: string): React.ReactNode {
-  // Split by sentences (simplified). Each sentence can have an inline
-  // verification marker like [verified], [unverified], or [flagged].
-  const parts = content.split(/(\[verified\]|\[unverified\]|\[flagged\])/g);
-
-  if (parts.length === 1) {
-    // No inline markers, render as plain text paragraphs
-    return content.split("\n\n").map((paragraph, i) => (
-      <p key={i} className="text-sm leading-relaxed">
-        {paragraph}
-      </p>
-    ));
-  }
-
-  const elements: React.ReactNode[] = [];
-  let currentVerification: string | null = null;
-
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-
-    if (part === "[verified]") {
-      currentVerification = "verified";
-      continue;
-    }
-    if (part === "[unverified]") {
-      currentVerification = "unverified";
-      continue;
-    }
-    if (part === "[flagged]") {
-      currentVerification = "flagged";
-      continue;
-    }
-
-    if (!part.trim()) continue;
-
-    if (currentVerification) {
-      elements.push(
-        <span
-          key={i}
-          className={cn(
-            "inline",
-            currentVerification === "verified" &&
-              "border-l-2 border-green-400 pl-1",
-            currentVerification === "unverified" &&
-              "border-l-2 border-yellow-400 pl-1",
-            currentVerification === "flagged" &&
-              "border-l-2 border-red-400 pl-1"
-          )}
-        >
-          {part}
-          <ClaimIndicator type={currentVerification} />
-        </span>
-      );
-      currentVerification = null;
-    } else {
-      elements.push(<span key={i}>{part}</span>);
-    }
-  }
-
-  return <div className="text-sm leading-relaxed space-y-1">{elements}</div>;
-}
-
-function ClaimIndicator({ type }: { type: string }) {
+function VerificationIcon({ type }: { type: string }) {
+  const className = "h-3.5 w-3.5 shrink-0";
   switch (type) {
     case "verified":
-      return (
-        <CheckCircle2 className="ml-1 inline h-3.5 w-3.5 text-green-500" />
-      );
+      return <CheckCircle2 className={cn(className, "text-green-500")} />;
     case "unverified":
-      return (
-        <AlertCircle className="ml-1 inline h-3.5 w-3.5 text-yellow-500" />
-      );
+      return <AlertCircle className={cn(className, "text-yellow-500")} />;
     case "flagged":
-      return <XCircle className="ml-1 inline h-3.5 w-3.5 text-red-500" />;
+      return <XCircle className={cn(className, "text-red-500")} />;
     default:
       return null;
   }
+}
+
+function verificationLabel(type: string): string {
+  switch (type) {
+    case "verified":
+      return "Backed by evidence";
+    case "unverified":
+      return "No direct evidence found";
+    case "flagged":
+      return "Conflicts with evidence";
+    default:
+      return type;
+  }
+}
+
+function borderClass(type: string): string {
+  switch (type) {
+    case "verified":
+      return "border-l-green-400";
+    case "unverified":
+      return "border-l-yellow-400";
+    case "flagged":
+      return "border-l-red-400";
+    default:
+      return "border-l-muted";
+  }
+}
+
+/**
+ * Renders section content using real claim-map rows. Each claim row's
+ * sentenceText becomes its own clickable block that expands to show the
+ * backing facts from the project's fact store.
+ *
+ * Falls back to plain paragraphs if no claim rows exist for this section
+ * yet (e.g., claim_verify step not run, or user is viewing a manual edit
+ * before re-verification).
+ */
+function ClaimAwareContent({
+  content,
+  claims,
+  facts,
+}: {
+  content: string;
+  claims: ClaimRow[] | undefined;
+  facts: FactRow[];
+}) {
+  const [expandedClaimId, setExpandedClaimId] = useState<string | null>(null);
+
+  if (!claims || claims.length === 0) {
+    return (
+      <div className="prose prose-sm max-w-none dark:prose-invert">
+        {content.split("\n\n").map((paragraph, i) => (
+          <p key={i} className="text-sm leading-relaxed">
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  // Build an index: factIds in claim_map are 1-based positional refs into
+  // the facts list the LLM saw during verification (ordered by createdAt).
+  const factByIndex = new Map<string, FactRow>();
+  facts.forEach((f, i) => factByIndex.set(String(i + 1), f));
+
+  return (
+    <div className="space-y-2">
+      {claims.map((claim) => {
+        const isExpanded = expandedClaimId === claim.id;
+        const linkedFacts = claim.factIds
+          .map((idx) => factByIndex.get(idx))
+          .filter((f): f is FactRow => f != null);
+
+        return (
+          <div
+            key={claim.id}
+            className={cn(
+              "rounded-md border-l-2 bg-muted/20",
+              borderClass(claim.verification)
+            )}
+          >
+            <button
+              type="button"
+              onClick={() => setExpandedClaimId(isExpanded ? null : claim.id)}
+              className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-muted/40 transition-colors rounded-md"
+              aria-expanded={isExpanded}
+              title={verificationLabel(claim.verification)}
+            >
+              <VerificationIcon type={claim.verification} />
+              <span className="flex-1 text-sm leading-relaxed">
+                {claim.sentenceText}
+              </span>
+              {linkedFacts.length > 0 && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 pt-0.5">
+                  {isExpanded ? (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  )}
+                  {linkedFacts.length} source{linkedFacts.length === 1 ? "" : "s"}
+                </span>
+              )}
+            </button>
+
+            {isExpanded && (
+              <div className="px-3 pb-3 pt-1 space-y-2 border-t">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground pt-2">
+                  {verificationLabel(claim.verification)}
+                  {claim.confidence != null && (
+                    <span className="ml-2 normal-case">
+                      · confidence {Math.round(claim.confidence * 100)}%
+                    </span>
+                  )}
+                </p>
+                {linkedFacts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    No backing facts recorded for this claim.
+                  </p>
+                ) : (
+                  linkedFacts.map((fact) => (
+                    <div
+                      key={fact.id}
+                      className="rounded border bg-background p-2.5 space-y-1.5"
+                    >
+                      <div className="flex items-start gap-2">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] shrink-0"
+                        >
+                          {fact.category}
+                        </Badge>
+                        <p className="text-xs font-medium">{fact.claim}</p>
+                      </div>
+                      {fact.evidenceRef && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <FileCode className="h-3 w-3" />
+                          <span className="font-mono">{fact.evidenceRef}</span>
+                        </div>
+                      )}
+                      {fact.evidenceText && (
+                        <pre className="text-[11px] bg-muted/50 rounded p-2 overflow-x-auto whitespace-pre-wrap font-mono leading-snug">
+                          {fact.evidenceText}
+                        </pre>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ─── Subcomponents ──────────────────────────────────────────────────────────
@@ -157,11 +270,17 @@ function ClaimIndicator({ type }: { type: string }) {
 function SectionEditor({
   section,
   projectId,
+  claims,
+  facts,
   onSaved,
+  onRegenerated,
 }: {
   section: Section;
   projectId: string;
+  claims: ClaimRow[] | undefined;
+  facts: FactRow[];
   onSaved: (updatedSection: Section) => void;
+  onRegenerated: (updatedSection: Section) => void;
 }) {
   const displayContent = section.isUserEdited && section.userContent
     ? section.userContent
@@ -170,9 +289,40 @@ function SectionEditor({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(displayContent);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
+  const [confirmRegen, setConfirmRegen] = useState(false);
+
+  const handleRegenerate = useCallback(async () => {
+    setIsRegenerating(true);
+    setRegenError(null);
+    try {
+      const res = await fetch(
+        `/api/projects/${projectId}/sections/${section.id}/regenerate`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? `Regenerate failed (${res.status})`);
+      }
+      const { section: updatedSection } = await res.json();
+      onRegenerated(updatedSection);
+      setEditContent(updatedSection.content);
+      setConfirmRegen(false);
+    } catch (err) {
+      setRegenError(
+        err instanceof Error ? err.message : "Failed to regenerate section"
+      );
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, [projectId, section.id, onRegenerated]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
+    setSaveError(null);
     try {
       const res = await fetch(
         `/api/projects/${projectId}/sections/${section.id}`,
@@ -184,7 +334,8 @@ function SectionEditor({
       );
 
       if (!res.ok) {
-        throw new Error("Failed to save changes");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? `Save failed (${res.status})`);
       }
 
       onSaved({
@@ -193,8 +344,11 @@ function SectionEditor({
         userContent: editContent,
       });
       setIsEditing(false);
+      setSavedAt(Date.now());
     } catch (err) {
-      console.error("Failed to save section:", err);
+      setSaveError(
+        err instanceof Error ? err.message : "Failed to save changes"
+      );
     } finally {
       setIsSaving(false);
     }
@@ -215,6 +369,11 @@ function SectionEditor({
               Edited
             </Badge>
           )}
+          {savedAt && Date.now() - savedAt < 3000 && (
+            <span className="flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400">
+              <CheckCircle2 className="h-3 w-3" /> Saved
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           {isEditing ? (
@@ -234,17 +393,87 @@ function SectionEditor({
               </Button>
             </>
           ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsEditing(true)}
-            >
-              <Pencil className="mr-1 h-3.5 w-3.5" />
-              Edit
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (section.isUserEdited) {
+                    setConfirmRegen(true);
+                  } else {
+                    handleRegenerate();
+                  }
+                }}
+                disabled={isRegenerating}
+                title="Regenerate just this section using cached facts"
+              >
+                {isRegenerating ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                )}
+                {isRegenerating ? "Regenerating..." : "Regenerate"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                disabled={isRegenerating}
+              >
+                <Pencil className="mr-1 h-3.5 w-3.5" />
+                Edit
+              </Button>
+            </>
           )}
         </div>
       </div>
+
+      {/* Regenerate confirmation (only shown when overwriting user edits) */}
+      {confirmRegen && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+          <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0 space-y-2">
+            <p className="text-xs text-amber-800 dark:text-amber-200">
+              This section has your edits. Regenerating will overwrite them.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleRegenerate}
+                disabled={isRegenerating}
+              >
+                {isRegenerating ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                Overwrite &amp; Regenerate
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setConfirmRegen(false)}
+                disabled={isRegenerating}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save / regenerate error banners */}
+      {saveError && (
+        <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/5 p-2">
+          <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+          <p className="text-xs text-destructive">{saveError}</p>
+        </div>
+      )}
+      {regenError && (
+        <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/5 p-2">
+          <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+          <p className="text-xs text-destructive">{regenError}</p>
+        </div>
+      )}
 
       {/* Content area */}
       {isEditing ? (
@@ -254,9 +483,11 @@ function SectionEditor({
           className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
         />
       ) : (
-        <div className="prose prose-sm max-w-none dark:prose-invert">
-          {renderContentWithClaims(displayContent)}
-        </div>
+        <ClaimAwareContent
+          content={displayContent}
+          claims={claims}
+          facts={facts}
+        />
       )}
     </div>
   );
@@ -267,6 +498,24 @@ function SectionEditor({
 export function NarrativeView({ projectId, sections }: NarrativeViewProps) {
   const [localSections, setLocalSections] = useState<Section[]>(sections);
   const [variantFilter, setVariantFilter] = useState<VariantFilter>("recruiter");
+  const [claimData, setClaimData] = useState<ClaimMapData | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/claim-map`);
+        if (!res.ok) return;
+        const data: ClaimMapData = await res.json();
+        if (!cancelled) setClaimData(data);
+      } catch {
+        // Non-fatal — the UI falls back to plain paragraphs
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
 
   // Get unique section types, preserving defined order
   const sectionTypes = Array.from(
@@ -315,6 +564,26 @@ export function NarrativeView({ projectId, sections }: NarrativeViewProps) {
     setLocalSections((prev) =>
       prev.map((s) => (s.id === updatedSection.id ? updatedSection : s))
     );
+  }
+
+  const refetchClaimMap = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/claim-map`);
+      if (!res.ok) return;
+      const data: ClaimMapData = await res.json();
+      setClaimData(data);
+    } catch {
+      // Non-fatal
+    }
+  }, [projectId]);
+
+  function handleSectionRegenerated(updatedSection: Section) {
+    setLocalSections((prev) =>
+      prev.map((s) => (s.id === updatedSection.id ? updatedSection : s))
+    );
+    // Claim-map rows were replaced server-side — refetch so the UI reflects
+    // the new evidence-backing for the regenerated content.
+    refetchClaimMap();
   }
 
   if (localSections.length === 0) {
@@ -380,15 +649,18 @@ export function NarrativeView({ projectId, sections }: NarrativeViewProps) {
         <div className="mb-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-            Verified claim
+            Backed by evidence
           </span>
           <span className="flex items-center gap-1">
             <AlertCircle className="h-3.5 w-3.5 text-yellow-500" />
-            Unverified claim
+            No direct evidence
           </span>
           <span className="flex items-center gap-1">
             <XCircle className="h-3.5 w-3.5 text-red-500" />
-            Flagged claim
+            Conflicts with evidence
+          </span>
+          <span className="ml-auto text-[11px] italic">
+            Click any claim to see the code evidence.
           </span>
         </div>
 
@@ -415,7 +687,10 @@ export function NarrativeView({ projectId, sections }: NarrativeViewProps) {
                 <SectionEditor
                   section={section}
                   projectId={projectId}
+                  claims={claimData?.claimsBySection[section.id]}
+                  facts={claimData?.facts ?? []}
                   onSaved={handleSectionSaved}
+                  onRegenerated={handleSectionRegenerated}
                 />
               </TabsContent>
             );

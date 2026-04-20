@@ -46,6 +46,34 @@ export class GitHubClient {
   }
 
   /**
+   * Like {@link get}, but also exposes the response headers.
+   *
+   * Needed for endpoints where the *count* of items is derived from the
+   * `Link` header's `rel="last"` page number (e.g. commit/contributor counts
+   * via `?per_page=1`). See {@link parseLinkHeaderLast}.
+   */
+  async getWithHeaders<T>(
+    path: string
+  ): Promise<{ data: T; headers: Headers }> {
+    await this.rateLimiter.waitIfNeeded();
+
+    const url = `${GITHUB_API_BASE}${path}`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: this.buildHeaders(),
+    });
+
+    this.rateLimiter.update(response.headers);
+
+    if (!response.ok) {
+      await this.throwHttpError(response, url);
+    }
+
+    const data = (await response.json()) as T;
+    return { data, headers: response.headers };
+  }
+
+  /**
    * Fetch the **text** body of an arbitrary URL (e.g. raw file content on
    * `raw.githubusercontent.com`).  No `Accept: application/vnd.github.v3+json`
    * header is sent for these requests.

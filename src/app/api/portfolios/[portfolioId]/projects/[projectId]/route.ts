@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { portfolios, projects, facts, generatedSections } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import {
+  portfolios,
+  projects,
+  facts,
+  generatedSections,
+  projectDemos,
+} from "@/lib/db/schema";
+import { eq, and, asc } from "drizzle-orm";
+import type { DemoType, ProjectDemo } from "@/lib/demos/types";
 
 async function getAuthenticatedProject(
   portfolioId: string,
@@ -63,10 +70,28 @@ export async function GET(
     .from(generatedSections)
     .where(eq(generatedSections.projectId, params.projectId));
 
+  // Phase 4: include ordered demos so the detail page hydrates the
+  // <ProjectDemo> / <DemoForm> / storyboard Card 6 merge without a
+  // second round-trip.
+  const demoRows = await db
+    .select()
+    .from(projectDemos)
+    .where(eq(projectDemos.projectId, params.projectId))
+    .orderBy(asc(projectDemos.order));
+
+  const demos: ProjectDemo[] = demoRows.map((r) => ({
+    id: r.id,
+    url: r.url,
+    type: r.type as DemoType,
+    title: r.title,
+    order: r.order,
+  }));
+
   return NextResponse.json({
     project: result.project,
     facts: projectFacts,
     sections,
+    demos,
   });
 }
 

@@ -1,63 +1,83 @@
 import { z } from "zod";
 
+/**
+ * The LLM frequently emits `null` for missing string fields instead of
+ * omitting them. Preprocess null → undefined so `.optional()` accepts both.
+ */
+const optionalString = z.preprocess(
+  (v) => (v === null ? undefined : v),
+  z.string().optional()
+);
+
+const optionalStringArray = z.preprocess(
+  (v) => (v === null ? undefined : v),
+  z.array(z.string()).optional()
+);
+
 export const locationSchema = z.object({
-  city: z.string().optional(),
-  region: z.string().optional(),
-  country: z.string().optional(),
+  city: optionalString,
+  region: optionalString,
+  country: optionalString,
 });
 
 export const profileSchema = z.object({
   network: z.string(),
   username: z.string(),
-  url: z.string().optional(),
+  url: optionalString,
 });
 
 export const basicsSchema = z.object({
   name: z.string(),
-  label: z.string().optional(),
-  email: z.string().optional(),
-  phone: z.string().optional(),
-  url: z.string().optional(),
-  summary: z.string().optional(),
-  location: locationSchema.optional(),
-  profiles: z.array(profileSchema).optional(),
+  label: optionalString,
+  email: optionalString,
+  phone: optionalString,
+  url: optionalString,
+  summary: optionalString,
+  location: z.preprocess(
+    (v) => (v === null ? undefined : v),
+    locationSchema.optional()
+  ),
+  profiles: z.preprocess(
+    (v) => (v === null ? undefined : v),
+    z.array(profileSchema).optional()
+  ),
 });
 
 export const workSchema = z.object({
   company: z.string(),
   position: z.string(),
   startDate: z.string(),
-  endDate: z.string().optional(),
-  summary: z.string().optional(),
-  highlights: z.array(z.string()).optional(),
+  endDate: optionalString,
+  summary: optionalString,
+  highlights: optionalStringArray,
 });
 
 export const educationSchema = z.object({
   institution: z.string(),
-  area: z.string().optional(),
-  studyType: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  area: optionalString,
+  studyType: optionalString,
+  startDate: optionalString,
+  endDate: optionalString,
 });
 
 export const skillSchema = z.object({
   name: z.string(),
-  level: z.string().optional(),
-  keywords: z.array(z.string()).optional(),
+  level: optionalString,
+  keywords: optionalStringArray,
 });
 
 export const projectSchema = z.object({
   name: z.string(),
-  description: z.string().optional(),
-  url: z.string().optional(),
-  highlights: z.array(z.string()).optional(),
-  keywords: z.array(z.string()).optional(),
+  description: optionalString,
+  url: optionalString,
+  highlights: optionalStringArray,
+  keywords: optionalStringArray,
 });
 
 export const certificationSchema = z.object({
   name: z.string(),
-  issuer: z.string().optional(),
-  date: z.string().optional(),
+  issuer: optionalString,
+  date: optionalString,
 });
 
 export const structuredResumeSchema = z.object({

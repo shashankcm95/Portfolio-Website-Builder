@@ -1,4 +1,4 @@
-import { callClaudeStructured } from "@/lib/ai/claude";
+import type { LlmClient } from "@/lib/ai/providers/types";
 import { contextPackSchema, type ContextPack } from "@/lib/ai/schemas/context-pack";
 import {
   getContextGenerationSystemPrompt,
@@ -186,7 +186,8 @@ export interface ContextGenerateInput {
  * with Claude-powered architecture signal extraction.
  */
 export async function generateContextPack(
-  input: ContextGenerateInput
+  input: ContextGenerateInput,
+  llm: LlmClient
 ): Promise<ContextPack> {
   // Step 1: Rule-based tech stack detection from dependencies
   const detectedLanguages = detectLanguagesFromFileTree(input.fileTree);
@@ -206,7 +207,7 @@ export async function generateContextPack(
 
   let claudeContextPack: ContextPack;
   try {
-    claudeContextPack = await callClaudeStructured<ContextPack>({
+    claudeContextPack = await llm.structured<ContextPack>({
       systemPrompt,
       userPrompt,
       maxTokens: 4096,

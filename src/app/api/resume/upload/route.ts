@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const formData = await req.formData();
-    const file = formData.get("resume") as File | null;
+    const file = (formData.get("file") ?? formData.get("resume")) as File | null;
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -59,14 +59,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Structure resume using Claude
-    let structuredResume = null;
+    // Structure resume using the user's LLM provider. Non-fatal: on any
+    // failure (including LlmNotConfiguredError) we fall through and save
+    // the raw text only — the user can retry from Settings once they've
+    // configured a provider.
+    let structuredResume: unknown = null;
     try {
-      const { callClaudeStructured } = await import("@/lib/ai/claude");
+      const { getLlmClientForUser } = await import(
+        "@/lib/ai/providers/factory"
+      );
       const { getResumeStructuringSystemPrompt, buildResumeStructuringUserPrompt } =
         await import("@/lib/ai/prompts/resume-structuring");
 
-      structuredResume = await callClaudeStructured({
+      const llm = await getLlmClientForUser(session.user.id);
+      structuredResume = await llm.structured({
         systemPrompt: getResumeStructuringSystemPrompt(),
         userPrompt: buildResumeStructuringUserPrompt(rawText),
         maxTokens: 4096,
@@ -86,11 +92,14 @@ export async function POST(req: NextRequest) {
       })
       .where(eq(users.id, session.user.id));
 
+    const wordCount = rawText.split(/\s+/).filter(Boolean).length;
+
     return NextResponse.json({
-      success: true,
-      rawText: rawText.substring(0, 500) + "...",
-      structured: structuredResume,
-      filename: file.name,
+      resume: structuredResume,
+      structuringFailed: structuredResume === null,
+      parseInfo: {
+        wordCount,
+      },
     });
   } catch (error: any) {
     console.error("Resume upload error:", error);

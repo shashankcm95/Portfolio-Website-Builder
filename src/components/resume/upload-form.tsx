@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,6 +13,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ResumePreview } from "@/components/resume/resume-preview";
+import { NextStepBanner } from "@/components/ui/next-step-banner";
 import type { StructuredResume } from "@/lib/ai/schemas/resume";
 import {
   Upload,
@@ -34,7 +35,8 @@ const ACCEPTED_EXTENSIONS = [".pdf", ".docx"];
 type UploadStatus = "idle" | "selected" | "uploading" | "success" | "error";
 
 interface UploadResponse {
-  resume: StructuredResume;
+  resume: StructuredResume | null;
+  structuringFailed?: boolean;
   parseInfo?: {
     wordCount: number;
     pageCount?: number;
@@ -59,8 +61,33 @@ export function ResumeUploadForm() {
   const [error, setError] = useState<string | null>(null);
   const [resumeData, setResumeData] = useState<UploadResponse | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load existing resume data on mount
+  useEffect(() => {
+    async function loadExisting() {
+      try {
+        const res = await fetch("/api/resume/structured");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.structured) {
+            setResumeData({
+              resume: data.structured,
+              structuringFailed: false,
+            });
+            setStatus("success");
+          }
+        }
+      } catch {
+        // Silently ignore — user can upload fresh
+      } finally {
+        setLoadingExisting(false);
+      }
+    }
+    loadExisting();
+  }, []);
 
   const validateFile = useCallback((f: File): string | null => {
     const ext = getFileExtension(f.name);
@@ -342,25 +369,54 @@ export function ResumeUploadForm() {
 
           {/* Success state summary */}
           {status === "success" && resumeData && (
-            <div className="flex items-start gap-3 rounded-lg border border-green-500/30 bg-green-500/5 p-4">
-              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+            <div className={`flex items-start gap-3 rounded-lg border p-4 ${
+              resumeData.structuringFailed
+                ? "border-yellow-500/30 bg-yellow-500/5"
+                : "border-green-500/30 bg-green-500/5"
+            }`}>
+              <CheckCircle2 className={`h-5 w-5 shrink-0 mt-0.5 ${
+                resumeData.structuringFailed
+                  ? "text-yellow-600 dark:text-yellow-400"
+                  : "text-green-600 dark:text-green-400"
+              }`} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-green-700 dark:text-green-300">
-                  Resume Parsed Successfully
+                <p className={`text-sm font-medium ${
+                  resumeData.structuringFailed
+                    ? "text-yellow-700 dark:text-yellow-300"
+                    : "text-green-700 dark:text-green-300"
+                }`}>
+                  {resumeData.structuringFailed
+                    ? "Resume Text Extracted"
+                    : "Resume Parsed Successfully"}
                 </p>
-                <p className="mt-1 text-sm text-green-600/80 dark:text-green-400/80">
-                  Extracted data for{" "}
-                  <span className="font-medium">
-                    {resumeData.resume.basics.name}
-                  </span>
-                  {resumeData.parseInfo && (
+                <p className={`mt-1 text-sm ${
+                  resumeData.structuringFailed
+                    ? "text-yellow-600/80 dark:text-yellow-400/80"
+                    : "text-green-600/80 dark:text-green-400/80"
+                }`}>
+                  {resumeData.structuringFailed ? (
                     <>
-                      {" "}
-                      ({resumeData.parseInfo.wordCount.toLocaleString()} words
-                      {resumeData.parseInfo.pageCount
-                        ? `, ${resumeData.parseInfo.pageCount} page${resumeData.parseInfo.pageCount !== 1 ? "s" : ""}`
-                        : ""}
-                      )
+                      Text was extracted but AI structuring was unavailable.
+                      {resumeData.parseInfo && (
+                        <> ({resumeData.parseInfo.wordCount.toLocaleString()} words extracted)</>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      Extracted data for{" "}
+                      <span className="font-medium">
+                        {resumeData.resume?.basics?.name ?? "your resume"}
+                      </span>
+                      {resumeData.parseInfo && (
+                        <>
+                          {" "}
+                          ({resumeData.parseInfo.wordCount.toLocaleString()} words
+                          {resumeData.parseInfo.pageCount
+                            ? `, ${resumeData.parseInfo.pageCount} page${resumeData.parseInfo.pageCount !== 1 ? "s" : ""}`
+                            : ""}
+                          )
+                        </>
+                      )}
                     </>
                   )}
                 </p>
@@ -409,8 +465,19 @@ export function ResumeUploadForm() {
         </CardFooter>
       </Card>
 
+      {/* Next-step CTA after successful upload */}
+      {status === "success" && resumeData?.resume && !loadingExisting && (
+        <NextStepBanner
+          tone="success"
+          title="Resume parsed!"
+          description="Next: create a portfolio to turn this into a shareable site."
+          cta="Create Portfolio"
+          href="/portfolios/new"
+        />
+      )}
+
       {/* Resume preview section */}
-      {status === "success" && resumeData && (
+      {status === "success" && resumeData?.resume && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold tracking-tight">
             Parsed Resume Preview

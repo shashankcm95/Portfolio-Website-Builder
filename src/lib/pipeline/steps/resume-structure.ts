@@ -1,4 +1,4 @@
-import { callClaudeStructured } from "@/lib/ai/claude";
+import type { LlmClient } from "@/lib/ai/providers/types";
 import {
   structuredResumeSchema,
   type StructuredResume,
@@ -9,12 +9,13 @@ import {
 } from "@/lib/ai/prompts/resume-structuring";
 
 /**
- * Sends raw resume text to Claude for structured extraction.
+ * Sends raw resume text to the caller-supplied LLM for structured extraction.
  * Parses the response against the Zod schema.
  * Retries once on parse failure with a more explicit prompt.
  */
 export async function structureResume(
-  rawText: string
+  rawText: string,
+  llm: LlmClient
 ): Promise<StructuredResume> {
   const systemPrompt = getResumeStructuringSystemPrompt();
   const userPrompt = buildResumeStructuringUserPrompt(rawText);
@@ -23,7 +24,7 @@ export async function structureResume(
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await callClaudeStructured<unknown>({
+      const result = await llm.structured<unknown>({
         systemPrompt,
         userPrompt:
           attempt === 0

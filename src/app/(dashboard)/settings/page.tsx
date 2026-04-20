@@ -1,4 +1,6 @@
-import { Github, AlertTriangle } from "lucide-react";
+export const dynamic = "force-dynamic";
+
+import { Github, AlertTriangle, Sparkles } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -14,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/layout/page-header";
 import { getCurrentUser } from "@/lib/auth/session";
 import { ResumeUploadForm } from "@/components/resume/upload-form";
+import { LlmProviderForm } from "@/components/settings/llm-provider-form";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
@@ -63,6 +66,23 @@ export default async function SettingsPage() {
                 <Badge variant="secondary">Connected</Badge>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Provider section — Phase 3.5 BYOK */}
+        <Card id="ai-provider">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              AI Provider
+            </CardTitle>
+            <CardDescription>
+              Bring your own OpenAI or Anthropic key. Your key is encrypted
+              at rest and only used to power this account&apos;s LLM features.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LlmProviderForm />
           </CardContent>
         </Card>
 

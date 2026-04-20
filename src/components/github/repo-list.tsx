@@ -18,15 +18,27 @@ import {
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
+import type { StoredCredibilitySignals } from "@/lib/credibility/types";
+import type { ProjectDemo as ProjectDemoModel } from "@/lib/demos/types";
+
 interface Project {
   id: string;
-  repoName: string;
-  repoOwner: string;
+  repoName: string | null;
+  repoOwner: string | null;
   repoMetadata: Record<string, unknown> | null;
   pipelineStatus: string;
   isVisible: boolean;
   isFeatured: boolean;
   displayOrder: number;
+  sourceType?: string | null;
+  displayName?: string | null;
+  manualDescription?: string | null;
+  externalUrl?: string | null;
+  imageUrl?: string | null;
+  techStack?: string[] | null;
+  credibilitySignals?: StoredCredibilitySignals | null;
+  credibilityFetchedAt?: string | null;
+  demos?: ProjectDemoModel[] | null;
 }
 
 interface RepoListProps {

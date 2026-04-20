@@ -8,7 +8,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { repoUrl } = await req.json();
+    const body = await req.json();
+    // Accept both "url" and "repoUrl" field names
+    const repoUrl = body.url ?? body.repoUrl;
 
     if (!repoUrl || typeof repoUrl !== "string") {
       return NextResponse.json(
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if repo is accessible (public)
+    // Check if repo is accessible
     const response = await fetch(
       `https://api.github.com/repos/${parsed.owner}/${parsed.repo}`,
       {
@@ -54,17 +56,19 @@ export async function POST(req: NextRequest) {
 
     const metadata = await response.json();
 
+    // Return shape matching RepoValidationResult expected by the frontend
     return NextResponse.json({
-      valid: true,
+      name: metadata.name,
+      fullName: metadata.full_name,
+      description: metadata.description,
+      stars: metadata.stargazers_count ?? 0,
+      forks: metadata.forks_count ?? 0,
+      language: metadata.language,
+      htmlUrl: metadata.html_url,
       owner: parsed.owner,
-      repo: parsed.repo,
-      metadata: {
-        name: metadata.name,
-        description: metadata.description,
-        language: metadata.language,
-        stargazersCount: metadata.stargazers_count,
-        topics: metadata.topics || [],
-      },
+      isPrivate: metadata.private ?? false,
+      defaultBranch: metadata.default_branch ?? "main",
+      topics: metadata.topics ?? [],
     });
   } catch (error: any) {
     console.error("Repo validation error:", error);

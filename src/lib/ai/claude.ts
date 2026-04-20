@@ -1,43 +1,40 @@
-import Anthropic from "@anthropic-ai/sdk";
+/**
+ * @deprecated — these helpers are now thin shims over the Phase 3.5
+ * pluggable-provider layer. Prefer getting a concrete `LlmClient` via
+ * `getLlmClientForUser(userId)` or `getLlmClientForProject(projectId)`
+ * and calling `client.structured(...)` / `client.text(...)` directly.
+ *
+ * The shims exist purely to minimize diff surface while call sites are
+ * migrated. They require a `userId` so the factory can resolve BYOK →
+ * platform env → typed error. Call sites that can thread a `LlmClient`
+ * instance should; call sites that can't (yet) should call the shim.
+ *
+ * The file name and export names are preserved for historical reasons
+ * (this module used to target Anthropic's Claude directly before we
+ * pivoted to OpenAI); don't let the naming mislead you.
+ */
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+import { getLlmClientForUser } from "@/lib/ai/providers/factory";
+import type {
+  JsonSchemaSpec,
+  LlmStructuredArgs,
+  LlmTextArgs,
+} from "@/lib/ai/providers/types";
 
-export async function callClaude({
-  systemPrompt,
-  userPrompt,
-  maxTokens = 4096,
-  temperature = 0.3,
-}: {
-  systemPrompt: string;
-  userPrompt: string;
-  maxTokens?: number;
-  temperature?: number;
-}): Promise<string> {
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-5-20250514",
-    max_tokens: maxTokens,
-    temperature,
-    system: systemPrompt,
-    messages: [{ role: "user", content: userPrompt }],
-  });
-  const textBlock = response.content.find((b) => b.type === "text");
-  return textBlock?.text ?? "";
+export async function callClaude(
+  args: LlmTextArgs & { userId: string }
+): Promise<string> {
+  const { userId, ...rest } = args;
+  const client = await getLlmClientForUser(userId);
+  return client.text(rest);
 }
 
-export async function callClaudeStructured<T>({
-  systemPrompt,
-  userPrompt,
-  maxTokens = 4096,
-}: {
-  systemPrompt: string;
-  userPrompt: string;
-  maxTokens?: number;
-}): Promise<T> {
-  const text = await callClaude({ systemPrompt, userPrompt, maxTokens });
-  // Extract JSON from response (may be wrapped in markdown code blocks)
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, text];
-  const jsonStr = jsonMatch[1]?.trim() ?? text.trim();
-  return JSON.parse(jsonStr) as T;
+export async function callClaudeStructured<T>(
+  args: LlmStructuredArgs & { userId: string }
+): Promise<T> {
+  const { userId, ...rest } = args;
+  const client = await getLlmClientForUser(userId);
+  return client.structured<T>(rest);
 }
+
+export type { JsonSchemaSpec };

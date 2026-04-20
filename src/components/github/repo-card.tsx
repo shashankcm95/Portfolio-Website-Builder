@@ -25,6 +25,11 @@ import {
   RotateCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CredibilityBadges } from "@/components/github/credibility-badges";
+import { AuthorshipChip } from "@/components/github/authorship-chip";
+import { ProjectThumbnail } from "@/components/projects/project-thumbnail";
+import type { StoredCredibilitySignals } from "@/lib/credibility/types";
+import type { ProjectDemo as ProjectDemoModel } from "@/lib/demos/types";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -40,13 +45,28 @@ interface RepoMetadata {
 
 interface Project {
   id: string;
-  repoName: string;
-  repoOwner: string;
+  repoName: string | null;
+  repoOwner: string | null;
   repoMetadata: RepoMetadata | null;
   pipelineStatus: string;
   isVisible: boolean;
   isFeatured: boolean;
   displayOrder: number;
+  // Wave 3B: manual (non-GitHub) projects
+  sourceType?: string | null;
+  displayName?: string | null;
+  manualDescription?: string | null;
+  externalUrl?: string | null;
+  imageUrl?: string | null;
+  techStack?: string[] | null;
+  // Phase 1+2: credibility signals (GitHub projects only; null on manual/unfetched).
+  // Uses StoredCredibilitySignals so v1 rows (pre-Phase-2) round-trip without
+  // crashing — the authorshipSignal/commitActivity/etc. fields are optional
+  // on the reader type.
+  credibilitySignals?: StoredCredibilitySignals | null;
+  credibilityFetchedAt?: string | null;
+  // Phase 4: ordered user-supplied demos (video/image/slideshow).
+  demos?: ProjectDemoModel[] | null;
 }
 
 interface RepoCardProps {
@@ -92,6 +112,7 @@ const PIPELINE_STATUS_CONFIG: Record<
     variant: "default" | "secondary" | "destructive" | "outline";
     icon: React.ElementType;
     className: string;
+    tooltip: string;
   }
 > = {
   pending: {
@@ -99,24 +120,32 @@ const PIPELINE_STATUS_CONFIG: Record<
     variant: "outline",
     icon: Clock,
     className: "text-muted-foreground",
+    tooltip:
+      "Repository analysis has not started yet. Click Analyze to extract facts and generate narratives.",
   },
   running: {
     label: "Analyzing...",
     variant: "default",
     icon: RotateCw,
     className: "text-blue-600 dark:text-blue-400",
+    tooltip:
+      "The 7-step AI pipeline is currently analyzing this repository's code, commits, and context.",
   },
   completed: {
     label: "Analyzed",
     variant: "secondary",
     icon: CheckCircle2,
     className: "text-green-600 dark:text-green-400",
+    tooltip:
+      "Analysis complete — facts extracted, narratives generated, and claims verified. Ready for your portfolio.",
   },
   failed: {
     label: "Failed",
     variant: "destructive",
     icon: AlertCircle,
     className: "text-destructive",
+    tooltip:
+      "The last analysis attempt failed. Click Re-analyze to try again.",
   },
 };
 
@@ -131,7 +160,11 @@ function PipelineStatusBadge({ status }: { status: string }) {
   const Icon = config.icon;
 
   return (
-    <Badge variant={config.variant} className={cn("gap-1", config.className)}>
+    <Badge
+      variant={config.variant}
+      className={cn("gap-1", config.className)}
+      title={config.tooltip}
+    >
       <Icon
         className={cn(
           "h-3 w-3",
@@ -153,6 +186,7 @@ export function RepoCard({ project, portfolioId, onUpdate }: RepoCardProps) {
   const [actionError, setActionError] = useState("");
 
   const metadata = project.repoMetadata as RepoMetadata | null;
+  const isManual = project.sourceType === "manual";
 
   const handleAnalyze = useCallback(async () => {
     setIsAnalyzing(true);
@@ -240,18 +274,31 @@ export function RepoCard({ project, portfolioId, onUpdate }: RepoCardProps) {
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
         className="absolute inset-0 z-0 cursor-pointer rounded-lg"
-        aria-label={`View details for ${project.repoOwner}/${project.repoName}`}
+        aria-label={`View details for ${
+          isManual
+            ? project.displayName ?? "project"
+            : `${project.repoOwner}/${project.repoName}`
+        }`}
+      />
+
+      {/* Phase 4 — thumbnail banner (closes Wave-3B imageUrl latent bug).
+       *   Source priority: imageUrl → first demo → nothing. */}
+      <ProjectThumbnail
+        imageUrl={project.imageUrl}
+        demos={project.demos}
       />
 
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1 min-w-0">
             <CardTitle className="text-base truncate">
-              {project.repoOwner}/{project.repoName}
+              {isManual
+                ? project.displayName ?? "Untitled project"
+                : `${project.repoOwner}/${project.repoName}`}
             </CardTitle>
-            {metadata?.description && (
+            {(isManual ? project.manualDescription : metadata?.description) && (
               <p className="text-sm text-muted-foreground line-clamp-2">
-                {metadata.description}
+                {isManual ? project.manualDescription : metadata?.description}
               </p>
             )}
           </div>
@@ -268,25 +315,63 @@ export function RepoCard({ project, portfolioId, onUpdate }: RepoCardProps) {
 
       <CardContent className="pb-3">
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          {metadata?.language && (
-            <span className="flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "h-3 w-3 rounded-full",
-                  LANGUAGE_COLORS[metadata.language] || "bg-gray-400"
-                )}
-              />
-              {metadata.language}
-            </span>
+          {isManual ? (
+            <>
+              <Badge variant="outline" className="text-xs">
+                Manual
+              </Badge>
+              {project.techStack?.slice(0, 4).map((t) => (
+                <Badge key={t} variant="secondary" className="text-xs font-normal">
+                  {t}
+                </Badge>
+              ))}
+            </>
+          ) : (
+            <>
+              {metadata?.language && (
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "h-3 w-3 rounded-full",
+                      LANGUAGE_COLORS[metadata.language] || "bg-gray-400"
+                    )}
+                  />
+                  {metadata.language}
+                </span>
+              )}
+              {typeof metadata?.stars === "number" && (
+                <span className="flex items-center gap-1">
+                  <Star className="h-3.5 w-3.5" />
+                  {formatStarCount(metadata.stars)}
+                </span>
+              )}
+              <PipelineStatusBadge status={project.pipelineStatus} />
+            </>
           )}
-          {typeof metadata?.stars === "number" && (
-            <span className="flex items-center gap-1">
-              <Star className="h-3.5 w-3.5" />
-              {formatStarCount(metadata.stars)}
-            </span>
-          )}
-          <PipelineStatusBadge status={project.pipelineStatus} />
         </div>
+
+        {/* Phase 1 — Credibility signals row; Phase 2 — Authorship verdict above */}
+        {!isManual && project.credibilitySignals && (
+          <div className="mt-3 space-y-2">
+            {/* Phase 2 — Authorship chip (only renders when present + status=ok) */}
+            <AuthorshipChip
+              compact
+              signal={project.credibilitySignals.authorshipSignal}
+            />
+            <CredibilityBadges
+              signals={project.credibilitySignals}
+              compact
+            />
+            {project.credibilityFetchedAt && (
+              <VerifiedStamp
+                fetchedAt={project.credibilityFetchedAt}
+                portfolioId={portfolioId}
+                projectId={project.id}
+                onRefreshed={onUpdate}
+              />
+            )}
+          </div>
+        )}
 
         {actionError && (
           <div className="mt-3 rounded-md border border-destructive/50 bg-destructive/10 p-2 flex items-center gap-2">
@@ -299,31 +384,48 @@ export function RepoCard({ project, portfolioId, onUpdate }: RepoCardProps) {
       <CardFooter className="pt-0">
         {/* Action buttons - raised above the clickable overlay */}
         <div className="relative z-10 flex items-center gap-2 w-full">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAnalyze();
-            }}
-            disabled={
-              isAnalyzing || project.pipelineStatus === "running"
-            }
-          >
-            {isAnalyzing || project.pipelineStatus === "running" ? (
-              <>
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                Analyzing
-              </>
-            ) : (
-              <>
-                <Play className="mr-1.5 h-3.5 w-3.5" />
-                {project.pipelineStatus === "completed"
-                  ? "Re-analyze"
-                  : "Analyze"}
-              </>
-            )}
-          </Button>
+          {isManual ? (
+            project.externalUrl ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => e.stopPropagation()}
+                asChild
+              >
+                <a
+                  href={project.externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View
+                </a>
+              </Button>
+            ) : null
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAnalyze();
+              }}
+              disabled={isAnalyzing || project.pipelineStatus === "running"}
+            >
+              {isAnalyzing || project.pipelineStatus === "running" ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Analyzing
+                </>
+              ) : (
+                <>
+                  <Play className="mr-1.5 h-3.5 w-3.5" />
+                  {project.pipelineStatus === "completed"
+                    ? "Re-analyze"
+                    : "Analyze"}
+                </>
+              )}
+            </Button>
+          )}
 
           <div className="ml-auto">
             {confirmRemove ? (
@@ -365,7 +467,7 @@ export function RepoCard({ project, portfolioId, onUpdate }: RepoCardProps) {
                   handleRemove();
                 }}
                 className="text-muted-foreground hover:text-destructive"
-                aria-label={`Remove ${project.repoName}`}
+                aria-label={`Remove ${project.displayName ?? project.repoName ?? "project"}`}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -375,4 +477,80 @@ export function RepoCard({ project, portfolioId, onUpdate }: RepoCardProps) {
       </CardFooter>
     </Card>
   );
+}
+
+// ─── Verified Stamp (Phase 1) ───────────────────────────────────────────────
+
+function VerifiedStamp({
+  fetchedAt,
+  portfolioId,
+  projectId,
+  onRefreshed,
+}: {
+  fetchedAt: string;
+  portfolioId: string;
+  projectId: string;
+  onRefreshed?: () => void;
+}) {
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleRefresh = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/portfolios/${portfolioId}/projects/${projectId}/credibility/refresh`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        if (res.status === 429) {
+          const body = await res.json().catch(() => ({}));
+          const sec = body.retryAfterSeconds ?? 300;
+          setError(`Refreshed too recently — try again in ${sec}s`);
+        } else {
+          setError("Failed to refresh");
+        }
+        return;
+      }
+      onRefreshed?.();
+    } catch {
+      setError("Network error");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [portfolioId, projectId, refreshing, onRefreshed]);
+
+  return (
+    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+      <CheckCircle2 className="h-3 w-3" aria-hidden />
+      <span>Verified {relativeStamp(fetchedAt)}</span>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
+        onClick={handleRefresh}
+        disabled={refreshing}
+        aria-label="Refresh credibility signals"
+        title="Re-fetch badges from GitHub"
+      >
+        <RotateCw
+          className={cn("h-3 w-3", refreshing && "animate-spin")}
+        />
+      </Button>
+      {error && <span className="text-destructive">· {error}</span>}
+    </div>
+  );
+}
+
+function relativeStamp(iso: string): string {
+  const elapsed = Date.now() - new Date(iso).getTime();
+  const minutes = Math.round(elapsed / (1000 * 60));
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
 }

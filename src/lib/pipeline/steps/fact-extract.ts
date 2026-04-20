@@ -1,4 +1,4 @@
-import { callClaudeStructured } from "@/lib/ai/claude";
+import type { LlmClient } from "@/lib/ai/providers/types";
 import {
   factExtractionResultSchema,
   type FactExtractionResult,
@@ -23,7 +23,8 @@ export interface FactExtractInput {
  * Returns facts and derived facts validated against the Zod schema.
  */
 export async function extractFacts(
-  input: FactExtractInput
+  input: FactExtractInput,
+  llm: LlmClient
 ): Promise<FactExtractionResult> {
   const systemPrompt = getFactExtractionSystemPrompt();
   const userPrompt = buildFactExtractionUserPrompt({
@@ -37,7 +38,7 @@ export async function extractFacts(
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await callClaudeStructured<unknown>({
+      const result = await llm.structured<unknown>({
         systemPrompt,
         userPrompt:
           attempt === 0

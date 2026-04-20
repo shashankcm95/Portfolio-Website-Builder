@@ -2,6 +2,7 @@ import React from "react";
 import { readFile } from "fs/promises";
 import path from "path";
 import type { ProfileData, Project } from "@/templates/_shared/types";
+import { generateSitemap, generateRobotsTxt } from "./sitemap";
 
 // Dynamic import for react-dom/server to avoid Next.js webpack restrictions
 async function getRenderer() {
@@ -9,24 +10,76 @@ async function getRenderer() {
   return renderToStaticMarkup;
 }
 
-// Dynamic imports for template components to avoid static bundling issues
-async function getTemplateComponents() {
-  const [
-    { Layout },
-    { HomePage },
-    { AboutPage },
-    { ProjectsPage },
-    { ProjectDetailPage },
-    { ContactPage },
-  ] = await Promise.all([
-    import("@/templates/minimal/components/Layout"),
-    import("@/templates/minimal/pages/index"),
-    import("@/templates/minimal/pages/about"),
-    import("@/templates/minimal/pages/projects"),
-    import("@/templates/minimal/pages/project-detail"),
-    import("@/templates/minimal/pages/contact"),
-  ]);
-  return { Layout, HomePage, AboutPage, ProjectsPage, ProjectDetailPage, ContactPage };
+/**
+ * Load a template's page + layout components by ID.
+ *
+ * Explicit per-template import branches keep Next.js / Webpack's static
+ * analysis happy (it cannot follow fully dynamic import paths). To add a
+ * new template, drop in a directory under `templates/` and add a new case.
+ */
+async function getTemplateComponents(templateId: string) {
+  switch (templateId) {
+    case "classic": {
+      const [
+        { Layout },
+        { HomePage },
+        { AboutPage },
+        { ProjectsPage },
+        { ProjectDetailPage },
+        { ContactPage },
+      ] = await Promise.all([
+        import("@/templates/classic/components/Layout"),
+        import("@/templates/classic/pages/index"),
+        import("@/templates/classic/pages/about"),
+        import("@/templates/classic/pages/projects"),
+        import("@/templates/classic/pages/project-detail"),
+        import("@/templates/classic/pages/contact"),
+      ]);
+      return {
+        Layout,
+        HomePage,
+        AboutPage,
+        ProjectsPage,
+        ProjectDetailPage,
+        ContactPage,
+      };
+    }
+    case "minimal":
+    default: {
+      // Fall back to minimal so renders never fail on an unknown id.
+      const [
+        { Layout },
+        { HomePage },
+        { AboutPage },
+        { ProjectsPage },
+        { ProjectDetailPage },
+        { ContactPage },
+      ] = await Promise.all([
+        import("@/templates/minimal/components/Layout"),
+        import("@/templates/minimal/pages/index"),
+        import("@/templates/minimal/pages/about"),
+        import("@/templates/minimal/pages/projects"),
+        import("@/templates/minimal/pages/project-detail"),
+        import("@/templates/minimal/pages/contact"),
+      ]);
+      return {
+        Layout,
+        HomePage,
+        AboutPage,
+        ProjectsPage,
+        ProjectDetailPage,
+        ContactPage,
+      };
+    }
+  }
+}
+
+/**
+ * Resolve a templateId to the on-disk directory name, falling back to
+ * "minimal" for unknown ids.
+ */
+function resolveTemplateDir(templateId: string): string {
+  return templateId === "classic" ? "classic" : "minimal";
 }
 
 /**
@@ -47,13 +100,13 @@ export async function renderTemplate(
   const files = new Map<string, string>();
   const renderToStaticMarkup = await getRenderer();
   const { Layout, HomePage, AboutPage, ProjectsPage, ProjectDetailPage, ContactPage } =
-    await getTemplateComponents();
+    await getTemplateComponents(templateId);
 
   // ── Load CSS ────────────────────────────────────────────────────────────
   const cssPath = path.join(
     process.cwd(),
     "templates",
-    templateId,
+    resolveTemplateDir(templateId),
     "styles",
     "global.css"
   );
@@ -95,6 +148,12 @@ export async function renderTemplate(
   files.set("contact/index.html", renderPage("contact", () =>
     React.createElement(ContactPage, { profileData })
   ));
+
+  // Phase 6 — SEO surface: sitemap + robots alongside the rest of the
+  // published file tree. Cloudflare Pages serves both as static assets
+  // at `/sitemap.xml` and `/robots.txt` respectively.
+  files.set("sitemap.xml", generateSitemap(profileData));
+  files.set("robots.txt", generateRobotsTxt(profileData));
 
   return files;
 }

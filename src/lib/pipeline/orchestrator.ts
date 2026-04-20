@@ -20,6 +20,20 @@ import {
 import { extractFacts } from "@/lib/pipeline/steps/fact-extract";
 import { generateNarratives } from "@/lib/pipeline/steps/narrative-generate";
 import { verifyClaims } from "@/lib/pipeline/steps/claim-verify";
+import { runStoryboardGenerate } from "@/lib/pipeline/steps/storyboard-generate";
+import { runEmbeddingGenerate } from "@/lib/pipeline/steps/embedding-generate";
+import {
+  recordJobStart,
+  recordJobFinish,
+  recordStepStart,
+  recordStepFinish,
+} from "@/lib/pipeline/history";
+import { getLlmClientForProject } from "@/lib/ai/providers/factory";
+import {
+  LlmInvalidKeyError,
+  LlmNotConfiguredError,
+  type LlmClient,
+} from "@/lib/ai/providers/types";
 import type { ContextPack } from "@/lib/ai/schemas/context-pack";
 import type { Fact, FactExtractionResult } from "@/lib/ai/schemas/facts";
 
@@ -32,7 +46,9 @@ export type StepName =
   | "context_generate"
   | "fact_extract"
   | "narrative_generate"
-  | "claim_verify";
+  | "claim_verify"
+  | "storyboard_generate"
+  | "embedding_generate";
 
 export type StepStatus = "pending" | "running" | "completed" | "failed" | "skipped";
 
@@ -64,7 +80,22 @@ const STEP_ORDER: StepName[] = [
   "fact_extract",
   "narrative_generate",
   "claim_verify",
+  "storyboard_generate",
+  "embedding_generate",
 ];
+
+/**
+ * Steps that must NOT fail the overall pipeline. If one of these throws,
+ * we mark it failed and continue with subsequent steps. The rationale is
+ * that the storyboard + embedding pass are auxiliary enrichments —
+ * narratives + facts + credibility signals still render without them.
+ * Embedding failure just means the chatbot has an empty corpus for this
+ * project; the published site renders normally.
+ */
+const NON_FATAL_STEPS: ReadonlySet<StepName> = new Set([
+  "storyboard_generate",
+  "embedding_generate",
+]);
 
 // ─── In-memory state tracking ───────────────────────────────────────────────
 
@@ -101,6 +132,13 @@ export function startPipeline(
   };
 
   pipelineStates.set(projectId, state);
+
+  // Phase 6 — durable job history. Non-fatal if the DB write fails.
+  recordJobStart({
+    jobId,
+    projectId,
+    startedAt: state.startedAt,
+  });
 
   // Run pipeline asynchronously (fire-and-forget)
   runPipeline(projectId, jobId, options).catch((error) => {
@@ -170,6 +208,43 @@ async function runPipeline(
   updateJob(jobId, { status: "running", startedAt: new Date() });
   await updateProjectStatus(projectId, "running");
 
+  // Phase 3.5: resolve the LLM client once per pipeline run. The factory
+  // reads the project → portfolio → user traversal, then applies the
+  // BYOK → platform-env fallback chain. If nothing is configured, we
+  // fail-fast with a structured `pipelineError` prefix the UI recognizes.
+  let llm: LlmClient;
+  try {
+    llm = await getLlmClientForProject(projectId);
+  } catch (e) {
+    const isTyped =
+      e instanceof LlmNotConfiguredError || e instanceof LlmInvalidKeyError;
+    const pipelineError = isTyped
+      ? e instanceof LlmNotConfiguredError
+        ? "llm_not_configured"
+        : `llm_invalid_key:${(e as LlmInvalidKeyError).provider}`
+      : `pipeline_init_failed: ${e instanceof Error ? e.message : String(e)}`;
+
+    state.error = pipelineError;
+    state.completedAt = new Date();
+    for (const s of state.steps) {
+      if (s.status === "pending") s.status = "skipped";
+    }
+    updateJob(jobId, {
+      status: "failed",
+      error: pipelineError,
+      completedAt: new Date(),
+    });
+    // Phase 6 — persist the job-level failure before early-return.
+    recordJobFinish({
+      jobId,
+      status: "failed",
+      completedAt: new Date(),
+      error: pipelineError,
+    });
+    await updateProjectStatus(projectId, "failed", pipelineError);
+    return;
+  }
+
   // Shared context between steps
   let rawResumeText: string | undefined;
   let contextPack: ContextPack | undefined;
@@ -189,6 +264,9 @@ async function runPipeline(
       stepDef.status = "running";
       stepDef.startedAt = new Date();
       state.currentStep = stepName;
+
+      // Phase 6 — durable step history.
+      recordStepStart({ jobId, stepName, startedAt: stepDef.startedAt });
 
       await updateProjectStatus(projectId, `running:${stepName}`);
 
@@ -210,6 +288,12 @@ async function runPipeline(
             if (!rawResumeText) {
               stepDef.status = "skipped";
               stepDef.completedAt = new Date();
+              recordStepFinish({
+                jobId,
+                stepName,
+                status: "skipped",
+                completedAt: stepDef.completedAt,
+              });
               continue;
             }
           }
@@ -218,13 +302,19 @@ async function runPipeline(
 
         case "resume_structure": {
           if (rawResumeText) {
-            const structured = await structureResume(rawResumeText);
+            const structured = await structureResume(rawResumeText, llm);
 
             // Store structured resume in user record
             await storeResumeJson(projectId, structured);
           } else {
             stepDef.status = "skipped";
             stepDef.completedAt = new Date();
+            recordStepFinish({
+              jobId,
+              stepName,
+              status: "skipped",
+              completedAt: stepDef.completedAt,
+            });
             continue;
           }
           break;
@@ -250,6 +340,12 @@ async function runPipeline(
               console.warn(
                 `[orchestrator] No repo data available for project ${projectId}. Skipping repo_fetch.`
               );
+              recordStepFinish({
+                jobId,
+                stepName,
+                status: "skipped",
+                completedAt: stepDef.completedAt,
+              });
               continue;
             }
           } else {
@@ -294,7 +390,7 @@ async function runPipeline(
             readme,
           };
 
-          contextPack = await generateContextPack(input);
+          contextPack = await generateContextPack(input, llm);
 
           // Store context pack as a repo source
           await db.insert(repoSources).values({
@@ -311,10 +407,18 @@ async function runPipeline(
             // Try to load from DB
             const contextPackSource = await getRepoSource(projectId, "context_pack");
             if (contextPackSource) {
-              contextPack = JSON.parse(contextPackSource);
+              try {
+                contextPack = JSON.parse(contextPackSource);
+              } catch {
+                throw new Error("Context pack data is corrupt. Re-run context_generate.");
+              }
             } else {
               throw new Error("No context pack available. Run context_generate first.");
             }
+          }
+
+          if (!contextPack) {
+            throw new Error("No context pack available for fact extraction.");
           }
 
           const readme = options?.readme ?? (await getRepoSource(projectId, "readme")) ?? "";
@@ -323,12 +427,15 @@ async function runPipeline(
             (await getRepoSource(projectId, "dependencies")) ??
             "";
 
-          factExtractionResult = await extractFacts({
-            contextPack: contextPack!,
-            readme,
-            dependencies: depsRaw,
-            resumeContext: rawResumeText,
-          });
+          factExtractionResult = await extractFacts(
+            {
+              contextPack,
+              readme,
+              dependencies: depsRaw,
+              resumeContext: rawResumeText,
+            },
+            llm
+          );
 
           extractedFacts = factExtractionResult.facts;
 
@@ -384,8 +491,16 @@ async function runPipeline(
           if (!contextPack) {
             const contextPackSource = await getRepoSource(projectId, "context_pack");
             if (contextPackSource) {
-              contextPack = JSON.parse(contextPackSource);
+              try {
+                contextPack = JSON.parse(contextPackSource);
+              } catch {
+                throw new Error("Context pack data is corrupt. Re-run context_generate.");
+              }
             }
+          }
+
+          if (!contextPack) {
+            throw new Error("No context pack available for narrative generation.");
           }
 
           // Get project name
@@ -397,23 +512,61 @@ async function runPipeline(
 
           const projectName = project[0]?.displayName ?? project[0]?.repoName ?? "Unknown Project";
 
-          const narratives = await generateNarratives({
-            projectName,
-            facts: extractedFacts,
-            contextPack: contextPack!,
-          });
+          const narratives = await generateNarratives(
+            {
+              projectName,
+              facts: extractedFacts,
+              contextPack,
+            },
+            llm
+          );
 
-          // Store generated sections in DB
+          // Store generated sections in DB (upsert so retries are idempotent)
           for (const section of narratives.sections) {
-            await db.insert(generatedSections).values({
-              projectId,
-              sectionType: section.sectionType,
-              variant: section.variant,
-              content: section.content,
-              modelUsed: "claude-sonnet-4-5-20250514",
-            });
+            await db
+              .insert(generatedSections)
+              .values({
+                projectId,
+                sectionType: section.sectionType,
+                variant: section.variant,
+                content: section.content,
+                modelUsed: "gpt-4o-mini",
+              })
+              .onConflictDoUpdate({
+                target: [
+                  generatedSections.projectId,
+                  generatedSections.sectionType,
+                  generatedSections.variant,
+                  generatedSections.version,
+                ],
+                set: {
+                  content: section.content,
+                  modelUsed: "gpt-4o-mini",
+                  updatedAt: new Date(),
+                },
+              });
           }
 
+          break;
+        }
+
+        case "storyboard_generate": {
+          const result = await runStoryboardGenerate(projectId, llm);
+          if (!result.ok) {
+            throw new Error(result.error);
+          }
+          break;
+        }
+
+        case "embedding_generate": {
+          // Phase 5 — populate the chatbot's retrieval corpus. Non-fatal:
+          // if this fails, the rest of the pipeline still completes; the
+          // published site's chatbot will simply have no context until the
+          // next successful run.
+          const result = await runEmbeddingGenerate(projectId);
+          if (!result.ok) {
+            throw new Error(result.error ?? "embedding_generate failed");
+          }
           break;
         }
 
@@ -448,12 +601,20 @@ async function runPipeline(
 
           // Verify each section
           for (const section of sections) {
-            const verificationResult = await verifyClaims({
-              generatedText: section.content,
-              facts: extractedFacts,
-              sectionType: section.sectionType,
-              variant: section.variant,
-            });
+            const verificationResult = await verifyClaims(
+              {
+                generatedText: section.content,
+                facts: extractedFacts,
+                sectionType: section.sectionType,
+                variant: section.variant,
+              },
+              llm
+            );
+
+            // Clear stale claim-map rows for this section before re-inserting
+            await db
+              .delete(claimMap)
+              .where(eq(claimMap.sectionId, section.id));
 
             // Store claim map entries
             for (const claim of verificationResult.claims) {
@@ -475,6 +636,22 @@ async function runPipeline(
       // Mark step as completed
       stepDef.status = "completed";
       stepDef.completedAt = new Date();
+
+      // Phase 6 — persist the step's final state. Model + tokens are
+      // null for v1: internal step callers still use the legacy `text`
+      // / `structured` methods. Upgrading them to `measuredText` /
+      // `measuredStructured` is tracked in 6.1 and lights up cost
+      // attribution per step.
+      //
+      // Note: steps that `continue`d (status === "skipped") emit their
+      // own recordStepFinish inline before the continue, so this line
+      // only covers the happy "completed" path.
+      recordStepFinish({
+        jobId,
+        stepName,
+        status: "completed",
+        completedAt: stepDef.completedAt,
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -482,6 +659,24 @@ async function runPipeline(
       stepDef.status = "failed";
       stepDef.error = errorMessage;
       stepDef.completedAt = new Date();
+
+      console.error(
+        `[orchestrator] Step "${stepName}" failed for project ${projectId}:`,
+        errorMessage
+      );
+
+      recordStepFinish({
+        jobId,
+        stepName,
+        status: "failed",
+        completedAt: stepDef.completedAt,
+        error: errorMessage,
+      });
+
+      // Non-fatal step: log and continue. Other artifacts still ship.
+      if (NON_FATAL_STEPS.has(stepName)) {
+        continue;
+      }
 
       state.error = `Step "${stepName}" failed: ${errorMessage}`;
       state.completedAt = new Date();
@@ -492,12 +687,16 @@ async function runPipeline(
         completedAt: new Date(),
       });
 
+      // Phase 6 — durable job-fail history.
+      recordJobFinish({
+        jobId,
+        status: "failed",
+        completedAt: state.completedAt,
+        error: state.error,
+      });
+
       await updateProjectStatus(projectId, "failed", state.error);
 
-      console.error(
-        `[orchestrator] Step "${stepName}" failed for project ${projectId}:`,
-        errorMessage
-      );
       return;
     }
   }
@@ -507,6 +706,13 @@ async function runPipeline(
   state.completedAt = new Date();
 
   updateJob(jobId, { status: "completed", completedAt: new Date() });
+  // Phase 6 — durable job-complete history.
+  recordJobFinish({
+    jobId,
+    status: "completed",
+    completedAt: state.completedAt,
+  });
+
   await updateProjectStatus(projectId, "completed");
 
   // Update lastAnalyzed
@@ -514,6 +720,145 @@ async function runPipeline(
     .update(projects)
     .set({ lastAnalyzed: new Date() })
     .where(eq(projects.id, projectId));
+}
+
+/**
+ * Regenerate a single narrative section using cached facts + contextPack.
+ *
+ * Skips the expensive earlier pipeline steps (repo_fetch, context_generate,
+ * fact_extract) and re-runs just `narrative_generate` + `claim_verify` for
+ * the one (sectionType, variant) the user wants to redo.
+ *
+ * Note: the underlying LLM call still returns all 10 sections — this helper
+ * picks the one the caller asked for and upserts only that row, then
+ * re-verifies claims for that section.
+ *
+ * Throws if prerequisites are missing (facts / context pack not yet built).
+ */
+export async function regenerateSection(
+  projectId: string,
+  sectionType: string,
+  variant: string
+): Promise<{ sectionId: string }> {
+  // Phase 3.5: resolve the LLM client once via the user bound to the project.
+  // Typed errors bubble up; API route turns them into 409s.
+  const llm = await getLlmClientForProject(projectId);
+
+  // Load cached contextPack
+  const contextPackRaw = await getRepoSource(projectId, "context_pack");
+  if (!contextPackRaw) {
+    throw new Error(
+      "Context pack not found. Run the full analysis pipeline first."
+    );
+  }
+  let contextPack: ContextPack;
+  try {
+    contextPack = JSON.parse(contextPackRaw);
+  } catch {
+    throw new Error("Context pack data is corrupt. Re-run analysis.");
+  }
+
+  // Load facts
+  const dbFacts = await db
+    .select()
+    .from(factsTable)
+    .where(eq(factsTable.projectId, projectId));
+
+  if (dbFacts.length === 0) {
+    throw new Error(
+      "No facts found for this project. Run the full analysis pipeline first."
+    );
+  }
+
+  const facts: Fact[] = dbFacts.map((f) => ({
+    claim: f.claim,
+    category: f.category as Fact["category"],
+    confidence: f.confidence,
+    evidenceType: f.evidenceType as Fact["evidenceType"],
+    evidenceRef: f.evidenceRef ?? "",
+    evidenceText: f.evidenceText ?? "",
+  }));
+
+  // Resolve project name
+  const [project] = await db
+    .select()
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+  const projectName =
+    project?.displayName ?? project?.repoName ?? "Unknown Project";
+
+  // Generate narratives (returns all 10 — we pick the one requested)
+  const narratives = await generateNarratives(
+    {
+      projectName,
+      facts,
+      contextPack,
+    },
+    llm
+  );
+
+  const picked = narratives.sections.find(
+    (s) => s.sectionType === sectionType && s.variant === variant
+  );
+  if (!picked) {
+    throw new Error(
+      `Model did not return a section for ${sectionType}/${variant}. Try again.`
+    );
+  }
+
+  // Upsert the single section
+  const [upserted] = await db
+    .insert(generatedSections)
+    .values({
+      projectId,
+      sectionType: picked.sectionType,
+      variant: picked.variant,
+      content: picked.content,
+      modelUsed: "gpt-4o-mini",
+    })
+    .onConflictDoUpdate({
+      target: [
+        generatedSections.projectId,
+        generatedSections.sectionType,
+        generatedSections.variant,
+        generatedSections.version,
+      ],
+      set: {
+        content: picked.content,
+        isUserEdited: false,
+        userContent: null,
+        modelUsed: "gpt-4o-mini",
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+
+  // Re-verify claims for this section only
+  const verificationResult = await verifyClaims(
+    {
+      generatedText: picked.content,
+      facts,
+      sectionType: picked.sectionType,
+      variant: picked.variant,
+    },
+    llm
+  );
+
+  await db.delete(claimMap).where(eq(claimMap.sectionId, upserted.id));
+
+  for (const claim of verificationResult.claims) {
+    await db.insert(claimMap).values({
+      sectionId: upserted.id,
+      sentenceIndex: claim.sentenceIndex,
+      sentenceText: claim.sentenceText,
+      factIds: JSON.stringify(claim.factIds),
+      verification: claim.verification,
+      confidence: claim.confidence,
+    });
+  }
+
+  return { sectionId: upserted.id };
 }
 
 // ─── Helper Functions ───────────────────────────────────────────────────────

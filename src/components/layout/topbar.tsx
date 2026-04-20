@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Menu, User } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UserButton } from "@/components/auth/user-button";
 
 interface TopbarProps {
   onMenuClick?: () => void;
@@ -26,11 +27,8 @@ export function Topbar({ onMenuClick, children }: TopbarProps) {
       {/* Page title / children slot */}
       <div className="flex-1">{children}</div>
 
-      {/* User button placeholder */}
-      <Button variant="ghost" size="icon" className="rounded-full">
-        <User className="h-5 w-5" />
-        <span className="sr-only">User menu</span>
-      </Button>
+      {/* User button */}
+      <UserButton />
     </header>
   );
 }

@@ -24,6 +24,8 @@ export interface RepoMetadata {
   updatedAt: string;
   license: { name: string } | null;
   htmlUrl: string;
+  /** The repo's declared `homepage` URL, if any. May be "" or null. */
+  homepage: string | null;
 }
 
 export interface FileTreeEntry {
@@ -59,6 +61,7 @@ interface GitHubRepoResponse {
   updated_at: string;
   license: { name: string } | null;
   html_url: string;
+  homepage: string | null;
 }
 
 /** GitHub REST API shape for a single entry inside a Git tree. */
@@ -159,6 +162,7 @@ export class RepoFetcher {
       updatedAt: data.updated_at,
       license: data.license ? { name: data.license.name } : null,
       htmlUrl: data.html_url,
+      homepage: data.homepage ?? null,
     };
   }
 
