@@ -1,6 +1,6 @@
-import type { VerifierSpec } from "@/lib/ai/schemas/storyboard";
+import type { FileVerifier } from "@/lib/ai/schemas/storyboard";
 
-type FileVerifierSpec = Extract<VerifierSpec, { kind: "file" }>;
+type FileVerifierSpec = FileVerifier;
 
 export interface VerifierResult {
   status: "verified" | "flagged";

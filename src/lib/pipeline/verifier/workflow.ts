@@ -1,8 +1,8 @@
-import type { VerifierSpec } from "@/lib/ai/schemas/storyboard";
+import type { WorkflowVerifier } from "@/lib/ai/schemas/storyboard";
 import type { WorkflowCategory } from "@/lib/credibility/types";
 import type { VerifierResult } from "@/lib/pipeline/verifier/file";
 
-type WorkflowVerifierSpec = Extract<VerifierSpec, { kind: "workflow" }>;
+type WorkflowVerifierSpec = WorkflowVerifier;
 
 export interface ClassifiedWorkflow {
   name: string;

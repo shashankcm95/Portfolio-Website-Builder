@@ -15,30 +15,95 @@ import { z } from "zod";
 
 // ─── Verifier spec — discriminated union by `kind` ──────────────────────────
 
-export const verifierSpecSchema = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("dep"),
-    package: z.string().min(1),
-    ecosystem: z.enum(["npm", "pypi", "cargo", "go"]).optional(),
-  }),
-  z.object({
-    kind: z.literal("file"),
-    glob: z.string().min(1),
-  }),
-  z.object({
-    kind: z.literal("workflow"),
-    category: z.enum(["test", "deploy", "lint", "security", "release"]),
-  }),
-  z.object({
-    kind: z.literal("grep"),
-    pattern: z.string().min(1),
+/**
+ * Phase 3 used a Zod discriminated union so each `kind` has a tight
+ * shape. OpenAI strict mode can't express that — it forces a flat
+ * object with every property declared (see JSON schema below) and
+ * unused ones emitted as `null`. To bridge the two, we parse the
+ * flat object with a permissive schema here and let the verifier
+ * reject claims whose `kind` is inconsistent with the populated
+ * fields at runtime.
+ */
+export const verifierSpecSchema = z
+  .object({
+    kind: z.enum(["dep", "file", "workflow", "grep"]),
+    // `dep`
+    package: z.string().min(1).nullish(),
+    ecosystem: z.enum(["npm", "pypi", "cargo", "go"]).nullish(),
+    // `file`
+    glob: z.string().min(1).nullish(),
+    // `workflow`
+    category: z
+      .enum(["test", "deploy", "lint", "security", "release"])
+      .nullish(),
+    // `grep`
+    pattern: z.string().min(1).nullish(),
     sources: z
       .array(z.enum(["readme", "file_tree", "dependencies"]))
-      .min(1),
-  }),
-]);
+      .min(1)
+      .nullish(),
+  })
+  .superRefine((v, ctx) => {
+    // Enforce the per-kind required fields that the discriminated
+    // union used to express. Anything that fails here is a contract
+    // violation from the LLM and the post-processor drops the claim.
+    if (v.kind === "dep" && !v.package) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["package"],
+        message: "dep verifier requires package",
+      });
+    }
+    if (v.kind === "file" && !v.glob) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["glob"],
+        message: "file verifier requires glob",
+      });
+    }
+    if (v.kind === "workflow" && !v.category) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["category"],
+        message: "workflow verifier requires category",
+      });
+    }
+    if (v.kind === "grep" && (!v.pattern || !v.sources?.length)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["pattern"],
+        message: "grep verifier requires pattern + sources",
+      });
+    }
+  });
 
 export type VerifierSpec = z.infer<typeof verifierSpecSchema>;
+
+/**
+ * Narrow per-kind shapes for the runtime verifier dispatcher. We
+ * hand-write these because the flat `VerifierSpec` loses the
+ * "package is always a string when kind='dep'" guarantee the old
+ * discriminated union had — the dispatcher branches on kind and
+ * casts to these tighter shapes before calling each verifier.
+ */
+export type DepVerifier = {
+  kind: "dep";
+  package: string;
+  ecosystem?: "npm" | "pypi" | "cargo" | "go" | null;
+};
+export type FileVerifier = {
+  kind: "file";
+  glob: string;
+};
+export type WorkflowVerifier = {
+  kind: "workflow";
+  category: "test" | "deploy" | "lint" | "security" | "release";
+};
+export type GrepVerifier = {
+  kind: "grep";
+  pattern: string;
+  sources: Array<"readme" | "file_tree" | "dependencies">;
+};
 
 // ─── Claim ──────────────────────────────────────────────────────────────────
 
@@ -55,32 +120,58 @@ export const verifiedClaimSchema = z.object({
   label: z.string().min(1).max(120),
   verifier: verifierSpecSchema,
   // LLM fills `status` with "pending"; verifier overwrites. Accept anything
-  // on parse so we can post-process cleanly.
-  status: claimStatusSchema.optional(),
-  evidence: z.string().optional(),
+  // on parse so we can post-process cleanly. `.nullish()` because OpenAI
+  // strict mode emits missing optionals as `null`.
+  status: claimStatusSchema.nullish(),
+  evidence: z.string().nullish(),
 });
 
 export type VerifiedClaim = z.infer<typeof verifiedClaimSchema>;
 
 // ─── Card extras — per-card specialization ──────────────────────────────────
 
-const fileSnippetExtraSchema = z.object({
-  kind: z.literal("file_snippet"),
-  path: z.string().min(1),
-  snippet: z.string().min(1).max(2000),
-  language: z.string().min(1),
-});
-
-const demoExtraSchema = z.object({
-  kind: z.literal("demo"),
-  url: z.string().url().optional(),
-  cloneCommand: z.string().optional(),
-});
-
-export const cardExtraSchema = z.discriminatedUnion("kind", [
-  fileSnippetExtraSchema,
-  demoExtraSchema,
-]);
+/**
+ * Like the verifier, the card-extra used to be a discriminated union.
+ * OpenAI strict mode requires a single flat object (or null) so we
+ * parse permissively and enforce the per-kind required fields in a
+ * superRefine. Post-processors read `kind` to branch.
+ */
+export const cardExtraSchema = z
+  .object({
+    kind: z.enum(["file_snippet", "demo"]),
+    // file_snippet-only
+    path: z.string().min(1).nullish(),
+    snippet: z.string().min(1).max(2000).nullish(),
+    language: z.string().min(1).nullish(),
+    // demo-only
+    url: z.string().url().nullish(),
+    cloneCommand: z.string().nullish(),
+  })
+  .superRefine((e, ctx) => {
+    if (e.kind === "file_snippet") {
+      if (!e.path)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["path"],
+          message: "file_snippet requires path",
+        });
+      if (!e.snippet)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["snippet"],
+          message: "file_snippet requires snippet",
+        });
+      if (!e.language)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["language"],
+          message: "file_snippet requires language",
+        });
+    }
+    // "demo" kind allows all four of url / cloneCommand / null — no
+    // required fields. The renderer shows whichever the LLM chose to
+    // populate.
+  });
 
 export type CardExtra = z.infer<typeof cardExtraSchema>;
 
@@ -115,7 +206,8 @@ export const storyboardCardSchema = z.object({
   title: z.string().min(1).max(80),
   description: z.string().min(1).max(400),
   claims: z.array(verifiedClaimSchema).max(5), // post-drop we cap at 3 per card
-  extra: cardExtraSchema.optional(),
+  // `.nullish()` — OpenAI strict emits null for cards without an extra.
+  extra: cardExtraSchema.nullish(),
 });
 
 export type StoryboardCard = z.infer<typeof storyboardCardSchema>;
@@ -167,6 +259,17 @@ export type StoryboardPayload = z.infer<typeof storyboardPayloadSchema>;
  * discriminators, `additionalProperties: false` required everywhere, all
  * fields in `required`). This stays small and predictable.
  */
+/**
+ * OpenAI strict-mode `response_format` requires that every key in
+ * `properties` is listed in `required`. Optional fields are expressed
+ * as nullable (`type: ["X", "null"]`) rather than omitted from
+ * `required`. That's why this schema looks chatty with nulls — the
+ * LLM is required to produce the key, but it may emit `null` when
+ * the field doesn't apply (e.g. a `file`-kind verifier has no
+ * `package`).
+ *
+ * See: https://platform.openai.com/docs/guides/structured-outputs
+ */
 export const STORYBOARD_JSON_SCHEMA = {
   name: "storyboard_payload",
   strict: true,
@@ -184,7 +287,8 @@ export const STORYBOARD_JSON_SCHEMA = {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["id", "icon", "title", "description", "claims"],
+          // Every property listed here — strict mode requirement.
+          required: ["id", "icon", "title", "description", "claims", "extra"],
           properties: {
             id: {
               type: "string",
@@ -206,38 +310,54 @@ export const STORYBOARD_JSON_SCHEMA = {
               items: {
                 type: "object",
                 additionalProperties: false,
-                required: ["label", "verifier"],
+                required: ["label", "evidence", "verifier"],
                 properties: {
                   label: { type: "string" },
-                  evidence: { type: "string" },
+                  // Optional commentary — nullable, because some claims
+                  // are self-evident from `label` alone.
+                  evidence: { type: ["string", "null"] },
                   verifier: {
                     type: "object",
                     additionalProperties: false,
-                    required: ["kind"],
+                    required: [
+                      "kind",
+                      "package",
+                      "ecosystem",
+                      "glob",
+                      "category",
+                      "pattern",
+                      "sources",
+                    ],
                     properties: {
                       kind: {
                         type: "string",
                         enum: ["dep", "file", "workflow", "grep"],
                       },
-                      package: { type: "string" },
+                      // `package` + `ecosystem` apply when kind="dep";
+                      // null for other kinds.
+                      package: { type: ["string", "null"] },
                       ecosystem: {
-                        type: "string",
-                        enum: ["npm", "pypi", "cargo", "go"],
+                        type: ["string", "null"],
+                        enum: ["npm", "pypi", "cargo", "go", null],
                       },
-                      glob: { type: "string" },
+                      // `glob` applies when kind="file"; null otherwise.
+                      glob: { type: ["string", "null"] },
+                      // `category` applies when kind="workflow".
                       category: {
-                        type: "string",
+                        type: ["string", "null"],
                         enum: [
                           "test",
                           "deploy",
                           "lint",
                           "security",
                           "release",
+                          null,
                         ],
                       },
-                      pattern: { type: "string" },
+                      // `pattern` + `sources` apply when kind="grep".
+                      pattern: { type: ["string", "null"] },
                       sources: {
-                        type: "array",
+                        type: ["array", "null"],
                         items: {
                           type: "string",
                           enum: ["readme", "file_tree", "dependencies"],
@@ -248,18 +368,38 @@ export const STORYBOARD_JSON_SCHEMA = {
                 },
               },
             },
+            // Each card carries an optional `extra` payload — null on
+            // cards that don't need one; only populated on the
+            // "interesting_file" + "try_it" cards in practice.
             extra: {
-              type: "object",
-              additionalProperties: false,
-              required: ["kind"],
-              properties: {
-                kind: { type: "string", enum: ["file_snippet", "demo"] },
-                path: { type: "string" },
-                snippet: { type: "string" },
-                language: { type: "string" },
-                url: { type: "string" },
-                cloneCommand: { type: "string" },
-              },
+              anyOf: [
+                {
+                  type: "object",
+                  additionalProperties: false,
+                  required: [
+                    "kind",
+                    "path",
+                    "snippet",
+                    "language",
+                    "url",
+                    "cloneCommand",
+                  ],
+                  properties: {
+                    kind: {
+                      type: "string",
+                      enum: ["file_snippet", "demo"],
+                    },
+                    // file_snippet-only fields — null for "demo" extras.
+                    path: { type: ["string", "null"] },
+                    snippet: { type: ["string", "null"] },
+                    language: { type: ["string", "null"] },
+                    // demo-only fields — null for "file_snippet" extras.
+                    url: { type: ["string", "null"] },
+                    cloneCommand: { type: ["string", "null"] },
+                  },
+                },
+                { type: "null" },
+              ],
             },
           },
         },

@@ -93,12 +93,12 @@ function visualFor(status: "verified" | "flagged" | "pending") {
 function verifierDescription(spec: VerifierSpec): string {
   switch (spec.kind) {
     case "dep":
-      return `Checked for "${spec.package}"${spec.ecosystem ? ` in ${spec.ecosystem}` : ""} dependencies.`;
+      return `Checked for "${spec.package ?? "?"}"${spec.ecosystem ? ` in ${spec.ecosystem}` : ""} dependencies.`;
     case "file":
-      return `Checked file tree for "${spec.glob}".`;
+      return `Checked file tree for "${spec.glob ?? "?"}".`;
     case "workflow":
-      return `Checked GitHub Actions for a "${spec.category}" workflow.`;
+      return `Checked GitHub Actions for a "${spec.category ?? "?"}" workflow.`;
     case "grep":
-      return `Checked ${spec.sources.join(", ")} for pattern "${spec.pattern}".`;
+      return `Checked ${(spec.sources ?? []).join(", ")} for pattern "${spec.pattern ?? "?"}".`;
   }
 }

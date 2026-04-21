@@ -1,7 +1,7 @@
-import type { VerifierSpec } from "@/lib/ai/schemas/storyboard";
+import type { GrepVerifier } from "@/lib/ai/schemas/storyboard";
 import type { VerifierResult } from "@/lib/pipeline/verifier/file";
 
-type GrepVerifierSpec = Extract<VerifierSpec, { kind: "grep" }>;
+type GrepVerifierSpec = GrepVerifier;
 
 export type SourceBlobs = Partial<
   Record<"readme" | "file_tree" | "dependencies", string>

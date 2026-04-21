@@ -1,4 +1,10 @@
-import type { VerifierSpec } from "@/lib/ai/schemas/storyboard";
+import type {
+  DepVerifier,
+  FileVerifier,
+  GrepVerifier,
+  VerifierSpec,
+  WorkflowVerifier,
+} from "@/lib/ai/schemas/storyboard";
 import { verifyDep, type ParsedDep } from "@/lib/pipeline/verifier/dep";
 import {
   verifyFile,
@@ -36,13 +42,53 @@ export function verifyClaim(
   try {
     switch (spec.kind) {
       case "dep":
-        return verifyDep(spec, ctx.depsParsed);
+        if (!spec.package) {
+          return {
+            status: "flagged",
+            evidence: "dep verifier is missing `package`",
+          };
+        }
+        return verifyDep(
+          { kind: "dep", package: spec.package, ecosystem: spec.ecosystem } as DepVerifier,
+          ctx.depsParsed
+        );
       case "file":
-        return verifyFile(spec, ctx.fileTreePaths);
+        if (!spec.glob) {
+          return {
+            status: "flagged",
+            evidence: "file verifier is missing `glob`",
+          };
+        }
+        return verifyFile(
+          { kind: "file", glob: spec.glob } as FileVerifier,
+          ctx.fileTreePaths
+        );
       case "workflow":
-        return verifyWorkflow(spec, ctx.workflows);
+        if (!spec.category) {
+          return {
+            status: "flagged",
+            evidence: "workflow verifier is missing `category`",
+          };
+        }
+        return verifyWorkflow(
+          { kind: "workflow", category: spec.category } as WorkflowVerifier,
+          ctx.workflows
+        );
       case "grep":
-        return verifyGrep(spec, ctx.sourceBlobs);
+        if (!spec.pattern || !spec.sources?.length) {
+          return {
+            status: "flagged",
+            evidence: "grep verifier is missing `pattern` or `sources`",
+          };
+        }
+        return verifyGrep(
+          {
+            kind: "grep",
+            pattern: spec.pattern,
+            sources: spec.sources,
+          } as GrepVerifier,
+          ctx.sourceBlobs
+        );
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

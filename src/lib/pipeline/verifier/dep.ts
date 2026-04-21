@@ -1,7 +1,10 @@
-import type { VerifierSpec } from "@/lib/ai/schemas/storyboard";
+import type { DepVerifier } from "@/lib/ai/schemas/storyboard";
 import type { VerifierResult } from "@/lib/pipeline/verifier/file";
 
-type DepVerifierSpec = Extract<VerifierSpec, { kind: "dep" }>;
+// Phase 7 — the per-kind narrow type lives in the schemas file now
+// because the flat `VerifierSpec` (OpenAI strict-mode shape) no
+// longer supports `Extract<VerifierSpec, { kind: "dep" }>`.
+type DepVerifierSpec = DepVerifier;
 
 export interface ParsedDep {
   name: string;
