@@ -33,10 +33,27 @@ export async function GET(
     const { renderTemplate } = await import("@/lib/generator/renderer");
 
     const profileData = await assembleProfileData(params.portfolioId);
-    const files = await renderTemplate(portfolio.templateId ?? "minimal", profileData);
+
+    // Phase 7 — preview-only override of the stored template. Lets the
+    // template picker show "Preview this template" without a save round-trip.
+    // Always falls back to the stored templateId.
+    const { searchParams } = new URL(req.url);
+    const templateOverride = searchParams.get("templateId");
+    const ALLOWED_TEMPLATES = new Set([
+      "minimal",
+      "classic",
+      "research",
+      "terminal",
+      "editorial",
+    ]);
+    const templateId =
+      templateOverride && ALLOWED_TEMPLATES.has(templateOverride)
+        ? templateOverride
+        : portfolio.templateId ?? "minimal";
+
+    const files = await renderTemplate(templateId, profileData);
 
     // Determine which page to serve
-    const { searchParams } = new URL(req.url);
     const page = searchParams.get("page") ?? "index";
 
     // Map page name to file path

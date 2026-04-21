@@ -61,6 +61,53 @@ const shippedTemplates = [
       showTechStack: true,
     },
   },
+  // Phase 7 — three new archetypes covering research, systems, and
+  // editorial-leaning portfolios.
+  {
+    id: "research",
+    name: "Research",
+    description:
+      "Academic, single-column, content-first. Modeled after researcher home pages (Karpathy, colah). Optimal for ML researchers, PhD candidates, scientists.",
+    isActive: true,
+    isPremium: false,
+    config: {
+      primaryColor: "#0066cc",
+      fontFamily: "Crimson Pro",
+      showGitHubStats: true,
+      showTechStack: true,
+      audience: ["research", "ml", "academic"],
+    },
+  },
+  {
+    id: "terminal",
+    name: "Terminal",
+    description:
+      "CLI / hacker aesthetic — monospace, dark Monokai-ish palette, command-style headers. Optimal for SRE, DevOps, and systems / infra engineers.",
+    isActive: true,
+    isPremium: false,
+    config: {
+      primaryColor: "#a6e22e",
+      fontFamily: "JetBrains Mono",
+      showGitHubStats: true,
+      showTechStack: true,
+      audience: ["sre", "devops", "systems", "infra"],
+    },
+  },
+  {
+    id: "editorial",
+    name: "Editorial",
+    description:
+      "Typography-forward, magazine-leaning. Display face for hero, numbered case-study project list, warm cream + vermillion accent. Optimal for senior engineers, technical leaders, and designer-developer hybrids.",
+    isActive: true,
+    isPremium: false,
+    config: {
+      primaryColor: "#ff3c00",
+      fontFamily: "Fraunces",
+      showGitHubStats: true,
+      showTechStack: true,
+      audience: ["leader", "designer-dev", "writing"],
+    },
+  },
 ];
 
 async function main() {

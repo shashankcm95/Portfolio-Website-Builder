@@ -15,6 +15,9 @@ export async function GET() {
       description: templates.description,
       previewUrl: templates.previewUrl,
       isPremium: templates.isPremium,
+      // Phase 7 — config carries the audience tags the picker shows
+      // as chips. Returning the full jsonb keeps future fields free.
+      config: templates.config,
     })
     .from(templates)
     .where(eq(templates.isActive, true))

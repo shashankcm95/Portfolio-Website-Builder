@@ -505,6 +505,72 @@ export const pipelineStepRuns = pgTable(
   })
 );
 
+// ─── Phase 7 — Layout Reviews ───────────────────────────────────────────────
+
+/**
+ * On-demand layout review of a portfolio's rendered HTML. One row per
+ * review run; issues live in `layoutReviewIssues` for queryability.
+ */
+export const layoutReviews = pgTable(
+  "layout_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    portfolioId: uuid("portfolio_id")
+      .notNull()
+      .references(() => portfolios.id, { onDelete: "cascade" }),
+    templateId: text("template_id").notNull(),
+    // "running" | "completed" | "failed"
+    status: text("status").notNull(),
+    // 0-100 composite. Null while running.
+    score: integer("score"),
+    // Did the Playwright-backed Tier 2 checks run?
+    tier2Available: boolean("tier2_available").notNull().default(false),
+    // Did the AI vision Tier 3 review run?
+    tier3Available: boolean("tier3_available").notNull().default(false),
+    // Tier 3 narrative summary (Claude-generated).
+    aiSummary: text("ai_summary"),
+    error: text("error"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    portfolioIdx: index("layout_reviews_portfolio_id_idx").on(table.portfolioId),
+    portfolioStatusIdx: index("layout_reviews_portfolio_status_idx").on(
+      table.portfolioId,
+      table.status
+    ),
+  })
+);
+
+/**
+ * One row per individual issue surfaced by a review run. Severity
+ * controls scoring weight; tier identifies which check produced it.
+ */
+export const layoutReviewIssues = pgTable(
+  "layout_review_issues",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => layoutReviews.id, { onDelete: "cascade" }),
+    // Stable identifier like "R10-hero-name-wraps" — keys to the rules table.
+    rule: text("rule").notNull(),
+    // "static" | "rendered" | "ai"
+    tier: text("tier").notNull(),
+    // "critical" | "warning" | "info"
+    severity: text("severity").notNull(),
+    message: text("message").notNull(),
+    page: text("page"),
+    viewport: integer("viewport"),
+    elementSelector: text("element_selector"),
+    details: jsonb("details"),
+  },
+  (table) => ({
+    reviewIdIdx: index("layout_review_issues_review_id_idx").on(table.reviewId),
+  })
+);
+
 // ─── Relations ───────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -522,6 +588,23 @@ export const portfoliosRelations = relations(portfolios, ({ one, many }) => ({
   chatbotSessions: many(chatbotSessions),
   shareTokens: many(shareTokens),
   visitorEvents: many(visitorEvents),
+  layoutReviews: many(layoutReviews),
+}));
+
+// Phase 7 — reverse relation for layout_reviews + cascade-style child rows.
+export const layoutReviewsRelations = relations(layoutReviews, ({ one, many }) => ({
+  portfolio: one(portfolios, {
+    fields: [layoutReviews.portfolioId],
+    references: [portfolios.id],
+  }),
+  issues: many(layoutReviewIssues),
+}));
+
+export const layoutReviewIssuesRelations = relations(layoutReviewIssues, ({ one }) => ({
+  review: one(layoutReviews, {
+    fields: [layoutReviewIssues.reviewId],
+    references: [layoutReviews.id],
+  }),
 }));
 
 // Phase 6 — reverse relations for the new tables.

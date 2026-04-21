@@ -38,7 +38,26 @@ interface Template {
   name: string;
   description: string | null;
   isPremium: boolean | null;
+  // Phase 7 — config blob may carry an "audience" tag list used to
+  // render small chips on the picker card. The /api/templates endpoint
+  // returns the full row so this field is populated whenever the seed
+  // script set it.
+  config?: { audience?: string[] } & Record<string, unknown>;
 }
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  sde: "SDE",
+  research: "Research",
+  ml: "ML",
+  academic: "Academic",
+  sre: "SRE",
+  devops: "DevOps",
+  systems: "Systems",
+  infra: "Infra",
+  leader: "Leader",
+  "designer-dev": "Designer-dev",
+  writing: "Writing",
+};
 
 interface Portfolio {
   id: string;
@@ -233,33 +252,77 @@ export function PortfolioSettings({
               <div className="grid gap-3 sm:grid-cols-2">
                 {templates.map((t) => {
                   const selected = templateId === t.id;
+                  const audience = Array.isArray(t.config?.audience)
+                    ? (t.config!.audience as string[])
+                    : [];
+                  const previewHref = `/api/portfolios/${portfolio.id}/preview?templateId=${encodeURIComponent(t.id)}`;
                   return (
-                    <button
+                    <div
                       key={t.id}
-                      type="button"
-                      onClick={() => setTemplateId(t.id)}
-                      disabled={isSaving}
                       className={cn(
                         "relative flex flex-col gap-2 rounded-md border p-4 text-left transition",
                         selected
                           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                           : "hover:border-muted-foreground/40"
                       )}
+                      data-testid={`template-card-${t.id}`}
                     >
-                      <div className="flex items-center justify-between">
+                      {/* The whole card is selectable except where buttons
+                          live (the "Preview" link below). Use a button
+                          inside instead of wrapping everything in <button>
+                          to allow nested interactives. */}
+                      <button
+                        type="button"
+                        onClick={() => setTemplateId(t.id)}
+                        disabled={isSaving}
+                        className="flex items-start justify-between gap-2 text-left"
+                      >
                         <p className="text-sm font-medium">{t.name}</p>
                         {selected && (
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                             <Check className="h-3 w-3" />
                           </span>
                         )}
-                      </div>
+                      </button>
+
                       {t.description && (
-                        <p className="text-xs text-muted-foreground">
-                          {t.description}
-                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setTemplateId(t.id)}
+                          disabled={isSaving}
+                          className="text-left"
+                        >
+                          <p className="text-xs text-muted-foreground">
+                            {t.description}
+                          </p>
+                        </button>
                       )}
-                    </button>
+
+                      {audience.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {audience.map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground"
+                            >
+                              {AUDIENCE_LABELS[tag] ?? tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="mt-1 pt-1">
+                        <a
+                          href={previewHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] text-primary underline-offset-2 hover:underline"
+                          data-testid={`template-preview-${t.id}`}
+                        >
+                          Preview this template ↗
+                        </a>
+                      </div>
+                    </div>
                   );
                 })}
               </div>

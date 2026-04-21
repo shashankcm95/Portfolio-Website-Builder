@@ -1,0 +1,14 @@
+{
+  "id": "editorial",
+  "name": "Editorial",
+  "description": "Typography-forward, magazine-leaning. Display face for hero, numbered case-study project list, warm cream + vermillion accent. Optimal for senior engineers, technical leaders, and designer-developer hybrids.",
+  "version": "1.0.0",
+  "supportedPages": ["home", "about", "projects", "project-detail", "contact"],
+  "audience": ["leader", "designer-dev", "writing"],
+  "defaultSettings": {
+    "primaryColor": "#ff3c00",
+    "fontFamily": "Fraunces",
+    "showGitHubStats": true,
+    "showTechStack": true
+  }
+}

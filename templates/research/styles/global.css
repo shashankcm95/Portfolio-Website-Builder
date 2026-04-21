@@ -1,0 +1,280 @@
+/* ─── Phase 7: Research template ──────────────────────────────────────────
+ *
+ * Academic / research-minimal palette. Deliberately spartan — content
+ * over decoration. Modeled after karpathy.ai + colah.github.io: serif
+ * body, near-black on cream, single-column, no motion.
+ *
+ * Type: system serif fallback chain so we don't pay a network round-trip
+ * for a custom font on first paint. Inter for headings (most systems
+ * ship a close fallback already).
+ */
+
+:root {
+  --bg: #fdfcf8;
+  --surface: #ffffff;
+  --text: #1a1a1a;
+  --text-muted: #555;
+  --text-subtle: #888;
+  --border: #e6e2d8;
+  --link: #0066cc;
+  --link-hover: #003d99;
+  --serif: ui-serif, "Charter", "Cambria", "Source Serif Pro", "Georgia", serif;
+  --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+  --max-width: 720px;
+  --max-width-wide: 880px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--link-hover); }
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--sans);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  margin: 2em 0 0.6em;
+  color: var(--text);
+}
+h1 { font-size: 2rem; margin-top: 0; }
+h2 { font-size: 1.4rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+h3 { font-size: 1.15rem; }
+p { margin: 0 0 1em; }
+
+/* ─── Layout primitives ────────────────────────────────────────────── */
+
+.container { max-width: var(--max-width); margin: 0 auto; padding: 0 24px; }
+.container-wide { max-width: var(--max-width-wide); margin: 0 auto; padding: 0 24px; }
+.section { padding: 2.5em 0; }
+
+/* ─── Top nav ──────────────────────────────────────────────────────── */
+
+.nav {
+  border-bottom: 1px solid var(--border);
+  padding: 18px 0;
+  background: var(--bg);
+}
+.nav-inner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.nav-brand {
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 1rem;
+}
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  font-family: var(--sans);
+  font-size: 0.95rem;
+}
+.nav-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.nav-links a:hover, .nav-links a.active {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+/* ─── Hero ─────────────────────────────────────────────────────────── */
+
+.hero {
+  padding: 56px 0 24px;
+}
+.hero-inner {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.hero-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.hero-text { flex: 1; min-width: 0; }
+.hero-name {
+  font-family: var(--sans);
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+.hero-label {
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  margin: 0 0 14px;
+}
+.hero-summary {
+  margin: 14px 0 18px;
+  color: var(--text);
+}
+.hero-links {
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  color: var(--text-muted);
+}
+.hero-links a {
+  margin-right: 14px;
+  color: var(--link);
+}
+
+/* ─── Timeline (career / education) ────────────────────────────────── */
+
+.timeline { margin-top: 1em; }
+.timeline-item {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 18px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.timeline-item:first-child { border-top: none; }
+.timeline-date {
+  color: var(--text-subtle);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  padding-top: 3px;
+}
+.timeline-title { margin: 0 0 2px; font-size: 1.05rem; font-family: var(--sans); }
+.timeline-subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 6px; }
+.timeline-content { margin: 6px 0; color: var(--text); }
+.timeline-highlights {
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+  color: var(--text);
+}
+.timeline-highlights li { margin: 4px 0; }
+
+/* ─── Skills (inline, no chips) ────────────────────────────────────── */
+
+.skills-group { margin: 14px 0; }
+.skills-group-title {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-subtle);
+  margin: 0 0 4px;
+}
+.skills-inline {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+.skills-inline span:not(:last-child)::after {
+  content: " · ";
+  color: var(--border);
+}
+
+/* ─── Projects (academic-paper style list) ─────────────────────────── */
+
+.project-list {
+  list-style: none;
+  padding: 0;
+  margin: 1em 0;
+}
+.project-item {
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+.project-item:first-child { border-top: none; }
+.project-name {
+  font-family: var(--sans);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.project-name a { color: var(--text); text-decoration: none; }
+.project-name a:hover { color: var(--link); text-decoration: underline; }
+.project-desc { margin: 0 0 6px; color: var(--text); }
+.project-meta {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-subtle);
+}
+.project-meta span:not(:last-child)::after { content: " · "; }
+
+/* ─── Project detail ───────────────────────────────────────────────── */
+
+.project-section { margin: 1.6em 0; }
+.project-section h3 {
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-subtle);
+  margin-bottom: 0.4em;
+}
+.project-section p { margin: 0.6em 0; }
+.facts-list {
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+}
+.facts-list li { margin: 4px 0; }
+
+/* ─── Contact ──────────────────────────────────────────────────────── */
+
+.contact-block { padding: 32px 0 80px; }
+.contact-links { font-family: var(--sans); margin-top: 12px; }
+.contact-links a { margin-right: 16px; }
+
+/* ─── Footer ───────────────────────────────────────────────────────── */
+
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 0 48px;
+  margin-top: 32px;
+}
+.footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-subtle);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.footer a { color: var(--text-subtle); }
+
+/* ─── Responsive ───────────────────────────────────────────────────── */
+
+@media (max-width: 540px) {
+  .hero-inner { flex-direction: column; gap: 16px; }
+  .hero-avatar { width: 64px; height: 64px; }
+  .timeline-item { grid-template-columns: 1fr; gap: 4px; }
+  .timeline-date { padding-top: 0; }
+  body { font-size: 16px; }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "terminal",
+  "name": "Terminal",
+  "description": "CLI / hacker aesthetic — monospace, dark Monokai-ish palette, command-style headers. Optimal for SRE, DevOps, and systems / infra engineers.",
+  "version": "1.0.0",
+  "supportedPages": ["home", "about", "projects", "project-detail", "contact"],
+  "audience": ["sre", "devops", "systems", "infra"],
+  "defaultSettings": {
+    "primaryColor": "#a6e22e",
+    "fontFamily": "JetBrains Mono",
+    "showGitHubStats": true,
+    "showTechStack": true
+  }
+}

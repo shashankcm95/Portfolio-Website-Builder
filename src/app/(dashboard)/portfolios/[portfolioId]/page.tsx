@@ -24,6 +24,7 @@ import { PortfolioSettings } from "@/components/portfolio/portfolio-settings";
 import { ChatbotSettings } from "@/components/portfolio/chatbot-settings";
 import { ShareLinksCard } from "@/components/portfolio/share-links-card";
 import { PortfolioAnalytics } from "@/components/portfolio/portfolio-analytics";
+import { LayoutReviewPanel } from "@/components/portfolio/layout-review-panel";
 
 interface Portfolio {
   id: string;
@@ -213,12 +214,14 @@ export default function PortfolioDetailPage() {
           />
         </TabsContent>
 
-        {/* Preview tab */}
-        <TabsContent value="preview">
+        {/* Preview tab — combines Phase 6.1 "Share this preview" shortcut
+            with the Phase 7 LayoutReviewPanel below the iframe. */}
+        <TabsContent value="preview" className="space-y-6">
           <PreviewPanel
             portfolioId={params.portfolioId}
             onShare={() => setActiveTab("settings")}
           />
+          <LayoutReviewPanel portfolioId={params.portfolioId} />
         </TabsContent>
 
         {/* Deploy tab */}
