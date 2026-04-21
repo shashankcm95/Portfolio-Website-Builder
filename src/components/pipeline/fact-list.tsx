@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
   CheckCircle2,
   CircleDot,
   Filter,
+  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { FactEditInline } from "@/components/pipeline/fact-edit-inline";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -31,10 +33,17 @@ interface Fact {
   evidenceRef: string;
   evidenceText: string;
   isVerified: boolean;
+  /** Phase 10 — Track F. True once the owner has edited claim/category/
+   *  confidence via the inline editor. */
+  ownerEdited?: boolean;
 }
 
 interface FactListProps {
   facts: Fact[];
+  /** Phase 10 — Track F. Required for inline editing to wire the PATCH
+   *  endpoint. When either is omitted, the pencil-edit UI is hidden. */
+  portfolioId?: string;
+  projectId?: string;
 }
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -74,29 +83,66 @@ function getConfidenceLevel(confidence: number): {
 
 // ─── Subcomponents ──────────────────────────────────────────────────────────
 
-function FactItem({ fact }: { fact: Fact }) {
+function FactItem({
+  fact,
+  portfolioId,
+  projectId,
+  onSaved,
+}: {
+  fact: Fact;
+  portfolioId?: string;
+  projectId?: string;
+  onSaved?: (next: Fact) => void;
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { label: confidenceLabel, variant: confidenceVariant } =
     getConfidenceLevel(fact.confidence);
 
+  const canEdit = !!portfolioId && !!projectId && !!onSaved;
+
+  if (isEditing && canEdit) {
+    return (
+      <div className="rounded-md border bg-background p-1">
+        <FactEditInline
+          portfolioId={portfolioId!}
+          projectId={projectId!}
+          factId={fact.id}
+          initialClaim={fact.claim}
+          initialCategory={fact.category}
+          initialConfidence={fact.confidence}
+          onSaved={(next) => {
+            onSaved!({ ...fact, ...next });
+            setIsEditing(false);
+          }}
+          onCancel={() => setIsEditing(false)}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-md border bg-background">
-      <button
-        type="button"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-start gap-3 p-3 text-left hover:bg-muted/50 transition-colors"
-      >
-        {/* Expand/collapse icon */}
-        <div className="mt-0.5 shrink-0">
+    <div className="group rounded-md border bg-background">
+      <div className="flex w-full items-start gap-3 p-3 text-left">
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-label={isExpanded ? "Collapse fact" : "Expand fact"}
+          className="mt-0.5 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+        >
           {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4" />
           ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4" />
           )}
-        </div>
+        </button>
 
         {/* Claim text */}
-        <div className="flex-1 min-w-0">
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex-1 min-w-0 text-left"
+        >
           <p className="text-sm">{fact.claim}</p>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <Badge variant={confidenceVariant} className="text-[10px]">
@@ -111,9 +157,30 @@ function FactItem({ fact }: { fact: Fact }) {
                 Verified
               </span>
             )}
+            {fact.ownerEdited && (
+              <span
+                className="inline-flex items-center gap-0.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-1.5 py-0.5 text-[10px] text-blue-700 dark:text-blue-300"
+                data-testid="fact-owner-edited-chip"
+              >
+                edited by owner
+              </span>
+            )}
           </div>
-        </div>
-      </button>
+        </button>
+
+        {/* Pencil edit icon (visible on hover when editing is wired up) */}
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            aria-label="Edit fact"
+            data-testid={`fact-edit-${fact.id}`}
+            className="mt-0.5 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 focus:opacity-100"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
 
       {/* Collapsible evidence section */}
       {isExpanded && (
@@ -152,9 +219,15 @@ function FactItem({ fact }: { fact: Fact }) {
 function CategoryGroup({
   category,
   facts,
+  portfolioId,
+  projectId,
+  onFactSaved,
 }: {
   category: string;
   facts: Fact[];
+  portfolioId?: string;
+  projectId?: string;
+  onFactSaved?: (next: Fact) => void;
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const label = CATEGORY_LABELS[category] ?? category;
@@ -180,7 +253,13 @@ function CategoryGroup({
       {!isCollapsed && (
         <div className="ml-2 space-y-2 pb-2">
           {facts.map((fact) => (
-            <FactItem key={fact.id} fact={fact} />
+            <FactItem
+              key={fact.id}
+              fact={fact}
+              portfolioId={portfolioId}
+              projectId={projectId}
+              onSaved={onFactSaved}
+            />
           ))}
         </div>
       )}
@@ -190,20 +269,33 @@ function CategoryGroup({
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function FactList({ facts }: FactListProps) {
+export function FactList({ facts, portfolioId, projectId }: FactListProps) {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  // Phase 10 — Track F. Mirror props into local state so inline edits can
+  // patch a single row without round-tripping through the server. Keep
+  // in sync when the parent replaces the list wholesale.
+  const [localFacts, setLocalFacts] = useState<Fact[]>(facts);
+  useEffect(() => {
+    setLocalFacts(facts);
+  }, [facts]);
 
   // Group facts by category
   const grouped = useMemo(() => {
     const groups: Record<string, Fact[]> = {};
-    for (const fact of facts) {
+    for (const fact of localFacts) {
       if (!groups[fact.category]) {
         groups[fact.category] = [];
       }
       groups[fact.category].push(fact);
     }
     return groups;
-  }, [facts]);
+  }, [localFacts]);
+
+  const handleFactSaved = (next: Fact) => {
+    setLocalFacts((prev) =>
+      prev.map((f) => (f.id === next.id ? { ...f, ...next } : f))
+    );
+  };
 
   // Available categories (sorted by defined order, then alphabetical)
   const categories = useMemo(() => {
@@ -223,7 +315,7 @@ export function FactList({ facts }: FactListProps) {
     ? categories.filter((c) => c === activeFilter)
     : categories;
 
-  if (facts.length === 0) {
+  if (localFacts.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -251,7 +343,7 @@ export function FactList({ facts }: FactListProps) {
           <div>
             <CardTitle className="text-lg">Extracted Facts</CardTitle>
             <CardDescription>
-              {facts.length} facts extracted across {categories.length}{" "}
+              {localFacts.length} facts extracted across {categories.length}{" "}
               categories
             </CardDescription>
           </div>
@@ -267,7 +359,7 @@ export function FactList({ facts }: FactListProps) {
             size="sm"
             onClick={() => setActiveFilter(null)}
           >
-            All ({facts.length})
+            All ({localFacts.length})
           </Button>
           {categories.map((cat) => (
             <Button
@@ -292,6 +384,9 @@ export function FactList({ facts }: FactListProps) {
               key={category}
               category={category}
               facts={grouped[category]}
+              portfolioId={portfolioId}
+              projectId={projectId}
+              onFactSaved={handleFactSaved}
             />
           ))}
         </div>

@@ -4,6 +4,7 @@ import {
   getContextGenerationSystemPrompt,
   buildContextGenerationUserPrompt,
 } from "@/lib/ai/prompts/context-generation";
+import { throwIfAborted } from "@/lib/pipeline/abort";
 
 /**
  * Maps common npm packages to their categories for rule-based tech stack detection.
@@ -187,8 +188,10 @@ export interface ContextGenerateInput {
  */
 export async function generateContextPack(
   input: ContextGenerateInput,
-  llm: LlmClient
+  llm: LlmClient,
+  signal?: AbortSignal
 ): Promise<ContextPack> {
+  throwIfAborted(signal);
   // Step 1: Rule-based tech stack detection from dependencies
   const detectedLanguages = detectLanguagesFromFileTree(input.fileTree);
   let ruleBasedStack = { frameworks: [] as string[], libraries: [] as string[], tools: [] as string[] };

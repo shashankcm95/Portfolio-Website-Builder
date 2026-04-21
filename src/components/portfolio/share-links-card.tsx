@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
+  AlertTriangle,
   Check,
   CheckCircle2,
   Copy,
@@ -184,9 +185,16 @@ export function ShareLinksCard({ portfolioId }: ShareLinksCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {/* Phase 7 — detect a localhost-ish origin and surface a
+            warning so the owner understands why the link won't
+            resolve from any other device. */}
+        <LocalhostWarning />
+
         {/* Create */}
         <div className="space-y-3 rounded-md border bg-muted/20 p-3">
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+          {/* Phase 10 — Track H: stack vertically on narrow viewports
+              so the expiry select doesn't crowd the label input. */}
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_auto]">
             <div className="space-y-1">
               <Label htmlFor="share-link-label" className="text-xs">
                 Label (optional)
@@ -421,5 +429,57 @@ function StatusBadge({
     >
       {children}
     </span>
+  );
+}
+
+/**
+ * Phase 7 — When the app is running on a localhost-ish origin, share
+ * links are only reachable from the owner's own machine. Flag this
+ * early so the owner doesn't copy a link to Slack and get confused
+ * replies. Runs client-side only; SSR returns null so we don't flash
+ * a false positive before hydration.
+ */
+function LocalhostWarning() {
+  const [origin, setOrigin] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
+  }, []);
+  if (!origin) return null;
+  const isLocal =
+    /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:\d+)?$/.test(
+      origin
+    ) || origin.endsWith(".local") || origin.includes("localhost");
+  if (!isLocal) return null;
+  return (
+    <div
+      role="status"
+      className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200"
+      data-testid="share-localhost-warning"
+    >
+      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <div className="space-y-1">
+        <p className="font-medium">Links point at {origin}</p>
+        <p>
+          That URL only resolves on this machine. To share with others:
+        </p>
+        <ul className="ml-4 list-disc space-y-0.5">
+          <li>
+            <span className="font-medium">Quick tunnel</span> (dev):
+            run <code className="rounded bg-amber-500/20 px-1">cloudflared tunnel --url http://localhost:3000</code>, then set{" "}
+            <code className="rounded bg-amber-500/20 px-1">NEXT_PUBLIC_APP_URL</code>{" "}
+            to the tunnel URL and restart.
+          </li>
+          <li>
+            <span className="font-medium">Real fix</span>: deploy the
+            builder app somewhere public (Vercel, Fly, Railway,
+            self-host) and point{" "}
+            <code className="rounded bg-amber-500/20 px-1">NEXT_PUBLIC_APP_URL</code>{" "}
+            at that hostname. Every new share link will use it.
+          </li>
+        </ul>
+      </div>
+    </div>
   );
 }

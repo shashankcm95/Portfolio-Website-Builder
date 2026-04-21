@@ -76,6 +76,20 @@ export default async function DashboardPage() {
 
   const userName = session.user.name?.split(" ")[0] ?? "";
 
+  // Phase 10 — Track H. Post-OAuth welcome toast: first visit only, when
+  // the user has no portfolios yet and we know their GitHub login.
+  // Emitted via a tiny inline script so we don't need a client component
+  // wrapper. sessionStorage makes it idempotent. GitHub usernames are
+  // [A-Za-z0-9-]; anything non-matching is rejected so we never inject
+  // arbitrary text into inline JS.
+  const githubUsername = (session.user as { githubUsername?: string })
+    .githubUsername;
+  const safeGithubUsername =
+    typeof githubUsername === "string" &&
+    /^[A-Za-z0-9-]{1,39}$/.test(githubUsername)
+      ? githubUsername
+      : null;
+
   // Onboarding: hide the checklist once the user has deployed at least once —
   // by then they've completed all three steps and don't need training wheels.
   const hasResume = !!userRow[0]?.resumeJson;
@@ -84,8 +98,38 @@ export default async function DashboardPage() {
   const hasDeployment = (deploymentRows[0]?.count ?? 0) > 0;
   const showOnboarding = !hasDeployment;
 
+  const showFirstVisitToast = !hasPortfolio && safeGithubUsername !== null;
+  const firstVisitToastScript = showFirstVisitToast
+    ? `
+      (function() {
+        try {
+          if (sessionStorage.getItem("pw-first-visit-toast-shown")) return;
+          sessionStorage.setItem("pw-first-visit-toast-shown", "1");
+          var el = document.createElement("div");
+          el.setAttribute("role", "status");
+          el.setAttribute("data-testid", "first-visit-toast");
+          el.style.cssText =
+            "position:fixed;bottom:20px;right:20px;z-index:9999;" +
+            "background:#0f172a;color:#f8fafc;padding:12px 16px;" +
+            "border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.2);" +
+            "max-width:360px;line-height:1.4;";
+          el.textContent = "Signed in as @${safeGithubUsername} — Create your first portfolio";
+          document.body.appendChild(el);
+          setTimeout(function() { el.style.opacity = "0"; el.style.transition = "opacity .3s"; }, 5000);
+          setTimeout(function() { el.remove(); }, 5400);
+        } catch (e) { /* sessionStorage may be blocked */ }
+      })();
+    `.trim()
+    : null;
+
   return (
     <div className="space-y-8">
+      {firstVisitToastScript && (
+        <script
+          // Idempotent: sessionStorage guard prevents repeated firings.
+          dangerouslySetInnerHTML={{ __html: firstVisitToastScript }}
+        />
+      )}
       {/* Welcome section */}
       <PageHeader
         title={`Welcome back${userName ? `, ${userName}` : ""}`}

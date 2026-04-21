@@ -19,6 +19,7 @@ import type {
   CredibilitySignals,
   StoredCredibilitySignals,
 } from "@/lib/credibility/types";
+import { throwIfAborted, PipelineAbortError } from "@/lib/pipeline/abort";
 
 const MAX_CLAIMS_PER_CARD = 3;
 const MAX_DEP_NAMES = 100;
@@ -43,9 +44,11 @@ export async function runStoryboardGenerate(
    * The orchestrator passes an already-resolved instance to avoid
    * refetching the user row for every pipeline step.
    */
-  llmClient?: LlmClient
+  llmClient?: LlmClient,
+  signal?: AbortSignal
 ): Promise<StoryboardGenerateResult> {
   try {
+    throwIfAborted(signal);
     const llm = llmClient ?? (await getLlmClientForProject(projectId));
 
     // ─── Load inputs (one round-trip each via Promise.all) ───
@@ -183,6 +186,9 @@ export async function runStoryboardGenerate(
 
     return { ok: true, payload: verifiedPayload };
   } catch (e) {
+    // Phase 10 — re-throw cancellation so the orchestrator handles it
+    // as an abort instead of a non-fatal step failure.
+    if (e instanceof PipelineAbortError) throw e;
     return {
       ok: false,
       error: `Unexpected error: ${e instanceof Error ? e.message : String(e)}`,

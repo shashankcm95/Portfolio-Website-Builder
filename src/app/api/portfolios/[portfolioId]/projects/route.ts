@@ -9,6 +9,162 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, asc, inArray } from "drizzle-orm";
 import type { DemoType, ProjectDemo } from "@/lib/demos/types";
+import { RepoFetcher } from "@/lib/github/repo-fetcher";
+import { getAuthenticatedGitHubClient } from "@/lib/github/authenticated-client";
+import { CredibilityFetcher } from "@/lib/github/credibility-fetcher";
+import { extractVerifiedStack } from "@/lib/github/stack-detector";
+
+// ─── importSingleRepo (Phase 10 Track A) ────────────────────────────────────
+//
+// Extracted from the original single-repo POST body so the new batch
+// endpoint (`.../projects/import`) can reuse the exact same insert logic.
+// Behavior-preserving end-to-end — credibility fetch + Phase-8 category
+// classification + verified-stack extraction + repoSources bulk-insert
+// all match the pre-refactor version byte-for-byte.
+
+export interface ImportSingleRepoOptions {
+  /** The user issuing the import — used for the authenticated GitHub client. */
+  userId: string;
+  /** Owner's GitHub login — enables the Phase-8 category classifier. */
+  userGithubLogin?: string | null;
+  /**
+   * Pre-computed displayOrder for the new row. When omitted, the helper
+   * queries for the current max within the portfolio. The batch path
+   * always passes an explicit order so it can assign sequential slots
+   * per-repo without N round-trips.
+   */
+  displayOrder?: number;
+}
+
+export interface ImportSingleRepoResult {
+  project: { id: string; repoName: string | null } & Record<string, unknown>;
+  repoMetadata: { name: string; fullName: string };
+}
+
+export async function importSingleRepo(
+  portfolioId: string,
+  owner: string,
+  repo: string,
+  opts: ImportSingleRepoOptions
+): Promise<ImportSingleRepoResult> {
+  const client = await getAuthenticatedGitHubClient(opts.userId);
+  const fetcher = new RepoFetcher(client);
+  const repoData = await fetcher.fetchRepoData(owner, repo);
+
+  // Phase 1: Credibility signals — never fatal. Phase 8: also classifies
+  // the repo (personal_learning / personal_tool / oss_author /
+  // oss_contributor / unspecified) so the coaching UI + portfolio byline
+  // pick up the right category on first load.
+  let credibilitySignals: unknown = null;
+  let credibilityFetchedAt: Date | null = null;
+  let initialCategory: string = "unspecified";
+  try {
+    const credFetcher = new CredibilityFetcher(client);
+    const bundle = await credFetcher.fetchAll(
+      owner,
+      repo,
+      repoData.metadata,
+      repoData.dependencies,
+      {
+        userGithubLogin: opts.userGithubLogin ?? null,
+      }
+    );
+    credibilitySignals = bundle;
+    credibilityFetchedAt = new Date();
+    initialCategory =
+      bundle.authorshipSignal?.status === "ok"
+        ? bundle.authorshipSignal.presentation?.category ?? "unspecified"
+        : "unspecified";
+  } catch (credError) {
+    console.warn("Credibility fetch failed (non-fatal):", credError);
+  }
+
+  const verifiedStack = extractVerifiedStack(repoData.dependencies);
+
+  let displayOrder = opts.displayOrder;
+  if (displayOrder === undefined) {
+    const existingProjects = await db
+      .select({ displayOrder: projects.displayOrder })
+      .from(projects)
+      .where(eq(projects.portfolioId, portfolioId));
+    const maxOrder = existingProjects.reduce(
+      (max, p) => Math.max(max, p.displayOrder ?? 0),
+      -1
+    );
+    displayOrder = maxOrder + 1;
+  }
+
+  const [project] = await db
+    .insert(projects)
+    .values({
+      portfolioId,
+      sourceType: "github",
+      repoUrl: repoData.metadata.htmlUrl,
+      repoOwner: owner,
+      repoName: repo,
+      displayName: repoData.metadata.name,
+      displayOrder,
+      repoMetadata: repoData.metadata as any,
+      techStack: verifiedStack,
+      credibilitySignals: credibilitySignals as any,
+      credibilityFetchedAt,
+      // Phase 8 — persist the classifier result so the coaching UI has
+      // something to read without re-classifying on every page load.
+      projectCategory: initialCategory,
+      projectCategorySource: "auto",
+      // Default the portfolio-characterization toggle on for flattering
+      // categories; leave it off for `personal_learning` and
+      // `oss_contributor` where the byline may read less favorably.
+      showCharacterizationOnPortfolio:
+        initialCategory === "personal_tool" ||
+        initialCategory === "oss_author",
+    })
+    .returning();
+
+  const sources: Array<{
+    projectId: string;
+    sourceType: string;
+    content: string;
+  }> = [];
+
+  if (repoData.readme) {
+    sources.push({
+      projectId: project.id,
+      sourceType: "readme",
+      content: repoData.readme.substring(0, 50000),
+    });
+  }
+
+  if (repoData.fileTree.length > 0) {
+    sources.push({
+      projectId: project.id,
+      sourceType: "file_tree",
+      content: JSON.stringify(repoData.fileTree.slice(0, 1000)),
+    });
+  }
+
+  for (const dep of repoData.dependencies) {
+    sources.push({
+      projectId: project.id,
+      sourceType: dep.type,
+      content: dep.content.substring(0, 50000),
+    });
+  }
+
+  if (sources.length > 0) {
+    await db.insert(repoSources).values(sources);
+  }
+
+  return {
+    project: project as ImportSingleRepoResult["project"],
+    repoMetadata: {
+      name: repoData.metadata.name,
+      fullName: repoData.metadata.fullName,
+    },
+  };
+}
+
+// ─── Handlers ───────────────────────────────────────────────────────────────
 
 export async function GET(
   _req: NextRequest,
@@ -19,7 +175,6 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify portfolio ownership
   const [portfolio] = await db
     .select()
     .from(portfolios)
@@ -153,7 +308,6 @@ export async function POST(
           externalUrl: externalUrl?.trim() || null,
           techStack: Array.isArray(techStack) ? techStack : [],
           displayOrder: maxOrder + 1,
-          // No GitHub metadata for manual projects
           pipelineStatus: "complete", // nothing to analyze, mark ready
         })
         .returning();
@@ -161,7 +315,7 @@ export async function POST(
       return NextResponse.json({ project }, { status: 201 });
     }
 
-    // ─── GitHub project (existing flow) ─────────────────────────────────
+    // ─── GitHub project (delegated to importSingleRepo helper) ──────────
     const { repoUrl } = body as { repoUrl?: string };
     if (!repoUrl) {
       return NextResponse.json(
@@ -172,7 +326,6 @@ export async function POST(
 
     const { parseGitHubUrl } = await import("@/lib/github/url-parser");
     const parsed = parseGitHubUrl(repoUrl);
-
     if (!parsed) {
       return NextResponse.json(
         { error: "Invalid GitHub repository URL" },
@@ -180,93 +333,21 @@ export async function POST(
       );
     }
 
-    const { RepoFetcher } = await import("@/lib/github/repo-fetcher");
-    const { getAuthenticatedGitHubClient } = await import(
-      "@/lib/github/authenticated-client"
-    );
-    const { CredibilityFetcher } = await import(
-      "@/lib/github/credibility-fetcher"
-    );
-    const { extractVerifiedStack } = await import(
-      "@/lib/github/stack-detector"
-    );
-
-    const client = await getAuthenticatedGitHubClient(session.user.id);
-    const fetcher = new RepoFetcher(client);
-    const repoData = await fetcher.fetchRepoData(parsed.owner, parsed.repo);
-
-    // Phase 1: fetch credibility signals alongside the project. Never blocks
-    // the project insert — on failure we store null and let the user refresh.
-    let credibilitySignals: unknown = null;
-    let credibilityFetchedAt: Date | null = null;
-    try {
-      const credFetcher = new CredibilityFetcher(client);
-      credibilitySignals = await credFetcher.fetchAll(
-        parsed.owner,
-        parsed.repo,
-        repoData.metadata,
-        repoData.dependencies
-      );
-      credibilityFetchedAt = new Date();
-    } catch (credError) {
-      console.warn(
-        "Credibility fetch failed (non-fatal):",
-        credError
-      );
-    }
-
-    // Populate techStack from detected deps — distinct from user-declared
-    // tech; "verified" in the sense that it comes from the repo itself.
-    const verifiedStack = extractVerifiedStack(repoData.dependencies);
-
-    const [project] = await db
-      .insert(projects)
-      .values({
-        portfolioId: params.portfolioId,
-        sourceType: "github",
-        repoUrl,
-        repoOwner: parsed.owner,
-        repoName: parsed.repo,
-        displayName: repoData.metadata.name,
+    const result = await importSingleRepo(
+      params.portfolioId,
+      parsed.owner,
+      parsed.repo,
+      {
+        userId: session.user.id,
+        userGithubLogin: (session.user as any).githubUsername ?? null,
         displayOrder: maxOrder + 1,
-        repoMetadata: repoData.metadata as any,
-        techStack: verifiedStack,
-        credibilitySignals: credibilitySignals as any,
-        credibilityFetchedAt,
-      })
-      .returning();
+      }
+    );
 
-    const sources = [];
-
-    if (repoData.readme) {
-      sources.push({
-        projectId: project.id,
-        sourceType: "readme",
-        content: repoData.readme.substring(0, 50000),
-      });
-    }
-
-    if (repoData.fileTree.length > 0) {
-      sources.push({
-        projectId: project.id,
-        sourceType: "file_tree",
-        content: JSON.stringify(repoData.fileTree.slice(0, 1000)),
-      });
-    }
-
-    for (const dep of repoData.dependencies) {
-      sources.push({
-        projectId: project.id,
-        sourceType: dep.type,
-        content: dep.content.substring(0, 50000),
-      });
-    }
-
-    if (sources.length > 0) {
-      await db.insert(repoSources).values(sources);
-    }
-
-    return NextResponse.json({ project, repoData: repoData.metadata }, { status: 201 });
+    return NextResponse.json(
+      { project: result.project, repoData: result.repoMetadata },
+      { status: 201 }
+    );
   } catch (error: unknown) {
     console.error("Project creation error:", error);
     return NextResponse.json(

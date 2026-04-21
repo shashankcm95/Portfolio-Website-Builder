@@ -7,6 +7,7 @@ import {
   getResumeStructuringSystemPrompt,
   buildResumeStructuringUserPrompt,
 } from "@/lib/ai/prompts/resume-structuring";
+import { throwIfAborted } from "@/lib/pipeline/abort";
 
 /**
  * Sends raw resume text to the caller-supplied LLM for structured extraction.
@@ -15,8 +16,10 @@ import {
  */
 export async function structureResume(
   rawText: string,
-  llm: LlmClient
+  llm: LlmClient,
+  signal?: AbortSignal
 ): Promise<StructuredResume> {
+  throwIfAborted(signal);
   const systemPrompt = getResumeStructuringSystemPrompt();
   const userPrompt = buildResumeStructuringUserPrompt(rawText);
 

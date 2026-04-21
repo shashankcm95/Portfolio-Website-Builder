@@ -24,6 +24,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { NextStepBanner } from "@/components/ui/next-step-banner";
+import { CancelPipelineButton } from "@/components/pipeline/cancel-pipeline-button";
+import { FileText, Upload } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -45,12 +47,20 @@ interface PipelineStateResponse {
   startedAt: string;
   completedAt?: string;
   error?: string;
+  pipelineStatus?: string;
+  pipelineError?: string | null;
 }
 
 interface PipelineStatusProps {
   portfolioId: string;
   projectId: string;
   initialStatus?: string;
+  /**
+   * Phase 10, Track H — wire the "Re-upload" button in the targeted
+   * resume-parse failure state to the parent's existing file input.
+   * When absent, the button is rendered disabled with a tooltip.
+   */
+  onReuploadResume?: () => void;
 }
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -105,6 +115,7 @@ export function PipelineStatus({
   portfolioId,
   projectId,
   initialStatus,
+  onReuploadResume,
 }: PipelineStatusProps) {
   const [pipelineState, setPipelineState] =
     useState<PipelineStateResponse | null>(null);
@@ -314,22 +325,88 @@ export function PipelineStatus({
         )}
 
         {/* Error display */}
-        {(startError || (isFailed && pipelineState?.error)) && (
-          <>
-            <Separator />
-            <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-red-800 dark:text-red-300">
-                  Pipeline Error
-                </p>
-                <p className="mt-0.5 text-xs text-red-700 dark:text-red-400 break-words">
-                  {startError ?? pipelineState?.error}
-                </p>
-              </div>
-            </div>
-          </>
-        )}
+        {(() => {
+          // Phase 10, Track H — targeted empty-state for resume parse/structure
+          // failures. Matches the `pipelineError` prefix the orchestrator
+          // stamps (e.g. `resume_parse: ...`, `resume_structure: ...`) *or*
+          // a step-level error on the `resume_parse` / `resume_structure`
+          // step. Bumps the user straight to a re-upload action instead of
+          // showing the raw exception text.
+          const resumeErrorRe = /^resume_(parse|structure)/i;
+          const rawError = startError ?? pipelineState?.error;
+          const failedStepIsResume = steps.some(
+            (s) =>
+              s.status === "failed" &&
+              (s.name === "resume_parse" || s.name === "resume_structure")
+          );
+          const isResumeError =
+            !startError &&
+            isFailed &&
+            ((typeof rawError === "string" && resumeErrorRe.test(rawError)) ||
+              failedStepIsResume);
+
+          if (isResumeError) {
+            return (
+              <>
+                <Separator />
+                <div className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+                  <FileText className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                      We couldn&apos;t read your resume.
+                    </p>
+                    <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+                      Supported formats: PDF, DOCX, TXT.
+                    </p>
+                    <div className="mt-3">
+                      {onReuploadResume ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={onReuploadResume}
+                        >
+                          <Upload className="mr-1.5 h-3.5 w-3.5" />
+                          Re-upload
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled
+                          title="Use the resume input above."
+                        >
+                          <Upload className="mr-1.5 h-3.5 w-3.5" />
+                          Re-upload
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+          }
+
+          if (startError || (isFailed && pipelineState?.error)) {
+            return (
+              <>
+                <Separator />
+                <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                      Pipeline Error
+                    </p>
+                    <p className="mt-0.5 text-xs text-red-700 dark:text-red-400 break-words">
+                      {startError ?? pipelineState?.error}
+                    </p>
+                  </div>
+                </div>
+              </>
+            );
+          }
+
+          return null;
+        })()}
       </CardContent>
 
       <CardFooter className="gap-2">
@@ -346,9 +423,16 @@ export function PipelineStatus({
           </Button>
         )}
         {isRunning && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Processing...
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Processing...
+            </div>
+            <CancelPipelineButton
+              portfolioId={portfolioId}
+              projectId={projectId}
+              onCancelled={fetchStatus}
+            />
           </div>
         )}
         {isCompleted && (

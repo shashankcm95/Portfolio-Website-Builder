@@ -64,6 +64,48 @@ interface GitHubRepoResponse {
   homepage: string | null;
 }
 
+/**
+ * GitHub REST API shape for an entry in GET /users/:login/repos.
+ * Subset of the full repo response — only the fields we surface in the
+ * bulk-import picker.
+ */
+interface GitHubUserRepoResponse {
+  name: string;
+  owner: { login: string } | null;
+  description: string | null;
+  language: string | null;
+  stargazers_count: number;
+  forks_count: number;
+  updated_at: string;
+  pushed_at: string | null;
+  html_url: string;
+  fork: boolean;
+  archived: boolean;
+}
+
+/**
+ * Clean, UI-facing shape for a listed user repo. Returned by
+ * {@link listUserRepos}; consumed by the picker API route and tests.
+ */
+export interface UserRepoSummary {
+  owner: string;
+  name: string;
+  fullName: string;
+  description: string | null;
+  language: string | null;
+  stars: number;
+  forks: number;
+  updatedAt: string;
+  htmlUrl: string;
+  isFork: boolean;
+  isArchived: boolean;
+}
+
+export interface ListUserReposOptions {
+  /** Cap on returned rows. GitHub max is 100 per page and we don't paginate. */
+  perPage?: number;
+}
+
 /** GitHub REST API shape for a single entry inside a Git tree. */
 interface GitHubTreeItem {
   path: string;
@@ -237,4 +279,46 @@ export class RepoFetcher {
       )
       .map((r) => r.value);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Standalone: list a user's public repos (bulk-import picker)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch up to 100 of `login`'s public repositories, sorted by `pushed`
+ * descending. Uses the provided client so rate-limit accounting and auth
+ * tokens are threaded through consistently with {@link RepoFetcher}.
+ *
+ * Implemented as a free function (not a method) because the bulk-import
+ * route already has a {@link GitHubClient} and doesn't need the full
+ * per-repo {@link RepoFetcher} surface area.
+ */
+export async function listUserRepos(
+  client: GitHubClient,
+  login: string,
+  opts: ListUserReposOptions = {}
+): Promise<UserRepoSummary[]> {
+  const perPage = Math.min(Math.max(opts.perPage ?? 100, 1), 100);
+  const data = await client.get<GitHubUserRepoResponse[]>(
+    `/users/${encodeURIComponent(
+      login
+    )}/repos?per_page=${perPage}&sort=pushed&direction=desc`
+  );
+
+  return data.map((r) => ({
+    owner: r.owner?.login ?? login,
+    name: r.name,
+    fullName: `${r.owner?.login ?? login}/${r.name}`,
+    description: r.description,
+    language: r.language,
+    stars: r.stargazers_count ?? 0,
+    forks: r.forks_count ?? 0,
+    // Prefer pushed_at (activity) over updated_at (any metadata change);
+    // fall back to updated_at for very old repos where pushed_at is null.
+    updatedAt: r.pushed_at ?? r.updated_at,
+    htmlUrl: r.html_url,
+    isFork: Boolean(r.fork),
+    isArchived: Boolean(r.archived),
+  }));
 }

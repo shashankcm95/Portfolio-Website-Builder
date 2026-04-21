@@ -8,6 +8,7 @@ import {
   buildClaimVerificationUserPrompt,
 } from "@/lib/ai/prompts/claim-verification";
 import type { Fact } from "@/lib/ai/schemas/facts";
+import { throwIfAborted } from "@/lib/pipeline/abort";
 
 export interface ClaimVerifyInput {
   generatedText: string;
@@ -23,8 +24,10 @@ export interface ClaimVerifyInput {
  */
 export async function verifyClaims(
   input: ClaimVerifyInput,
-  llm: LlmClient
+  llm: LlmClient,
+  signal?: AbortSignal
 ): Promise<VerificationResult> {
+  throwIfAborted(signal);
   const systemPrompt = getClaimVerificationSystemPrompt();
 
   // Build a formatted fact list for the prompt

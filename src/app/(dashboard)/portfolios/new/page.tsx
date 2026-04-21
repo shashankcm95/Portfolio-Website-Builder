@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -26,6 +26,23 @@ interface Template {
   isPremium: boolean | null;
 }
 
+/**
+ * Phase 10, Track C — suggest the smallest integer suffix `n` such that
+ * `<slug>-<n>` is not in the user's existing slug set. Strips any existing
+ * trailing `-\d+` first so repeated retries don't pile up suffixes.
+ */
+function suggestAvailableSlug(
+  slug: string,
+  existing: ReadonlySet<string>
+): string {
+  const base = slug.replace(/-\d+$/, "");
+  for (let n = 2; n < 1000; n++) {
+    const candidate = `${base}-${n}`;
+    if (!existing.has(candidate)) return candidate;
+  }
+  return `${base}-${Date.now()}`;
+}
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -44,6 +61,35 @@ export default function NewPortfolioPage() {
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Phase 10, Track C — slug conflict state.
+  const [slugError, setSlugError] = useState<string | null>(null);
+  const [slugSuggestion, setSlugSuggestion] = useState<string | null>(null);
+  const [existingSlugs, setExistingSlugs] = useState<Set<string>>(new Set());
+  const slugInputRef = useRef<HTMLInputElement>(null);
+
+  // Load the user's existing portfolio slugs so the 409 handler can suggest
+  // a non-colliding alternative without an extra round-trip.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/portfolios");
+        if (!res.ok) return;
+        const { portfolios } = (await res.json()) as {
+          portfolios: Array<{ slug: string }>;
+        };
+        if (cancelled) return;
+        setExistingSlugs(new Set(portfolios.map((p) => p.slug)));
+      } catch {
+        // Non-fatal — worst case we can't pre-check suggestions, but the
+        // server's 409 still fires and we'll compute a best-effort suggestion.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Load available templates
   useEffect(() => {
@@ -85,35 +131,71 @@ export default function NewPortfolioPage() {
     setSlug(slugify(value));
   }, []);
 
-  const handleSubmit = useCallback(async () => {
-    if (!name.trim() || !slug.trim()) {
-      setError("Name and slug are required.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/portfolios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), slug: slug.trim(), templateId }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? `Failed to create portfolio (${res.status})`);
+  const handleSubmit = useCallback(
+    async (overrideSlug?: string) => {
+      const effectiveSlug = (overrideSlug ?? slug).trim();
+      if (!name.trim() || !effectiveSlug) {
+        setError("Name and slug are required.");
+        return;
       }
 
-      const { portfolio } = await res.json();
-      router.push(`/portfolios/${portfolio.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create portfolio");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [name, slug, templateId, router]);
+      setIsSubmitting(true);
+      setError(null);
+      setSlugError(null);
+      setSlugSuggestion(null);
+
+      try {
+        const res = await fetch("/api/portfolios", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            slug: effectiveSlug,
+            templateId,
+          }),
+        });
+
+        if (res.status === 409) {
+          // Phase 10, Track C — slug conflict inline handler. Seed the
+          // "existing slugs" cache with the conflicting slug so repeated
+          // 409s keep producing fresh suggestions.
+          const nextExisting = new Set(existingSlugs);
+          nextExisting.add(effectiveSlug);
+          setExistingSlugs(nextExisting);
+
+          const suggestion = suggestAvailableSlug(effectiveSlug, nextExisting);
+          setSlugError(`"${effectiveSlug}" is already yours`);
+          setSlugSuggestion(suggestion);
+          // Focus the slug input so the user can edit immediately.
+          slugInputRef.current?.focus();
+          return;
+        }
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? `Failed to create portfolio (${res.status})`);
+        }
+
+        const { portfolio } = await res.json();
+        router.push(`/portfolios/${portfolio.id}`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to create portfolio");
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [name, slug, templateId, router, existingSlugs]
+  );
+
+  // Phase 10, Track C — Applying the suggested slug updates state and
+  // immediately re-submits with the new value (state updates are async,
+  // hence the `overrideSlug` arg).
+  const handleUseSuggestion = useCallback(() => {
+    if (!slugSuggestion) return;
+    setSlug(slugSuggestion);
+    setSlugManuallyEdited(true);
+    handleSubmit(slugSuggestion);
+  }, [slugSuggestion, handleSubmit]);
 
   return (
     <div className="space-y-8">
@@ -147,15 +229,36 @@ export default function NewPortfolioPage() {
             <Label htmlFor="slug">URL Slug</Label>
             <Input
               id="slug"
+              ref={slugInputRef}
               placeholder="my-portfolio"
               value={slug}
               onChange={(e) => handleSlugChange(e.target.value)}
               disabled={isSubmitting}
+              aria-invalid={slugError ? true : undefined}
             />
-            <p className="text-xs text-muted-foreground">
-              Your portfolio will be available at: yoursite.com/
-              <span className="font-medium">{slug || "my-portfolio"}</span>
-            </p>
+            {slugError ? (
+              <p className="text-xs text-red-600 dark:text-red-400">
+                <span className="font-mono">{slug}</span> is already yours
+                {slugSuggestion && (
+                  <>
+                    {" "}— try{" "}
+                    <button
+                      type="button"
+                      onClick={handleUseSuggestion}
+                      className="font-mono underline hover:no-underline"
+                    >
+                      {slugSuggestion}
+                    </button>
+                    ?
+                  </>
+                )}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Your portfolio will be available at: yoursite.com/
+                <span className="font-medium">{slug || "my-portfolio"}</span>
+              </p>
+            )}
           </div>
 
           {/* Template Picker */}
@@ -224,7 +327,7 @@ export default function NewPortfolioPage() {
           <Button variant="ghost" asChild>
             <Link href="/portfolios">Cancel</Link>
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || !name.trim()}>
+          <Button onClick={() => handleSubmit()} disabled={isSubmitting || !name.trim()}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

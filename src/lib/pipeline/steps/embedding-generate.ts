@@ -37,6 +37,7 @@ import {
   type ChunkerProjectRow,
   type ChunkerSectionRow,
 } from "@/lib/chatbot/chunker";
+import { throwIfAborted, PipelineAbortError } from "@/lib/pipeline/abort";
 
 export interface EmbeddingGenerateResult {
   ok: boolean;
@@ -50,9 +51,11 @@ export interface EmbeddingGenerateResult {
  * surface as fatal.
  */
 export async function runEmbeddingGenerate(
-  projectId: string
+  projectId: string,
+  signal?: AbortSignal
 ): Promise<EmbeddingGenerateResult> {
   try {
+    throwIfAborted(signal);
     // ── Load project + its portfolio + owner (for the profile chunk) ─────
     const [projectRow] = await db
       .select()
@@ -184,6 +187,9 @@ export async function runEmbeddingGenerate(
 
     return { ok: true, chunkCount: chunks.length };
   } catch (err) {
+    // Phase 10 — re-throw cancellation so the orchestrator treats it as
+    // an abort rather than converting it into a non-fatal step failure.
+    if (err instanceof PipelineAbortError) throw err;
     const message =
       err instanceof Error ? err.message : "Unknown embedding error";
     return { ok: false, chunkCount: 0, error: message };

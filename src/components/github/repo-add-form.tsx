@@ -24,8 +24,11 @@ import {
   GitFork,
   Github,
   FileText,
+  List,
+  Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RepoPicker } from "@/components/github/repo-picker";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -46,6 +49,11 @@ interface RepoValidationResult {
 interface RepoAddFormProps {
   portfolioId: string;
   onProjectAdded?: () => void;
+  /**
+   * Pre-fill the "Browse my repos" username input. Passed down from a
+   * server component that has the session (see `(session.user as any).githubUsername`).
+   */
+  defaultGithubLogin?: string;
 }
 
 type FormStep = "input" | "validating" | "preview" | "adding" | "success" | "error";
@@ -99,7 +107,11 @@ const LANGUAGE_COLORS: Record<string, string> = {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function RepoAddForm({ portfolioId, onProjectAdded }: RepoAddFormProps) {
+export function RepoAddForm({
+  portfolioId,
+  onProjectAdded,
+  defaultGithubLogin,
+}: RepoAddFormProps) {
   const [url, setUrl] = useState("");
   const [step, setStep] = useState<FormStep>("input");
   const [validationResult, setValidationResult] = useState<RepoValidationResult | null>(null);
@@ -235,7 +247,26 @@ export function RepoAddForm({ portfolioId, onProjectAdded }: RepoAddFormProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="github" className="mt-4 space-y-4">
+        <TabsContent value="github" className="mt-4">
+        <Tabs defaultValue="paste" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="paste">
+              <Link2 className="mr-2 h-4 w-4" />
+              Paste URL
+            </TabsTrigger>
+            <TabsTrigger value="browse">
+              <List className="mr-2 h-4 w-4" />
+              Browse my repos
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent
+            value="paste"
+            className="mt-0 space-y-4"
+            /* Keep this pane mounted when switching tabs so the form state
+               (URL, validation result, error) survives the toggle. */
+            forceMount
+          >
         {/* URL Input */}
         <div className="flex gap-2">
           <div className="flex-1">
@@ -397,7 +428,7 @@ export function RepoAddForm({ portfolioId, onProjectAdded }: RepoAddFormProps) {
           </div>
         )}
 
-          {/* GitHub tab footer */}
+          {/* Paste-URL tab footer */}
           <div className="flex justify-between pt-2">
             {step === "preview" && validationResult ? (
               <>
@@ -424,6 +455,16 @@ export function RepoAddForm({ portfolioId, onProjectAdded }: RepoAddFormProps) {
               </Button>
             ) : null}
           </div>
+          </TabsContent>
+
+          <TabsContent value="browse" className="mt-0">
+            <RepoPicker
+              portfolioId={portfolioId}
+              defaultLogin={defaultGithubLogin}
+              onImported={onProjectAdded}
+            />
+          </TabsContent>
+        </Tabs>
         </TabsContent>
 
         <TabsContent value="manual" className="mt-4">

@@ -29,6 +29,7 @@ import {
   recordStepFinish,
 } from "@/lib/pipeline/history";
 import { getLlmClientForProject } from "@/lib/ai/providers/factory";
+import { PipelineAbortError } from "./abort";
 import {
   LlmInvalidKeyError,
   LlmNotConfiguredError,
@@ -101,6 +102,22 @@ const NON_FATAL_STEPS: ReadonlySet<StepName> = new Set([
 
 const pipelineStates = new Map<string, PipelineState>();
 
+/**
+ * Phase 10 — Track AbortControllers for running pipelines so owners can
+ * cancel a long-running analysis. Keyed by projectId. Entries are created
+ * in `startPipeline`, consumed by `cancelPipeline`, and cleaned up on
+ * normal completion / failure.
+ */
+const pipelineAborters = new Map<string, AbortController>();
+
+// ─── Sentinel errors ────────────────────────────────────────────────────────
+
+// `PipelineAbortError` lives in `./abort` so individual step modules can
+// import it without creating a cycle through the orchestrator (which imports
+// every step). Re-exported here so callers outside the pipeline package
+// have a single entrypoint.
+export { PipelineAbortError } from "./abort";
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 /**
@@ -133,6 +150,11 @@ export function startPipeline(
 
   pipelineStates.set(projectId, state);
 
+  // Phase 10 — register an AbortController so `cancelPipeline` can interrupt
+  // this run. Cleared in `runPipeline`'s finally-path + on normal completion.
+  const controller = new AbortController();
+  pipelineAborters.set(projectId, controller);
+
   // Phase 6 — durable job history. Non-fatal if the DB write fails.
   recordJobStart({
     jobId,
@@ -141,9 +163,16 @@ export function startPipeline(
   });
 
   // Run pipeline asynchronously (fire-and-forget)
-  runPipeline(projectId, jobId, options).catch((error) => {
-    console.error(`[orchestrator] Pipeline failed for project ${projectId}:`, error);
-  });
+  runPipeline(projectId, jobId, options, controller.signal)
+    .catch((error) => {
+      console.error(`[orchestrator] Pipeline failed for project ${projectId}:`, error);
+    })
+    .finally(() => {
+      // Ensure the controller map doesn't leak, even on unexpected errors.
+      if (pipelineAborters.get(projectId) === controller) {
+        pipelineAborters.delete(projectId);
+      }
+    });
 
   return jobId;
 }
@@ -156,34 +185,54 @@ export function getStatus(projectId: string): PipelineState | undefined {
 }
 
 /**
- * Cancels a running pipeline for a project.
+ * Phase 10 — Cancels a running pipeline for a project.
+ *
+ * Returns `true` when a running pipeline was found and aborted,
+ * `false` when no pipeline was active for the project (the API route
+ * surfaces this as a 404).
+ *
+ * Mutates in-memory state + writes `pipelineStatus: "cancelled"` /
+ * `pipelineError: "Cancelled by owner"` to the DB. Steps still in
+ * flight may finish their current LLM call; the next step short-
+ * circuits via the `signal` check injected at its entry point.
  */
 export function cancelPipeline(projectId: string): boolean {
+  const controller = pipelineAborters.get(projectId);
   const state = pipelineStates.get(projectId);
-  if (!state) return false;
 
-  state.error = "Cancelled by user";
-  state.completedAt = new Date();
+  if (!controller) return false;
 
-  // Mark current running step as failed
-  const runningStep = state.steps.find((s) => s.status === "running");
-  if (runningStep) {
-    runningStep.status = "failed";
-    runningStep.error = "Cancelled by user";
-    runningStep.completedAt = new Date();
-  }
+  controller.abort();
+  pipelineAborters.delete(projectId);
 
-  // Mark remaining pending steps as skipped
-  for (const step of state.steps) {
-    if (step.status === "pending") {
-      step.status = "skipped";
+  if (state) {
+    state.error = "Cancelled by owner";
+    state.completedAt = new Date();
+
+    const runningStep = state.steps.find((s) => s.status === "running");
+    if (runningStep) {
+      runningStep.status = "failed";
+      runningStep.error = "Cancelled by owner";
+      runningStep.completedAt = new Date();
     }
+
+    for (const step of state.steps) {
+      if (step.status === "pending") {
+        step.status = "skipped";
+      }
+    }
+
+    updateJob(state.jobId, {
+      status: "failed",
+      error: "Cancelled by owner",
+      completedAt: new Date(),
+    });
   }
 
-  updateJob(state.jobId, { status: "failed", error: "Cancelled by user", completedAt: new Date() });
-
-  // Update DB
-  updateProjectStatus(projectId, "cancelled", "Cancelled by user").catch(console.error);
+  // Update DB — fire-and-forget; writes `pipelineStatus = "cancelled"`.
+  updateProjectStatus(projectId, "cancelled", "Cancelled by owner").catch(
+    console.error
+  );
 
   return true;
 }
@@ -200,7 +249,8 @@ async function runPipeline(
     dependenciesRaw?: string;
     dependenciesParsed?: Record<string, string>;
     readme?: string;
-  }
+  },
+  signal?: AbortSignal
 ): Promise<void> {
   const state = pipelineStates.get(projectId);
   if (!state) return;
@@ -252,8 +302,10 @@ async function runPipeline(
   let factExtractionResult: FactExtractionResult | undefined;
 
   for (const stepDef of state.steps) {
-    // Check if pipeline was cancelled
-    if (state.error === "Cancelled by user") {
+    // Phase 10 — short-circuit remaining steps when cancelled. Any in-flight
+    // step will itself throw `PipelineAbortError` on its next `signal`
+    // check, caught by the inner try/catch below.
+    if (signal?.aborted || state.error === "Cancelled by owner") {
       return;
     }
 
@@ -276,7 +328,8 @@ async function runPipeline(
           if (options?.resumeBuffer && options?.resumeMimeType) {
             const result = await parseResume(
               options.resumeBuffer,
-              options.resumeMimeType
+              options.resumeMimeType,
+              signal
             );
             rawResumeText = result.rawText;
 
@@ -302,7 +355,7 @@ async function runPipeline(
 
         case "resume_structure": {
           if (rawResumeText) {
-            const structured = await structureResume(rawResumeText, llm);
+            const structured = await structureResume(rawResumeText, llm, signal);
 
             // Store structured resume in user record
             await storeResumeJson(projectId, structured);
@@ -390,7 +443,7 @@ async function runPipeline(
             readme,
           };
 
-          contextPack = await generateContextPack(input, llm);
+          contextPack = await generateContextPack(input, llm, signal);
 
           // Store context pack as a repo source
           await db.insert(repoSources).values({
@@ -434,7 +487,8 @@ async function runPipeline(
               dependencies: depsRaw,
               resumeContext: rawResumeText,
             },
-            llm
+            llm,
+            signal
           );
 
           extractedFacts = factExtractionResult.facts;
@@ -518,7 +572,8 @@ async function runPipeline(
               facts: extractedFacts,
               contextPack,
             },
-            llm
+            llm,
+            signal
           );
 
           // Store generated sections in DB (upsert so retries are idempotent)
@@ -551,7 +606,7 @@ async function runPipeline(
         }
 
         case "storyboard_generate": {
-          const result = await runStoryboardGenerate(projectId, llm);
+          const result = await runStoryboardGenerate(projectId, llm, signal);
           if (!result.ok) {
             throw new Error(result.error);
           }
@@ -563,7 +618,7 @@ async function runPipeline(
           // if this fails, the rest of the pipeline still completes; the
           // published site's chatbot will simply have no context until the
           // next successful run.
-          const result = await runEmbeddingGenerate(projectId);
+          const result = await runEmbeddingGenerate(projectId, signal);
           if (!result.ok) {
             throw new Error(result.error ?? "embedding_generate failed");
           }
@@ -608,7 +663,8 @@ async function runPipeline(
                 sectionType: section.sectionType,
                 variant: section.variant,
               },
-              llm
+              llm,
+              signal
             );
 
             // Clear stale claim-map rows for this section before re-inserting
@@ -653,6 +709,24 @@ async function runPipeline(
         completedAt: stepDef.completedAt,
       });
     } catch (error) {
+      // Phase 10 — cancellation mid-step: don't overwrite the "cancelled"
+      // DB status with a "failed". Record the step as failed (for history)
+      // then bail out; `cancelPipeline` has already set the top-level
+      // project status.
+      if (error instanceof PipelineAbortError || signal?.aborted) {
+        stepDef.status = "failed";
+        stepDef.error = "Cancelled by owner";
+        stepDef.completedAt = new Date();
+        recordStepFinish({
+          jobId,
+          stepName,
+          status: "failed",
+          completedAt: stepDef.completedAt,
+          error: "Cancelled by owner",
+        });
+        return;
+      }
+
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 

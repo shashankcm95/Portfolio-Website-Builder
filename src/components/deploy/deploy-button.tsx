@@ -12,6 +12,7 @@ import {
   Upload,
   Copy,
   Check,
+  KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +57,37 @@ export function DeployButton({ portfolioId }: DeployButtonProps) {
   const [lastDeployedAt, setLastDeployedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Phase 10, Track B — Cloudflare pre-flight. `null` = still checking,
+  // `true` = env configured, `false` = missing credentials.
+  const [cloudflareConfigured, setCloudflareConfigured] = useState<
+    boolean | null
+  >(null);
+  // When `deployAuthFailed`, the deploy-error message contained "authentication
+  // failed" or "401" — show the same explainer with an extra line hinting
+  // that the credentials themselves may be invalid.
+  const [deployAuthFailed, setDeployAuthFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/deploy/prerequisites`);
+        if (!res.ok) {
+          // Non-fatal: treat an error as "unknown, let the user try".
+          if (!cancelled) setCloudflareConfigured(true);
+          return;
+        }
+        const body = (await res.json()) as { cloudflareConfigured: boolean };
+        if (!cancelled) setCloudflareConfigured(Boolean(body.cloudflareConfigured));
+      } catch {
+        if (!cancelled) setCloudflareConfigured(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Fetch the last successful deployment on mount so the URL persists across
   // page refreshes — previously, the URL was only in local state and vanished.
@@ -142,7 +174,14 @@ export function DeployButton({ portfolioId }: DeployButtonProps) {
       setLastDeployedAt(new Date().toISOString());
       setPhase("done");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Deployment failed");
+      const message = err instanceof Error ? err.message : "Deployment failed";
+      setError(message);
+      // Phase 10, Track B — escalate auth errors to the "connect Cloudflare"
+      // explainer. Matches the two most common 401 shapes surfaced by the
+      // deploy route.
+      if (/authentication failed|\b401\b/i.test(message)) {
+        setDeployAuthFailed(true);
+      }
       setPhase("error");
     }
   }, [portfolioId]);
@@ -209,6 +248,50 @@ export function DeployButton({ portfolioId }: DeployButtonProps) {
             Checking deployment status...
           </div>
         )}
+
+        {/* Phase 10, Track B — Cloudflare connect-your-credentials explainer.
+            Shown when env vars are missing, or when a previous deploy failed
+            auth (credentials set but invalid). Replaces the button until the
+            env is fixed. */}
+        {(cloudflareConfigured === false || deployAuthFailed) &&
+          phase !== "loading" &&
+          phase !== "done" && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+              <div className="mb-2 flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                  Connect your Cloudflare account to deploy
+                </p>
+              </div>
+              <p className="text-xs text-amber-800 dark:text-amber-300">
+                Needs{" "}
+                <code className="rounded bg-amber-100 px-1 py-0.5 text-[11px] dark:bg-amber-900/40">
+                  CLOUDFLARE_ACCOUNT_ID
+                </code>{" "}
+                +{" "}
+                <code className="rounded bg-amber-100 px-1 py-0.5 text-[11px] dark:bg-amber-900/40">
+                  CLOUDFLARE_API_TOKEN
+                </code>{" "}
+                in your{" "}
+                <code className="rounded bg-amber-100 px-1 py-0.5 text-[11px] dark:bg-amber-900/40">
+                  .env.local
+                </code>
+                .
+              </p>
+              {deployAuthFailed && (
+                <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">
+                  Your credentials may be invalid.
+                </p>
+              )}
+              <a
+                href="/README.md#deploying"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-amber-900 underline hover:text-amber-700 dark:text-amber-200"
+              >
+                See docs
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
 
         {/* Persisted live URL (loaded on mount or after successful deploy) */}
         {phase === "done" && liveUrl && (
@@ -286,12 +369,17 @@ export function DeployButton({ portfolioId }: DeployButtonProps) {
       </CardContent>
 
       <CardFooter className="gap-2">
-        {(phase === "idle" || phase === "done") && (
-          <Button onClick={handleDeploy}>
-            <Rocket className="mr-2 h-4 w-4" />
-            {phase === "done" ? "Redeploy" : "Generate & Deploy"}
-          </Button>
-        )}
+        {/* Hide the primary action while the pre-flight says Cloudflare is
+            unconfigured, or while we suspect invalid credentials. The
+            explainer above takes over; user redeploys after fixing env. */}
+        {(phase === "idle" || phase === "done") &&
+          cloudflareConfigured !== false &&
+          !deployAuthFailed && (
+            <Button onClick={handleDeploy}>
+              <Rocket className="mr-2 h-4 w-4" />
+              {phase === "done" ? "Redeploy" : "Generate & Deploy"}
+            </Button>
+          )}
 
         {(phase === "generating" || phase === "deploying") && (
           <Button disabled>
@@ -300,12 +388,14 @@ export function DeployButton({ portfolioId }: DeployButtonProps) {
           </Button>
         )}
 
-        {phase === "error" && (
-          <Button onClick={handleRetry} variant="outline">
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Retry
-          </Button>
-        )}
+        {phase === "error" &&
+          cloudflareConfigured !== false &&
+          !deployAuthFailed && (
+            <Button onClick={handleRetry} variant="outline">
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          )}
       </CardFooter>
     </Card>
   );

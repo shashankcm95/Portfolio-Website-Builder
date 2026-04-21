@@ -8,6 +8,7 @@ import {
   buildFactExtractionUserPrompt,
 } from "@/lib/ai/prompts/fact-extraction";
 import type { ContextPack } from "@/lib/ai/schemas/context-pack";
+import { throwIfAborted } from "@/lib/pipeline/abort";
 
 export interface FactExtractInput {
   contextPack: ContextPack;
@@ -24,8 +25,10 @@ export interface FactExtractInput {
  */
 export async function extractFacts(
   input: FactExtractInput,
-  llm: LlmClient
+  llm: LlmClient,
+  signal?: AbortSignal
 ): Promise<FactExtractionResult> {
+  throwIfAborted(signal);
   const systemPrompt = getFactExtractionSystemPrompt();
   const userPrompt = buildFactExtractionUserPrompt({
     contextPack: JSON.stringify(input.contextPack, null, 2),

@@ -9,6 +9,7 @@ import {
 } from "@/lib/ai/prompts/narrative-generation";
 import type { ContextPack } from "@/lib/ai/schemas/context-pack";
 import type { Fact } from "@/lib/ai/schemas/facts";
+import { throwIfAborted } from "@/lib/pipeline/abort";
 
 export interface NarrativeGenerateInput {
   projectName: string;
@@ -22,8 +23,10 @@ export interface NarrativeGenerateInput {
  */
 export async function generateNarratives(
   input: NarrativeGenerateInput,
-  llm: LlmClient
+  llm: LlmClient,
+  signal?: AbortSignal
 ): Promise<NarrativeResult> {
+  throwIfAborted(signal);
   const systemPrompt = getNarrativeGenerationSystemPrompt();
 
   // Build a formatted fact list for the prompt

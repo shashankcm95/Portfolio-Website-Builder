@@ -1,3 +1,5 @@
+import { throwIfAborted } from "@/lib/pipeline/abort";
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require("pdf-parse") as (
   buffer: Buffer
@@ -23,8 +25,10 @@ export interface ResumeParseResult {
  */
 export async function parseResume(
   fileBuffer: Buffer,
-  mimeType: string
+  mimeType: string,
+  signal?: AbortSignal
 ): Promise<ResumeParseResult> {
+  throwIfAborted(signal);
   if (
     mimeType === "application/pdf" ||
     mimeType === "application/x-pdf"
