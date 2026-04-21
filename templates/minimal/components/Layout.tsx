@@ -1,6 +1,7 @@
 import React from "react";
 import type { ProfileData } from "@/templates/_shared/types";
 import { buildAnalyticsSnippet } from "@/templates/_shared/analytics-snippet";
+import { buildChatbotSnippet } from "@/templates/_shared/chatbot-snippet";
 
 interface LayoutProps {
   profileData: ProfileData;
@@ -129,17 +130,22 @@ export function Layout({
           </div>
         </footer>
 
-        {/* Phase 5 — Visitor chatbot. Only injected when the owner has
-            it enabled, the pipeline produced an embedding corpus, and
-            NEXT_PUBLIC_APP_URL is configured at build time. */}
-        {chatbot?.enabled && chatbot.apiEndpoint && chatbot.portfolioId && (
-          <script
-            src={chatbot.apiEndpoint}
-            data-portfolio-id={chatbot.portfolioId}
-            async
-            defer
-          />
-        )}
+        {/* Phase 5 / 8.5 / 9 — Visitor chatbot. See classic Layout for
+            the full comment. `selfHosted` flips the iframe to same-origin
+            `/chat.html` backed by a Pages Function. */}
+        {chatbot?.enabled &&
+          chatbot.portfolioId &&
+          (chatbot.selfHosted || chatbot.appOrigin) && (
+            <script
+              dangerouslySetInnerHTML={{
+                __html: buildChatbotSnippet({
+                  appOrigin: chatbot.appOrigin,
+                  portfolioId: chatbot.portfolioId,
+                  selfHosted: chatbot.selfHosted,
+                }),
+              }}
+            />
+          )}
 
         {/* Phase 6 — Analytics beacon. Omitted when NEXT_PUBLIC_APP_URL
             isn't configured. */}

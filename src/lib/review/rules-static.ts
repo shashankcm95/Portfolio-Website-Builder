@@ -24,7 +24,9 @@ import type { LayoutIssue } from "./types";
  * Run all static checks across every HTML page in the generator's
  * output map. Skips non-HTML entries (CSS, sitemap.xml, robots.txt).
  */
-export function runStaticChecks(files: Map<string, string>): LayoutIssue[] {
+export function runStaticChecks(
+  files: Map<string, string | Buffer>
+): LayoutIssue[] {
   const issues: LayoutIssue[] = [];
 
   // Collect the full set of valid asset paths (as they'd appear in href)
@@ -44,10 +46,13 @@ export function runStaticChecks(files: Map<string, string>): LayoutIssue[] {
     }
   }
 
-  for (const [filePath, html] of files.entries()) {
+  for (const [filePath, content] of files.entries()) {
     if (!filePath.endsWith(".html")) continue;
+    // Phase 8.5 — binary entries (like baked og.png) are never HTML; the
+    // file-extension filter above already skips them, but guard anyway.
+    if (typeof content !== "string") continue;
     const pageKey = pageKeyFromPath(filePath);
-    issues.push(...runChecksForPage(html, pageKey, validPaths));
+    issues.push(...runChecksForPage(content, pageKey, validPaths));
   }
 
   return issues;

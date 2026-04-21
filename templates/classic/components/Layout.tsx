@@ -1,6 +1,7 @@
 import React from "react";
 import type { ProfileData } from "@/templates/_shared/types";
 import { buildAnalyticsSnippet } from "@/templates/_shared/analytics-snippet";
+import { buildChatbotSnippet } from "@/templates/_shared/chatbot-snippet";
 
 interface LayoutProps {
   profileData: ProfileData;
@@ -134,17 +135,26 @@ export function Layout({
           </div>
         </footer>
 
-        {/* Phase 5 — Visitor chatbot. Only injected when the owner has
-            it enabled, the pipeline produced an embedding corpus, and
-            NEXT_PUBLIC_APP_URL is configured at build time. */}
-        {chatbot?.enabled && chatbot.apiEndpoint && chatbot.portfolioId && (
-          <script
-            src={chatbot.apiEndpoint}
-            data-portfolio-id={chatbot.portfolioId}
-            async
-            defer
-          />
-        )}
+        {/* Phase 5 / 8.5 / 9 — Visitor chatbot. Bootstrap is inlined
+            (Phase 8.5). When `selfHosted` is true (Phase 9), the iframe
+            loads `/chat.html` on this same origin, served alongside a
+            Pages Function at `/api/chat/stream` — fully independent of
+            the builder. When false/omitted, the iframe loads from
+            `{appOrigin}/embed/chatbot/:pid` and self-removes on load
+            failure if the builder is unreachable. */}
+        {chatbot?.enabled &&
+          chatbot.portfolioId &&
+          (chatbot.selfHosted || chatbot.appOrigin) && (
+            <script
+              dangerouslySetInnerHTML={{
+                __html: buildChatbotSnippet({
+                  appOrigin: chatbot.appOrigin,
+                  portfolioId: chatbot.portfolioId,
+                  selfHosted: chatbot.selfHosted,
+                }),
+              }}
+            />
+          )}
 
         {/* Phase 6 — Analytics beacon. Fire-and-forget pageview on load.
             Omitted when NEXT_PUBLIC_APP_URL isn't configured. */}

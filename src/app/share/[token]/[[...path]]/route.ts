@@ -40,13 +40,25 @@ function resolveOutputKey(pathSegments: string[] | undefined): string {
   const parts = (pathSegments ?? []).filter((s) => s.length > 0);
   if (parts.length === 0) return "index.html";
   const joined = parts.join("/");
-  if (joined.endsWith(".css") || joined.endsWith(".js")) return joined;
+  // Phase 8.5 — binary/static assets pass through as-is.
+  if (
+    joined.endsWith(".css") ||
+    joined.endsWith(".js") ||
+    joined.endsWith(".png") ||
+    joined.endsWith(".xml") ||
+    joined.endsWith(".txt")
+  ) {
+    return joined;
+  }
   return `${joined.replace(/\/+$/, "")}/index.html`;
 }
 
 function contentTypeFor(key: string): string {
   if (key.endsWith(".css")) return "text/css; charset=utf-8";
   if (key.endsWith(".js")) return "application/javascript; charset=utf-8";
+  if (key.endsWith(".png")) return "image/png";
+  if (key.endsWith(".xml")) return "application/xml; charset=utf-8";
+  if (key.endsWith(".txt")) return "text/plain; charset=utf-8";
   return "text/html; charset=utf-8";
 }
 
@@ -113,11 +125,25 @@ export async function GET(
 
   const key = resolveOutputKey(params.path);
   const content = files.get(key);
-  if (!content) return notFound();
+  if (content === undefined) return notFound();
 
   bumpViewCount(row.id); // fire-and-forget
 
   const ct = contentTypeFor(key);
+
+  // Phase 8.5 — binary files (baked og.png Buffer) serve raw; HTML gets the
+  // noindex injection; other text files pass through.
+  if (Buffer.isBuffer(content)) {
+    return new Response(content as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        "Content-Type": ct,
+        "X-Share-Preview": "1",
+        "Cache-Control": "private, no-store, max-age=0",
+      },
+    });
+  }
+
   // For HTML, inject a noindex meta directly after <head> as belt-and-
   // suspenders alongside public/robots.txt.
   const body = ct.startsWith("text/html")

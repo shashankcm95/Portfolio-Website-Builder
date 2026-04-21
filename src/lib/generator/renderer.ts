@@ -3,6 +3,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import type { ProfileData, Project } from "@/templates/_shared/types";
 import { generateSitemap, generateRobotsTxt } from "./sitemap";
+import { bakePortfolioOgImage } from "./og-bake";
 
 // Dynamic import for react-dom/server to avoid Next.js webpack restrictions
 async function getRenderer() {
@@ -182,11 +183,19 @@ function resolveTemplateDir(templateId: string): string {
  *   - contact/index.html
  *   - styles/global.css
  */
+/**
+ * Phase 8.5 — the file map now holds either UTF-8 text (HTML/CSS/XML/TXT)
+ * or raw binary (PNG). Consumers must branch on `Buffer.isBuffer(value)`.
+ * The preview / publish call sites both handle both shapes; see
+ * `src/app/api/portfolios/[portfolioId]/preview/route.ts`.
+ */
+export type GeneratedFiles = Map<string, string | Buffer>;
+
 export async function renderTemplate(
   templateId: string,
   profileData: ProfileData
-): Promise<Map<string, string>> {
-  const files = new Map<string, string>();
+): Promise<GeneratedFiles> {
+  const files: GeneratedFiles = new Map();
   const renderToStaticMarkup = await getRenderer();
   const { Layout, HomePage, AboutPage, ProjectsPage, ProjectDetailPage, ContactPage } =
     await getTemplateComponents(templateId);
@@ -243,6 +252,50 @@ export async function renderTemplate(
   // at `/sitemap.xml` and `/robots.txt` respectively.
   files.set("sitemap.xml", generateSitemap(profileData));
   files.set("robots.txt", generateRobotsTxt(profileData));
+
+  // Phase 8.5 — Bake the OG social card into the deploy so social
+  // scrapers fetch it from the same origin as the site. Best-effort: any
+  // Satori / font / ImageResponse failure returns null, we skip the file,
+  // and the template's fallback (`basics.avatar`) takes over in the meta
+  // tag. The builder's `/api/og` route remains for preview/share flows.
+  const ogPng = await bakePortfolioOgImage(profileData);
+  if (ogPng) {
+    files.set("og.png", ogPng);
+  }
+
+  // Phase 9 — When the portfolio has opted into self-hosted chatbot,
+  // the builder bakes `functions/**` + iframe UI + wrangler.toml + the
+  // embeddings corpus into the Pages output. Cloudflare picks up
+  // `functions/` automatically at `wrangler pages deploy` time. If the
+  // bundle fails (e.g. Workers AI not configured), we log + fall back
+  // to the Phase 8.5 cross-origin chatbot: the generated HTML already
+  // handles both shapes gracefully because `profile-data.ts` only sets
+  // `chatbot.selfHosted = true` when this bundle is expected to
+  // succeed.
+  if (profileData.chatbot?.selfHosted) {
+    try {
+      const { buildSelfHostedChatbotFiles } = await import("./chatbot-bundle");
+      const bundle = await buildSelfHostedChatbotFiles({
+        portfolioId: profileData.chatbot.portfolioId,
+        ownerName: profileData.basics.name,
+        // Greeting + starters flow in via ProfileData.chatbot in a future
+        // iteration; for now the bundler reads the DB row directly inside
+        // `buildChatbotBundleIfEnabled`. We call the lower-level
+        // `buildSelfHostedChatbotFiles` here with safe defaults.
+        greeting: null,
+        starters: [],
+      });
+      for (const [path, content] of bundle.files) {
+        files.set(path, content);
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[renderer] Self-hosted chatbot bundle failed; publishing without it.",
+        err instanceof Error ? err.message : err
+      );
+    }
+  }
 
   return files;
 }

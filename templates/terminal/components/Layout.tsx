@@ -1,6 +1,7 @@
 import React from "react";
 import type { ProfileData } from "@/templates/_shared/types";
 import { buildAnalyticsSnippet } from "@/templates/_shared/analytics-snippet";
+import { buildChatbotSnippet } from "@/templates/_shared/chatbot-snippet";
 
 interface LayoutProps {
   profileData: ProfileData;
@@ -109,14 +110,20 @@ export function Layout({
           </div>
         </footer>
 
-        {chatbot?.enabled && chatbot.apiEndpoint && chatbot.portfolioId && (
-          <script
-            src={chatbot.apiEndpoint}
-            data-portfolio-id={chatbot.portfolioId}
-            async
-            defer
-          />
-        )}
+        {/* Phase 5 / 8.5 / 9 — inline chatbot bootstrap; see classic Layout. */}
+        {chatbot?.enabled &&
+          chatbot.portfolioId &&
+          (chatbot.selfHosted || chatbot.appOrigin) && (
+            <script
+              dangerouslySetInnerHTML={{
+                __html: buildChatbotSnippet({
+                  appOrigin: chatbot.appOrigin,
+                  portfolioId: chatbot.portfolioId,
+                  selfHosted: chatbot.selfHosted,
+                }),
+              }}
+            />
+          )}
 
         {meta.analyticsEndpoint && meta.analyticsPortfolioId && (
           <script
