@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   Briefcase,
+  Gauge,
   LayoutDashboard,
   Settings,
   User,
@@ -27,6 +28,12 @@ const navItems = [
     label: "Portfolios",
     href: "/portfolios",
     icon: Briefcase,
+  },
+  // Phase 6 — cross-project pipeline cost + run history.
+  {
+    label: "Pipeline",
+    href: "/pipeline",
+    icon: Gauge,
   },
   {
     label: "Settings",

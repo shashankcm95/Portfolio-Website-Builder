@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   CheckCircle2,
@@ -173,9 +174,15 @@ export default function PipelineDashboardPage() {
             </CardHeader>
             <CardContent>
               {data.jobs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No pipeline runs yet.
-                </p>
+                <div className="space-y-3 py-6 text-center text-sm text-muted-foreground">
+                  <p>
+                    No pipeline runs yet. Add a GitHub repo to one of your
+                    portfolios and analyze it to see cost + timing data here.
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/portfolios">Go to Portfolios</Link>
+                  </Button>
+                </div>
               ) : (
                 <table
                   className="w-full text-sm"

@@ -159,8 +159,22 @@ export function ProjectPipelineTab({
       {jobs && jobs.length === 0 && (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            No pipeline runs for this project yet. Kick one off from the
-            Overview tab.
+            No pipeline runs for this project yet.{" "}
+            {onRetry ? (
+              <>
+                Click{" "}
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  Run pipeline
+                </button>{" "}
+                above to analyze it.
+              </>
+            ) : (
+              <>Open the Details tab to trigger one.</>
+            )}
           </CardContent>
         </Card>
       )}
