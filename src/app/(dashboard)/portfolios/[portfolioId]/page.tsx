@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { Eye, Loader2, ExternalLink, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Eye, Loader2, ExternalLink, Link2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,11 +37,48 @@ interface Portfolio {
   chatbotStarters?: string[];
 }
 
+const TAB_VALUES = [
+  "overview",
+  "projects",
+  "preview",
+  "deploy",
+  "domains",
+  "analytics",
+  "settings",
+] as const;
+type TabValue = (typeof TAB_VALUES)[number];
+
 export default function PortfolioDetailPage() {
   const params = useParams<{ portfolioId: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Phase 6 UX polish — `?tab=<value>` makes deep-links from the
+  // onboarding checklist + share-friendly in-app URLs work. Invalid
+  // values fall through to the default landing tab.
+  const activeTab: TabValue = useMemo(() => {
+    const q = searchParams.get("tab");
+    return (TAB_VALUES as readonly string[]).includes(q ?? "")
+      ? (q as TabValue)
+      : "projects";
+  }, [searchParams]);
+
+  const setActiveTab = useCallback(
+    (next: string) => {
+      const sp = new URLSearchParams(searchParams.toString());
+      if (next === "projects") sp.delete("tab");
+      else sp.set("tab", next);
+      const qs = sp.toString();
+      router.replace(
+        `/portfolios/${params.portfolioId}${qs ? `?${qs}` : ""}`,
+        { scroll: false }
+      );
+    },
+    [params.portfolioId, router, searchParams]
+  );
 
   useEffect(() => {
     async function fetchPortfolio() {
@@ -84,10 +121,30 @@ export default function PortfolioDetailPage() {
       <PageHeader
         title={portfolio.name}
         description={`/${portfolio.slug}`}
-        action={<Badge variant="secondary">{portfolio.status}</Badge>}
+        action={
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{portfolio.status}</Badge>
+            {/* Phase 6 UX — Share is buried in the Settings tab; this
+                header-level shortcut deep-links the owner to the
+                ShareLinksCard in one click. */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab("settings")}
+              data-testid="portfolio-share-shortcut"
+            >
+              <Link2 className="mr-1.5 h-3.5 w-3.5" />
+              Share
+            </Button>
+          </div>
+        }
       />
 
-      <Tabs defaultValue="projects" className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
@@ -158,7 +215,10 @@ export default function PortfolioDetailPage() {
 
         {/* Preview tab */}
         <TabsContent value="preview">
-          <PreviewPanel portfolioId={params.portfolioId} />
+          <PreviewPanel
+            portfolioId={params.portfolioId}
+            onShare={() => setActiveTab("settings")}
+          />
         </TabsContent>
 
         {/* Deploy tab */}
@@ -178,13 +238,17 @@ export default function PortfolioDetailPage() {
 
         {/* Settings tab */}
         <TabsContent value="settings" className="space-y-6">
+          {/* Phase 6 UX — ShareLinksCard leads because the header's
+              Share shortcut lands here; it's the primary action users
+              expect to find on this tab. PortfolioSettings (name /
+              slug / template) is secondary. */}
+          <ShareLinksCard portfolioId={portfolio.id} />
           <PortfolioSettings
             portfolio={portfolio}
             onUpdated={(updated) =>
               setPortfolio((prev) => (prev ? { ...prev, ...updated } : updated as Portfolio))
             }
           />
-          <ShareLinksCard portfolioId={portfolio.id} />
           <ChatbotSettings
             portfolioId={portfolio.id}
             chatbotEnabled={portfolio.chatbotEnabled ?? true}
@@ -213,7 +277,14 @@ export default function PortfolioDetailPage() {
 
 // ─── Preview Panel ──────────────────────────────────────────────────────────
 
-function PreviewPanel({ portfolioId }: { portfolioId: string }) {
+function PreviewPanel({
+  portfolioId,
+  onShare,
+}: {
+  portfolioId: string;
+  /** Phase 6 UX — "Share this preview" jumps to the Settings tab's ShareLinksCard. */
+  onShare?: () => void;
+}) {
   const [showPreview, setShowPreview] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const [currentPage, setCurrentPage] = useState("index");
@@ -283,6 +354,17 @@ function PreviewPanel({ portfolioId }: { portfolioId: string }) {
                   Open
                 </a>
               </Button>
+              {onShare && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onShare}
+                  data-testid="preview-share-shortcut"
+                >
+                  <Link2 className="mr-1.5 h-3.5 w-3.5" />
+                  Share this preview
+                </Button>
+              )}
             </div>
 
             {/* Preview iframe */}
