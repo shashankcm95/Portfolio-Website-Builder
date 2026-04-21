@@ -14,6 +14,7 @@ import {
   resolveExternalUrl,
   scoreAuthorship,
 } from "@/lib/credibility/authorship";
+import { classifyRepoCategory } from "@/lib/credibility/category";
 import {
   CREDIBILITY_SCHEMA_VERSION,
   type CiSignal,
@@ -25,6 +26,8 @@ import {
   type IssuesAndPRsSignal,
   type LanguageSignal,
   type RecencySignal,
+  type RepoCategory,
+  type CategorySource,
   type ReleaseSignal,
   type TestFrameworkSignal,
   type TopicsSignal,
@@ -99,11 +102,34 @@ export class CredibilityFetcher {
    * `dependencies` are the already-parsed dependency files — we derive the
    * test framework and verified stack from them locally.
    */
+  /**
+   * @param options.userGithubLogin - The portfolio owner's GitHub login.
+   *   Used by the Phase 8 classifier to distinguish `oss_author` (your own
+   *   repo) from `oss_contributor` (someone else's). When omitted the
+   *   classifier returns `unspecified` and the presentation falls back to
+   *   the legacy 6-factor rubric.
+   * @param options.overrideCategory - If set, skips the classifier and
+   *   uses this category verbatim. Used when the owner has manually
+   *   overridden the category and a subsequent refresh shouldn't undo
+   *   their choice.
+   * @param options.overrideCategorySource - Stamp on the presentation
+   *   alongside `overrideCategory` (typically `"manual"`).
+   *
+   * The returned bundle always has its authorship signal classified; the
+   * caller reads `bundle.authorshipSignal.presentation.category` to get
+   * the classifier result and should persist it to the `projects.project_category`
+   * column on first fetch.
+   */
   async fetchAll(
     owner: string,
     repo: string,
     metadata: RepoMetadata,
-    dependencies: DependencyFile[]
+    dependencies: DependencyFile[],
+    options?: {
+      userGithubLogin?: string | null;
+      overrideCategory?: RepoCategory;
+      overrideCategorySource?: CategorySource;
+    }
   ): Promise<CredibilitySignals> {
     const limit = pLimit(MAX_INFLIGHT);
 
@@ -185,9 +211,34 @@ export class CredibilityFetcher {
       externalUrl,
     };
 
+    // Phase 8 — classify once the signal bundle is assembled. When the
+    // caller passes an explicit override (the owner picked manually), we
+    // stamp that in; otherwise we auto-classify from signals.
+    const autoCategory = classifyRepoCategory(
+      partial as CredibilitySignals,
+      options?.userGithubLogin ?? null,
+      owner,
+      metadata.stargazersCount ?? null
+    );
+    const category = options?.overrideCategory ?? autoCategory;
+    const categorySource: CategorySource =
+      options?.overrideCategory != null
+        ? options.overrideCategorySource ?? "manual"
+        : "auto";
+
     return {
       ...partial,
-      authorshipSignal: scoreAuthorship(partial as CredibilitySignals),
+      authorshipSignal: scoreAuthorship(partial as CredibilitySignals, {
+        category,
+        categorySource,
+        characterization: {
+          repoOwner: owner,
+          repoName: repo,
+          stars: metadata.stargazersCount ?? null,
+          totalCommits:
+            partial.commits.status === "ok" ? partial.commits.total : null,
+        },
+      }),
     };
   }
 

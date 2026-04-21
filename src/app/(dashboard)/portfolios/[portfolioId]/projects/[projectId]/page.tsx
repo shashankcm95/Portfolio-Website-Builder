@@ -21,13 +21,15 @@ import { PipelineStatus } from "@/components/pipeline/pipeline-status";
 import { FactList } from "@/components/pipeline/fact-list";
 import { NarrativeView } from "@/components/pipeline/narrative-view";
 import { CredibilityBadges } from "@/components/github/credibility-badges";
-import { AuthorshipChip } from "@/components/github/authorship-chip";
-import { ImprovementSuggestions } from "@/components/github/improvement-suggestions";
+import { StrengthenPanel } from "@/components/github/strengthen-panel";
 import { ProjectStoryboard } from "@/components/pipeline/project-storyboard";
 import { StoryboardDisclosure } from "@/components/pipeline/storyboard-disclosure";
 import { ProjectDemo } from "@/components/projects/project-demo";
 import { DemoForm } from "@/components/projects/demo-form";
-import type { StoredCredibilitySignals } from "@/lib/credibility/types";
+import type {
+  RepoCategory,
+  StoredCredibilitySignals,
+} from "@/lib/credibility/types";
 import type { ProjectDemo as ProjectDemoModel } from "@/lib/demos/types";
 
 interface ProjectData {
@@ -44,6 +46,11 @@ interface ProjectData {
   } | null;
   credibilitySignals?: StoredCredibilitySignals | null;
   credibilityFetchedAt?: string | null;
+  // Phase 8 — category + coaching state for the StrengthenPanel
+  projectCategory?: RepoCategory | null;
+  projectCategorySource?: "auto" | "manual" | null;
+  dismissedSuggestions?: string[] | null;
+  showCharacterizationOnPortfolio?: boolean | null;
   demos: ProjectDemoModel[];
   facts: Array<{
     id: string;
@@ -148,45 +155,25 @@ export default function ProjectDetailPage() {
 
         <TabsContent value="details" className="space-y-8">
 
-      {/* Phase 2 — Authorship Signal (verdict + factor breakdown) */}
+      {/* Phase 8 — Strengthen panel replaces the Phase-2 Authorship card +
+       *   its separate "Improve this project's score" section. Presents the
+       *   same underlying signals as a characterization + optional
+       *   strengthening suggestions, with per-item dismissal and a category
+       *   selector. No grade, no "N of 6" framing. */}
       {project.credibilitySignals?.authorshipSignal &&
         project.credibilitySignals.authorshipSignal.status === "ok" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Authorship</CardTitle>
-              <CardDescription>
-                Combined signal indicating whether this repo reflects
-                sustained developer work or a single-burst push.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AuthorshipChip
-                signal={project.credibilitySignals.authorshipSignal}
-              />
-            </CardContent>
-          </Card>
-        )}
-
-      {/* Phase 2 — Improvement suggestions (hidden for green / missing) */}
-      {project.credibilitySignals?.authorshipSignal &&
-        project.credibilitySignals.authorshipSignal.status === "ok" &&
-        project.credibilitySignals.authorshipSignal.verdict !== "sustained" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                Improve this project&apos;s score
-              </CardTitle>
-              <CardDescription>
-                Small, actionable steps to strengthen each non-positive factor.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ImprovementSuggestions
-                signals={project.credibilitySignals}
-                portfolioId={params.portfolioId}
-              />
-            </CardContent>
-          </Card>
+          <StrengthenPanel
+            portfolioId={params.portfolioId}
+            projectId={params.projectId}
+            projectName={project.repoName}
+            signals={project.credibilitySignals}
+            category={project.projectCategory ?? "unspecified"}
+            categorySource={project.projectCategorySource ?? "auto"}
+            dismissedSuggestions={project.dismissedSuggestions ?? []}
+            showCharacterizationOnPortfolio={
+              project.showCharacterizationOnPortfolio ?? false
+            }
+          />
         )}
 
       {/* Phase 1 — Credibility Signals (full layout) */}

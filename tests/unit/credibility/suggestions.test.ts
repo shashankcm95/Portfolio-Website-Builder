@@ -1,4 +1,5 @@
 import {
+  aggregateSuggestions,
   suggestImprovements,
   SUGGESTION_CONTENT,
   type Suggestion,
@@ -184,5 +185,144 @@ describe("suggestImprovements", () => {
     const releases = suggestions.find((s) => s.factorAffected === "releases");
     expect(commitDays?.impact).toBe("negative-to-neutral");
     expect(releases?.impact).toBe("negative-to-positive");
+  });
+
+  // ─── Phase 8 — category + dismissal filters ────────────────────────────
+
+  it("filters out suggestions not applicable to the category", () => {
+    // A "weak" bundle would normally emit all 6 suggestions; under
+    // personal_learning, only `commit-messages-descriptive` should remain.
+    const signals = baseSignals({
+      commitActivity: { status: "ok", activeDayCount: 1, totalWeeks: 52 },
+      commitMessages: {
+        status: "ok",
+        total: 1,
+        meaningfulCount: 0,
+        sample: ["wip"],
+      },
+      releases: { status: "missing" },
+      externalUrl: null,
+      recency: {
+        status: "ok",
+        createdAt: isoDaysAgo(3),
+        lastPushedAt: isoDaysAgo(1),
+      },
+    });
+    const learning = suggestImprovements(signals, {
+      category: "personal_learning",
+    });
+    expect(learning.map((s) => s.id)).toEqual([
+      "commit-messages-descriptive",
+    ]);
+  });
+
+  it("removes dismissed suggestion ids", () => {
+    const signals = baseSignals({
+      commitActivity: { status: "ok", activeDayCount: 1, totalWeeks: 52 },
+      commitMessages: {
+        status: "ok",
+        total: 1,
+        meaningfulCount: 0,
+        sample: ["wip"],
+      },
+      releases: { status: "missing" },
+      externalUrl: null,
+    });
+    const full = suggestImprovements(signals, { category: "oss_author" });
+    const fullIds = full.map((s) => s.id);
+    expect(fullIds).toContain("tag-release");
+
+    const filtered = suggestImprovements(signals, {
+      category: "oss_author",
+      dismissedIds: ["tag-release", "add-homepage-url"],
+    });
+    const filteredIds = filtered.map((s) => s.id);
+    expect(filteredIds).not.toContain("tag-release");
+    expect(filteredIds).not.toContain("add-homepage-url");
+    expect(filteredIds.length).toBe(fullIds.length - 2);
+  });
+
+  it("every suggestion in SUGGESTION_CONTENT has an effort tag", () => {
+    for (const entry of Object.values(SUGGESTION_CONTENT)) {
+      expect(["5min", "30min", "1h+"]).toContain(entry.effort);
+    }
+  });
+
+  it("every suggestion advertises at least one category", () => {
+    for (const entry of Object.values(SUGGESTION_CONTENT)) {
+      expect(entry.categories.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+// ─── aggregateSuggestions ─────────────────────────────────────────────────
+
+describe("aggregateSuggestions", () => {
+  it("flattens per-project suggestions and orders by effort (5min first)", () => {
+    const weak = baseSignals({
+      commitActivity: { status: "ok", activeDayCount: 1, totalWeeks: 52 },
+      commitMessages: {
+        status: "ok",
+        total: 1,
+        meaningfulCount: 0,
+        sample: ["wip"],
+      },
+      releases: { status: "missing" },
+      externalUrl: null,
+      recency: {
+        status: "ok",
+        createdAt: isoDaysAgo(3),
+        lastPushedAt: isoDaysAgo(1),
+      },
+    });
+
+    const aggregated = aggregateSuggestions([
+      {
+        projectId: "p1",
+        projectName: "alpha",
+        signals: weak,
+        category: "oss_author",
+        dismissedIds: [],
+      },
+      {
+        projectId: "p2",
+        projectName: "beta",
+        signals: weak,
+        category: "personal_learning",
+        dismissedIds: [],
+      },
+    ]);
+
+    // Personal_learning emits only 1 (commit-messages-descriptive);
+    // oss_author emits several. Aggregate must contain both.
+    expect(aggregated.length).toBeGreaterThan(1);
+    // Every entry has a project id
+    for (const s of aggregated) {
+      expect(s.projectId).toMatch(/^p[12]$/);
+    }
+    // 5min effort entries come first
+    const effortSeq = aggregated.map((s) => s.effort);
+    const first5min = effortSeq.indexOf("5min");
+    const first1h = effortSeq.indexOf("1h+");
+    if (first5min !== -1 && first1h !== -1) {
+      expect(first5min).toBeLessThan(first1h);
+    }
+  });
+
+  it("respects per-project dismissals", () => {
+    const weak = baseSignals({
+      commitActivity: { status: "ok", activeDayCount: 1, totalWeeks: 52 },
+      releases: { status: "missing" },
+    });
+    const aggregated = aggregateSuggestions([
+      {
+        projectId: "p1",
+        projectName: "alpha",
+        signals: weak,
+        category: "oss_author",
+        dismissedIds: ["tag-release"],
+      },
+    ]);
+    expect(aggregated.find((s) => s.id === "tag-release")).toBeUndefined();
   });
 });

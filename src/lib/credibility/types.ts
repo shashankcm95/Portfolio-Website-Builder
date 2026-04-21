@@ -148,11 +148,84 @@ export interface AuthorshipFactor {
 export type AuthorshipSignal =
   | {
       status: "ok";
+      /**
+       * @deprecated Phase 8 — retained for one phase so legacy callers don't
+       * crash. New UI reads `presentation` instead. Remove in Phase 8.1.
+       */
       verdict: AuthorshipVerdict;
+      /** @deprecated See `verdict`. */
       positiveCount: number;
       factors: AuthorshipFactor[];
+      /**
+       * Phase 8 — category-aware, coaching-oriented view of the same data.
+       * Optional so pre-Phase-8 rows read from the DB don't break reader code;
+       * any freshly-scored signal will have it populated.
+       */
+      presentation?: AuthorshipPresentation;
     }
   | { status: "missing"; reason: string };
+
+// ─── Phase 8 — Repo categories + coaching presentation ──────────────────────
+
+/**
+ * What kind of repo this is, which determines:
+ *   - which factors are surfaced (per-category rubric in rubrics.ts)
+ *   - the shape of the one-line characterization on the portfolio
+ *   - which strengthening suggestions are relevant
+ *
+ * `unspecified` is the bootstrap default for rows that predate the classifier
+ * or where signals were too thin to classify; treated like "no opinion."
+ */
+export type RepoCategory =
+  | "personal_learning"
+  | "personal_tool"
+  | "oss_author"
+  | "oss_contributor"
+  | "unspecified";
+
+export const REPO_CATEGORIES: readonly RepoCategory[] = [
+  "personal_learning",
+  "personal_tool",
+  "oss_author",
+  "oss_contributor",
+  "unspecified",
+] as const;
+
+export function isRepoCategory(value: unknown): value is RepoCategory {
+  return (
+    typeof value === "string" &&
+    (REPO_CATEGORIES as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * How the category was set. `auto` = classifier picked it; the fetcher may
+ * re-run the classifier on the next credibility fetch. `manual` = the owner
+ * overrode it via the coaching PATCH endpoint; sticks until changed.
+ */
+export type CategorySource = "auto" | "manual";
+
+/**
+ * Phase 8 output shape — the category-aware view that replaces the old
+ * `verdict` + `positiveCount` grading. `affirmations` and `gaps` both draw
+ * from the same per-factor scorers; a factor lands in one bucket or the
+ * other based on its `verdict` (`positive` → affirmations; anything else →
+ * gaps). Factors that aren't relevant for the category are omitted from
+ * both arrays — they don't count *for* or *against* the repo.
+ */
+export interface AuthorshipPresentation {
+  category: RepoCategory;
+  categorySource: CategorySource;
+  /** Factors with `verdict === "positive"` within the category's rubric. */
+  affirmations: AuthorshipFactor[];
+  /** Factors with `verdict !== "positive"` within the category's rubric. */
+  gaps: AuthorshipFactor[];
+  /**
+   * One-line, deterministic description baked into the portfolio when the
+   * owner opts in. Never contains a score, never contains a verdict word.
+   */
+  characterization: string;
+}
 
 // ─── Bundle ─────────────────────────────────────────────────────────────────
 

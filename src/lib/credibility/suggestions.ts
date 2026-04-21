@@ -15,6 +15,7 @@ import type {
   AuthorshipFactor,
   AuthorshipFactorName,
   CredibilitySignals,
+  RepoCategory,
 } from "@/lib/credibility/types";
 import { scoreAuthorship } from "@/lib/credibility/authorship";
 
@@ -35,12 +36,28 @@ export type SuggestionImpact =
   | "negative-to-neutral"
   | "neutral-to-positive";
 
+/**
+ * Effort estimate surfaced in the coaching UI. Used to sort the aggregate
+ * modal so the developer can plan a "weekend todo list" without opening
+ * each project.
+ */
+export type SuggestionEffort = "5min" | "30min" | "1h+";
+
 export interface Suggestion {
   id: SuggestionId;
   title: string;
   description: string;
   factorAffected: AuthorshipFactorName;
   impact: SuggestionImpact;
+  effort: SuggestionEffort;
+  /**
+   * Which Phase 8 categories this suggestion is relevant to. A suggestion
+   * never appears on a project whose category isn't in this list —
+   * `tag-release` is hidden on `personal_learning`, for example.
+   *
+   * `unspecified` always matches so legacy rows get the full catalog.
+   */
+  categories: RepoCategory[];
   helpUrl?: string;
 }
 
@@ -61,6 +78,8 @@ export const SUGGESTION_CONTENT: Record<
     description:
       "Your recent work lives in just a few commits. Try committing incremental changes across separate sessions so the cadence signal reflects real work.",
     factorAffected: "commitDays",
+    effort: "1h+",
+    categories: ["personal_tool", "oss_author", "unspecified"],
     helpUrl: "https://git-scm.com/docs/git-commit",
   },
   "commit-messages-descriptive": {
@@ -69,6 +88,15 @@ export const SUGGESTION_CONTENT: Record<
     description:
       "Messages like \"fix\" or \"wip\" don't tell reviewers what changed. Try formats like \"Add JWT middleware to auth routes\" — or adopt Conventional Commits (feat:, fix:, chore:).",
     factorAffected: "messageQuality",
+    effort: "5min",
+    // Descriptive messages are a universal win across every category.
+    categories: [
+      "personal_learning",
+      "personal_tool",
+      "oss_author",
+      "oss_contributor",
+      "unspecified",
+    ],
     helpUrl: "https://www.conventionalcommits.org/",
   },
   "use-prs": {
@@ -77,6 +105,10 @@ export const SUGGESTION_CONTENT: Record<
     description:
       "Merging changes via PRs (even self-reviewed) signals a professional workflow. Recruiters look for branching and review discipline.",
     factorAffected: "collaboration",
+    effort: "30min",
+    // A personal learning repo doesn't need branch/PR ceremony; oss_contributor
+    // already works via PRs upstream.
+    categories: ["personal_tool", "oss_author", "unspecified"],
     helpUrl:
       "https://docs.github.com/en/pull-requests/collaborating-with-pull-requests",
   },
@@ -86,6 +118,8 @@ export const SUGGESTION_CONTENT: Record<
     description:
       "Tagging a release (even v0.1.0) shows intentional versioning. GitHub releases are visible on the repo homepage and in our credibility signals.",
     factorAffected: "releases",
+    effort: "5min",
+    categories: ["personal_tool", "oss_author", "unspecified"],
     helpUrl:
       "https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository",
   },
@@ -95,6 +129,8 @@ export const SUGGESTION_CONTENT: Record<
     description:
       "If your project is deployed, set the repository's homepage field to the live URL. Recruiters should be one click away from seeing it run.",
     factorAffected: "externalPresence",
+    effort: "5min",
+    categories: ["personal_tool", "oss_author", "unspecified"],
     helpUrl:
       "https://docs.github.com/en/repositories/creating-and-managing-repositories/editing-your-repository-details",
   },
@@ -104,6 +140,8 @@ export const SUGGESTION_CONTENT: Record<
     description:
       "Recent pushes and a repo that's had time to evolve both strengthen the signal. Consider committing small improvements over the next few weeks.",
     factorAffected: "ageVsPush",
+    effort: "1h+",
+    categories: ["personal_tool", "oss_author", "unspecified"],
   },
   "add-ci": {
     id: "add-ci",
@@ -111,6 +149,8 @@ export const SUGGESTION_CONTENT: Record<
     description:
       "A GitHub Actions workflow that runs on every push is the clearest signal of professional practice. Even a 10-line ci.yml that runs your tests is enough.",
     factorAffected: "collaboration", // CI contributes to collaboration signal indirectly; not a Phase 2 factor directly
+    effort: "30min",
+    categories: ["personal_tool", "oss_author", "unspecified"],
     helpUrl: "https://docs.github.com/en/actions/quickstart",
   },
   "add-test-framework": {
@@ -119,6 +159,8 @@ export const SUGGESTION_CONTENT: Record<
     description:
       "Projects without a detected test framework read as unfinished. Add Jest / Vitest / pytest to your dev dependencies and write a small test suite.",
     factorAffected: "messageQuality", // proxy — shows professionalism; not a direct factor
+    effort: "30min",
+    categories: ["personal_tool", "oss_author", "unspecified"],
   },
 };
 
@@ -133,12 +175,25 @@ export const SUGGESTION_CONTENT: Record<
  *
  * Within an impact bucket, suggestions are ordered by the canonical factor
  * order so the list doesn't shuffle between renders.
+ *
+ * Phase 8 — `options.category` filters out suggestions that don't apply to
+ * the repo's kind (no "tag a release" prompts on a 3-week learning build).
+ * `options.dismissedIds` removes suggestions the owner has already
+ * dismissed inline. Both default to the legacy behavior (show everything)
+ * when omitted, so existing callers keep working.
  */
 export function suggestImprovements(
-  signals: CredibilitySignals
+  signals: CredibilitySignals,
+  options?: {
+    category?: RepoCategory;
+    dismissedIds?: readonly string[];
+  }
 ): Suggestion[] {
   const authorship = signals.authorshipSignal;
   if (authorship.status !== "ok") return [];
+
+  const category = options?.category ?? "unspecified";
+  const dismissed = new Set<string>(options?.dismissedIds ?? []);
 
   const suggestions: Suggestion[] = [];
   for (const factor of authorship.factors) {
@@ -146,6 +201,11 @@ export function suggestImprovements(
 
     const entry = suggestionFor(factor);
     if (!entry) continue;
+
+    // Phase 8 — skip suggestions that don't apply to this category.
+    if (!entry.categories.includes(category)) continue;
+    // Phase 8 — skip dismissed suggestions.
+    if (dismissed.has(entry.id)) continue;
 
     const impact = impactOf(factor);
     suggestions.push({ ...entry, impact });
@@ -184,13 +244,71 @@ export function suggestImprovements(
  * offer suggestions before the next refresh rewrites as v2.
  */
 export function suggestFromPartial(
-  signals: Omit<CredibilitySignals, "authorshipSignal">
+  signals: Omit<CredibilitySignals, "authorshipSignal">,
+  options?: {
+    category?: RepoCategory;
+    dismissedIds?: readonly string[];
+  }
 ): Suggestion[] {
-  const authorshipSignal = scoreAuthorship(signals as CredibilitySignals);
-  return suggestImprovements({
-    ...signals,
-    authorshipSignal,
-  } as CredibilitySignals);
+  const authorshipSignal = scoreAuthorship(signals as CredibilitySignals, {
+    category: options?.category,
+  });
+  return suggestImprovements(
+    {
+      ...signals,
+      authorshipSignal,
+    } as CredibilitySignals,
+    options
+  );
+}
+
+/**
+ * Aggregate view helper — returns ALL suggestions across a set of projects,
+ * each tagged with the project id that produced it. Used by the Phase 8
+ * coaching modal to render a cross-project "weekend todo list" sorted by
+ * effort. The caller supplies dismissals per-project.
+ */
+export interface AggregatedSuggestion extends Suggestion {
+  projectId: string;
+  projectName: string;
+}
+
+export function aggregateSuggestions(
+  inputs: readonly {
+    projectId: string;
+    projectName: string;
+    signals: CredibilitySignals;
+    category: RepoCategory;
+    dismissedIds: readonly string[];
+  }[]
+): AggregatedSuggestion[] {
+  const out: AggregatedSuggestion[] = [];
+  for (const input of inputs) {
+    const suggestions = suggestImprovements(input.signals, {
+      category: input.category,
+      dismissedIds: input.dismissedIds,
+    });
+    for (const s of suggestions) {
+      out.push({
+        ...s,
+        projectId: input.projectId,
+        projectName: input.projectName,
+      });
+    }
+  }
+  // Effort-first ordering — "5min" wins on top so the developer knocks out
+  // quick wins first, then medium, then long.
+  const effortRank: Record<SuggestionEffort, number> = {
+    "5min": 0,
+    "30min": 1,
+    "1h+": 2,
+  };
+  out.sort((a, b) => {
+    const e = effortRank[a.effort] - effortRank[b.effort];
+    if (e !== 0) return e;
+    return a.projectName.localeCompare(b.projectName);
+  });
+  return out;
 }
 
 // ─── Internals ──────────────────────────────────────────────────────────────

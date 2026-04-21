@@ -17,10 +17,15 @@
 
 import type {
   AuthorshipFactor,
+  AuthorshipPresentation,
   AuthorshipSignal,
   AuthorshipVerdict,
+  CategorySource,
   CredibilitySignals,
+  RepoCategory,
 } from "@/lib/credibility/types";
+import { scoreWithRubric } from "@/lib/credibility/rubrics";
+import { generateCharacterization } from "@/lib/credibility/characterization";
 
 // ─── Exported thresholds ────────────────────────────────────────────────────
 
@@ -111,15 +116,36 @@ export function classifyCommitMessage(message: string): boolean {
 }
 
 /**
- * Compute the authorship verdict from the credibility bundle.
+ * Compute the authorship signal from the credibility bundle.
  *
  * Returns `status: "missing"` when all three commit-related signals
  * (`commits`, `commitActivity`, `commitMessages`) failed to fetch — we
  * genuinely couldn't see, so refusing to score is more honest than
  * returning red by default.
+ *
+ * Phase 8 — the signal now carries a `presentation` with a category-aware
+ * view (affirmations + gaps + one-line characterization). The legacy
+ * `verdict` + `positiveCount` fields remain populated for one deprecation
+ * phase so existing callers don't break; new UI reads `presentation`.
+ *
+ * `category` defaults to `unspecified` when the caller doesn't know yet —
+ * the classifier in `credibility-fetcher.ts` passes the real category once
+ * it's computed. `unspecified` falls back to the full 6-factor rubric, so
+ * the legacy shape is unchanged when category info isn't supplied.
  */
 export function scoreAuthorship(
-  signals: CredibilitySignals
+  signals: CredibilitySignals,
+  options?: {
+    category?: RepoCategory;
+    categorySource?: CategorySource;
+    /** Fields needed by the characterization generator (portfolio byline). */
+    characterization?: {
+      repoOwner?: string | null;
+      repoName?: string | null;
+      stars?: number | null;
+      totalCommits?: number | null;
+    };
+  }
 ): AuthorshipSignal {
   if (
     signals.commits.status !== "ok" &&
@@ -132,6 +158,9 @@ export function scoreAuthorship(
     };
   }
 
+  // Legacy 6-factor view — retained for the deprecation window. The shape
+  // is unchanged from pre-Phase-8 so any reader of `factors` / `verdict`
+  // keeps working.
   const factors: AuthorshipFactor[] = [
     scoreCommitDays(signals),
     scoreMessageQuality(signals),
@@ -145,12 +174,34 @@ export function scoreAuthorship(
   const verdict: AuthorshipVerdict =
     positiveCount >= 3 ? "sustained" : positiveCount >= 1 ? "mixed" : "single-burst";
 
-  return { status: "ok", verdict, positiveCount, factors };
+  // Phase 8 — category-aware presentation. If the caller didn't pass a
+  // category, default to `unspecified` which reuses the full rubric.
+  const category: RepoCategory = options?.category ?? "unspecified";
+  const categorySource: CategorySource = options?.categorySource ?? "auto";
+  const { affirmations, gaps } = scoreWithRubric(signals, category);
+  const characterization = generateCharacterization({
+    category,
+    signals,
+    repoOwner: options?.characterization?.repoOwner ?? null,
+    repoName: options?.characterization?.repoName ?? null,
+    stars: options?.characterization?.stars ?? null,
+    totalCommits: options?.characterization?.totalCommits ?? null,
+  });
+
+  const presentation: AuthorshipPresentation = {
+    category,
+    categorySource,
+    affirmations,
+    gaps,
+    characterization,
+  };
+
+  return { status: "ok", verdict, positiveCount, factors, presentation };
 }
 
 // ─── Per-factor sub-scorers ─────────────────────────────────────────────────
 
-function scoreCommitDays(s: CredibilitySignals): AuthorshipFactor {
+export function scoreCommitDays(s: CredibilitySignals): AuthorshipFactor {
   const ca = s.commitActivity;
   if (ca.status !== "ok") {
     return {
@@ -181,7 +232,7 @@ function scoreCommitDays(s: CredibilitySignals): AuthorshipFactor {
   };
 }
 
-function scoreMessageQuality(s: CredibilitySignals): AuthorshipFactor {
+export function scoreMessageQuality(s: CredibilitySignals): AuthorshipFactor {
   const m = s.commitMessages;
   if (m.status !== "ok" || m.total === 0) {
     return {
@@ -219,7 +270,7 @@ function scoreMessageQuality(s: CredibilitySignals): AuthorshipFactor {
   };
 }
 
-function scoreCollaboration(s: CredibilitySignals): AuthorshipFactor {
+export function scoreCollaboration(s: CredibilitySignals): AuthorshipFactor {
   const closedPRs =
     s.issuesAndPRs.status === "ok" ? s.issuesAndPRs.closedTotal : 0;
   const contributors =
@@ -246,7 +297,7 @@ function scoreCollaboration(s: CredibilitySignals): AuthorshipFactor {
   };
 }
 
-function scoreReleases(s: CredibilitySignals): AuthorshipFactor {
+export function scoreReleases(s: CredibilitySignals): AuthorshipFactor {
   if (s.releases.status === "ok" && s.releases.count >= 1) {
     return {
       name: "releases",
@@ -261,7 +312,7 @@ function scoreReleases(s: CredibilitySignals): AuthorshipFactor {
   };
 }
 
-function scoreExternalPresence(s: CredibilitySignals): AuthorshipFactor {
+export function scoreExternalPresence(s: CredibilitySignals): AuthorshipFactor {
   if (s.externalUrl) {
     return {
       name: "externalPresence",
@@ -276,7 +327,7 @@ function scoreExternalPresence(s: CredibilitySignals): AuthorshipFactor {
   };
 }
 
-function scoreAgeVsPush(s: CredibilitySignals): AuthorshipFactor {
+export function scoreAgeVsPush(s: CredibilitySignals): AuthorshipFactor {
   if (s.recency.status !== "ok") {
     return {
       name: "ageVsPush",

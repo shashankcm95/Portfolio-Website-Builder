@@ -26,9 +26,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CredibilityBadges } from "@/components/github/credibility-badges";
-import { AuthorshipChip } from "@/components/github/authorship-chip";
+import { ProjectCategoryBadge } from "@/components/github/project-category-badge";
 import { ProjectThumbnail } from "@/components/projects/project-thumbnail";
-import type { StoredCredibilitySignals } from "@/lib/credibility/types";
+import type {
+  RepoCategory,
+  StoredCredibilitySignals,
+} from "@/lib/credibility/types";
 import type { ProjectDemo as ProjectDemoModel } from "@/lib/demos/types";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -65,6 +68,11 @@ interface Project {
   // on the reader type.
   credibilitySignals?: StoredCredibilitySignals | null;
   credibilityFetchedAt?: string | null;
+  // Phase 8: repo category (personal_learning / personal_tool / oss_author /
+  // oss_contributor / unspecified). Shown as a small informational badge on
+  // the card, replacing the Phase-2 authorship verdict chip.
+  projectCategory?: RepoCategory | null;
+  projectCategorySource?: "auto" | "manual" | null;
   // Phase 4: ordered user-supplied demos (video/image/slideshow).
   demos?: ProjectDemoModel[] | null;
 }
@@ -350,13 +358,15 @@ export function RepoCard({ project, portfolioId, onUpdate }: RepoCardProps) {
           )}
         </div>
 
-        {/* Phase 1 — Credibility signals row; Phase 2 — Authorship verdict above */}
+        {/* Phase 1 — Credibility badges; Phase 8 — Category badge (replaces
+         *   the old authorship verdict chip). Category is purely informational —
+         *   no grade, no "N of 6 positive" language. */}
         {!isManual && project.credibilitySignals && (
           <div className="mt-3 space-y-2">
-            {/* Phase 2 — Authorship chip (only renders when present + status=ok) */}
-            <AuthorshipChip
+            <ProjectCategoryBadge
+              category={project.projectCategory ?? "unspecified"}
+              source={project.projectCategorySource ?? "auto"}
               compact
-              signal={project.credibilitySignals.authorshipSignal}
             />
             <CredibilityBadges
               signals={project.credibilitySignals}

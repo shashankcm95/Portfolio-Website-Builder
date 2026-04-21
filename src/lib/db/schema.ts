@@ -68,6 +68,12 @@ export const portfolios = pgTable(
     // Phase 5.2 — up to 3 starter-question chips shown above the input
     // on an empty transcript. Empty array = no chips.
     chatbotStarters: jsonb("chatbot_starters").notNull().default("[]"),
+    // Phase 9 — when true, the publisher bakes a Cloudflare Pages Function
+    // + RAG corpus + static iframe UI into the Pages deploy so the chatbot
+    // runs fully standalone on the published site. When false (default),
+    // the iframe still points at the builder. Opt-in so existing
+    // published portfolios don't change behavior.
+    selfHostedChatbot: boolean("self_hosted_chatbot").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
@@ -110,6 +116,24 @@ export const projects = pgTable("projects", {
   credibilityFetchedAt: timestamp("credibility_fetched_at", {
     withTimezone: true,
   }),
+  // Phase 8 — Coaching, not grading.
+  // projectCategory: one of personal_learning | personal_tool | oss_author |
+  // oss_contributor | unspecified. Set by the classifier on first credibility
+  // fetch; overridable by the owner via the coaching PATCH endpoint. Enum-
+  // validated in app code (src/lib/credibility/types.ts :: RepoCategory).
+  projectCategory: text("project_category").default("unspecified"),
+  // Which category was assigned automatically vs manually overridden. "auto"
+  // means the classifier can re-run and adjust on next fetch; "manual" sticks.
+  projectCategorySource: text("project_category_source").default("auto"),
+  // String IDs of improvement suggestions the owner has dismissed inline.
+  // The suggestion module owns the ID namespace (suggestions.ts).
+  dismissedSuggestions: jsonb("dismissed_suggestions").default("[]"),
+  // When true, profile-data.ts bakes a one-line project characterization into
+  // the rendered portfolio. Defaults off; the UI flips it on for flattering
+  // categories (personal_tool, oss_author) at classification time.
+  showCharacterizationOnPortfolio: boolean(
+    "show_characterization_on_portfolio"
+  ).default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
@@ -187,6 +211,10 @@ export const facts = pgTable(
     evidenceText: text("evidence_text"),
     sourceId: uuid("source_id").references(() => repoSources.id),
     isVerified: boolean("is_verified").default(false),
+    // Phase 10 — owner-edited facts. Inline edit via <FactEditInline>
+    // flips this to true; downstream narrative-regeneration treats
+    // edited facts as canonical. Last-write-wins — no edit history.
+    ownerEdited: boolean("owner_edited").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => ({
@@ -337,6 +365,13 @@ export const embeddings = pgTable(
     sourceRef: text("source_ref"),
     embedding: text("embedding").notNull(),
     metadata: jsonb("metadata").default("{}"),
+    // Phase 9 — cached BGE embedding for the chatbot self-host flow.
+    // Shape: { hash: string, vector: number[] }. Hash is sha256 of
+    // chunkText; unchanged chunks skip re-embedding on subsequent
+    // publishes. Null until the first self-hosted publish touches this
+    // row. The builder-side chatbot does NOT read this column — only the
+    // publisher's cf-embed.ts does.
+    embeddingBge: jsonb("embedding_bge"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => ({

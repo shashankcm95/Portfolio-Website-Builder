@@ -14,11 +14,17 @@ import {
   ArrowDown,
   RefreshCw,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
+import { CoachingModal } from "@/components/portfolio/coaching-modal";
+import { aggregateSuggestions } from "@/lib/credibility/suggestions";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-import type { StoredCredibilitySignals } from "@/lib/credibility/types";
+import type {
+  RepoCategory,
+  StoredCredibilitySignals,
+} from "@/lib/credibility/types";
 import type { ProjectDemo as ProjectDemoModel } from "@/lib/demos/types";
 
 interface Project {
@@ -38,6 +44,10 @@ interface Project {
   techStack?: string[] | null;
   credibilitySignals?: StoredCredibilitySignals | null;
   credibilityFetchedAt?: string | null;
+  // Phase 8 — category badge on the card + coaching-modal input fields
+  projectCategory?: RepoCategory | null;
+  projectCategorySource?: "auto" | "manual" | null;
+  dismissedSuggestions?: string[] | null;
   demos?: ProjectDemoModel[] | null;
 }
 
@@ -140,6 +150,7 @@ export function RepoList({ portfolioId }: RepoListProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [coachingOpen, setCoachingOpen] = useState(false);
 
   const fetchProjects = useCallback(async () => {
     setIsLoading(true);
@@ -240,22 +251,75 @@ export function RepoList({ portfolioId }: RepoListProps) {
     return <EmptyState />;
   }
 
+  // Phase 8 — aggregate count of open strengthening suggestions across all
+  // projects, used to label the "View all suggestions" button. Projects
+  // with no category or no credibility signals contribute nothing.
+  const openSuggestionCount = aggregateSuggestions(
+    projects
+      .filter(
+        (p) =>
+          p.credibilitySignals?.authorshipSignal?.status === "ok" &&
+          p.sourceType !== "manual"
+      )
+      .map((p) => ({
+        projectId: p.id,
+        projectName: p.displayName ?? p.repoName ?? "project",
+        signals: p.credibilitySignals as any,
+        category: (p.projectCategory ?? "unspecified") as RepoCategory,
+        dismissedIds: p.dismissedSuggestions ?? [],
+      }))
+  ).length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {projects.length} {projects.length === 1 ? "project" : "projects"}
         </p>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={fetchProjects}
-          className="text-muted-foreground"
-        >
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {openSuggestionCount > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCoachingOpen(true)}
+              className="gap-1.5"
+              data-testid="coaching-modal-trigger"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Strengthen portfolio ({openSuggestionCount})
+            </Button>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fetchProjects}
+            className="text-muted-foreground"
+          >
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Refresh
+          </Button>
+        </div>
       </div>
+
+      <CoachingModal
+        portfolioId={portfolioId}
+        open={coachingOpen}
+        onOpenChange={setCoachingOpen}
+        onDismissed={fetchProjects}
+        projects={projects
+          .filter(
+            (p) =>
+              p.credibilitySignals?.authorshipSignal?.status === "ok" &&
+              p.sourceType !== "manual"
+          )
+          .map((p) => ({
+            id: p.id,
+            name: p.displayName ?? p.repoName ?? "project",
+            signals: p.credibilitySignals,
+            category: (p.projectCategory ?? "unspecified") as RepoCategory,
+            dismissedSuggestions: p.dismissedSuggestions ?? [],
+          }))}
+      />
 
       <div className="space-y-3">
         {projects.map((project, index) => (

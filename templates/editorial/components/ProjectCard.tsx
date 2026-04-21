@@ -30,6 +30,22 @@ export function ProjectCard({ project, num }: ProjectCardProps) {
         <h3 className="case-title">
           <a href={`/projects/${slug}/`}>{project.name}</a>
         </h3>
+        {/* Phase 8 — optional characterization byline (baked, no runtime call) */}
+        {project.characterization ? (
+          <p
+            className="case-characterization"
+            style={{
+              fontSize: "0.8rem",
+              letterSpacing: "0.02em",
+              textTransform: "uppercase",
+              color: "#ff3c00",
+              marginTop: "-0.25rem",
+              marginBottom: "0.5rem",
+            }}
+          >
+            {project.characterization}
+          </p>
+        ) : null}
         {project.description && (
           <p className="case-desc">{project.description}</p>
         )}

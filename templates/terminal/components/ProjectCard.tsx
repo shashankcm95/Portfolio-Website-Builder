@@ -36,6 +36,20 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <span className="ls-size">{sizeStr}</span>
         <span className="ls-mtime">{mtimeStr}</span>
       </div>
+      {/* Phase 8 — optional characterization byline, styled as a shell comment
+       *   to blend with the terminal aesthetic. Baked at generation time. */}
+      {project.characterization ? (
+        <div
+          className="ls-characterization"
+          style={{
+            color: "#75715e",
+            fontStyle: "italic",
+            fontSize: "0.85em",
+          }}
+        >
+          # {project.characterization}
+        </div>
+      ) : null}
       {project.description && (
         <div className="ls-desc"># {project.description}</div>
       )}

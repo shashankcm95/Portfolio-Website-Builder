@@ -106,13 +106,35 @@ export async function POST(
     const storedDeps: DependencyFile[] = repoData.dependencies;
 
     const credFetcher = new CredibilityFetcher(client);
+    // Phase 8 — respect a manual category override so refreshing doesn't
+    // undo the owner's choice. `auto` sources re-classify; `manual` stays
+    // whatever the owner set.
+    const manualOverride =
+      project.projectCategorySource === "manual" &&
+      project.projectCategory
+        ? (project.projectCategory as any)
+        : undefined;
+
     const signals = await credFetcher.fetchAll(
       parsed.owner,
       parsed.repo,
       repoData.metadata,
-      storedDeps
+      storedDeps,
+      {
+        userGithubLogin: (session.user as any).githubUsername ?? null,
+        overrideCategory: manualOverride,
+        overrideCategorySource: manualOverride ? "manual" : undefined,
+      }
     );
     const fetchedAt = new Date();
+
+    // Resolve the category we ended up using (manual overrides win; else
+    // whatever the classifier picked). Persist only when `auto` so a manual
+    // override isn't overwritten.
+    const resolvedCategory =
+      signals.authorshipSignal?.status === "ok"
+        ? signals.authorshipSignal.presentation?.category ?? "unspecified"
+        : "unspecified";
 
     await db
       .update(projects)
@@ -120,6 +142,11 @@ export async function POST(
         credibilitySignals: signals as any,
         credibilityFetchedAt: fetchedAt,
         repoMetadata: repoData.metadata as any,
+        // Only update the stored category when the source is "auto" —
+        // manual overrides persist across refreshes.
+        ...(project.projectCategorySource !== "manual"
+          ? { projectCategory: resolvedCategory }
+          : {}),
       })
       .where(eq(projects.id, params.projectId));
 

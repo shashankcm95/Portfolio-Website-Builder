@@ -56,8 +56,33 @@ export interface ProfileData {
 
   chatbot?: {
     enabled: boolean;
+    /**
+     * @deprecated Phase 8.5 — retained so pre-8.5 generated HTML that
+     * references this field doesn't crash. New templates use `appOrigin`
+     * + an inline snippet instead of a cross-origin script tag. Remove
+     * in a later phase once no template reads it.
+     */
     apiEndpoint: string;
+    /**
+     * Phase 8.5 — the builder app origin, e.g. `https://portfolio.example
+     * .com`. The inline chatbot bootstrap uses this to construct the
+     * iframe src. Decouples the published page's script load from the
+     * builder — only the iframe load depends on the builder being
+     * reachable, and that load already degrades gracefully.
+     *
+     * Phase 9 — when `selfHosted` is true, this field may be empty. The
+     * bootstrap points at `/chat.html` on the same origin instead.
+     */
+    appOrigin: string;
     portfolioId: string;
+    /**
+     * Phase 9 — when true, the chatbot is hosted on the published site
+     * itself via a Cloudflare Pages Function. The iframe loads
+     * `/chat.html` on the same origin and `/api/chat/stream` is served
+     * by a co-deployed Worker. Default false (Phase 8.5 cross-origin
+     * behavior).
+     */
+    selfHosted?: boolean;
   };
 }
 
@@ -105,6 +130,20 @@ export interface Project {
 
   facts: ProjectFact[];
   screenshot?: string;
+
+  /**
+   * Phase 8 — optional one-line honest characterization of the project
+   * ("Solo side project — 4 months, 18 active days, deployed at …"). When
+   * present, templates render it as a muted byline under the project title.
+   * When absent, the byline is omitted entirely.
+   *
+   * The string is baked into the generated HTML at build time via
+   * `profile-data.ts`. It crosses from the builder's credibility layer to
+   * the published portfolio as plain text — no runtime fetch, no class
+   * inference on the visitor's browser. See the Phase 8 plan's
+   * "Decoupling guarantee" section for the invariant this field upholds.
+   */
+  characterization?: string;
 }
 
 export interface ProjectFact {

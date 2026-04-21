@@ -73,18 +73,37 @@ export async function POST(
           parsed.owner,
           parsed.repo
         );
+        // Phase 8 — respect a manual category override on the project
+        // record; otherwise re-classify from signals.
+        const manualOverride =
+          project.projectCategorySource === "manual" &&
+          project.projectCategory
+            ? (project.projectCategory as any)
+            : undefined;
         const signals = await new CredibilityFetcher(client).fetchAll(
           parsed.owner,
           parsed.repo,
           repoData.metadata,
-          repoData.dependencies
+          repoData.dependencies,
+          {
+            userGithubLogin: (session.user as any).githubUsername ?? null,
+            overrideCategory: manualOverride,
+            overrideCategorySource: manualOverride ? "manual" : undefined,
+          }
         );
+        const resolvedCategory =
+          signals.authorshipSignal?.status === "ok"
+            ? signals.authorshipSignal.presentation?.category ?? "unspecified"
+            : "unspecified";
         await db
           .update(projects)
           .set({
             credibilitySignals: signals as any,
             credibilityFetchedAt: new Date(),
             repoMetadata: repoData.metadata as any,
+            ...(project.projectCategorySource !== "manual"
+              ? { projectCategory: resolvedCategory }
+              : {}),
           })
           .where(eq(projects.id, params.projectId));
       }

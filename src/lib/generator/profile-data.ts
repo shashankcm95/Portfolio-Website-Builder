@@ -174,16 +174,25 @@ export async function assembleProfileData(
  * encodes `portfolio.updatedAt` so social scrapers fetch a fresh image
  * after meaningful edits.
  */
+/**
+ * Phase 8.5 — Point the generated site's `og:image` at a relative path
+ * (`/og.png`) that's baked into the deploy by `renderTemplate`. Social
+ * scrapers resolve it against the portfolio's own origin and never call
+ * back to the builder. Returns a fixed string for backward-compat; args
+ * are retained so the signature doesn't break existing callers but
+ * are unused.
+ *
+ * The file itself is emitted only if `bakePortfolioOgImage` succeeds. If
+ * it doesn't, the file map is missing `og.png` and a visitor's scraper
+ * gets a 404 for the image — template falls through to `basics.avatar`
+ * via the existing `meta.ogImageUrl || basics.avatar` pattern.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function buildOgImageUrl(
-  portfolioId: string,
-  updatedAt: Date | null | undefined
+  _portfolioId: string,
+  _updatedAt: Date | null | undefined
 ): string | null {
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
-  if (!appUrl) return null;
-  const v = updatedAt
-    ? String(Math.floor(new Date(updatedAt).getTime() / 1000))
-    : "0";
-  return `${appUrl}/api/og?portfolioId=${encodeURIComponent(portfolioId)}&v=${v}`;
+  return "/og.png";
 }
 
 /**
@@ -207,14 +216,34 @@ function buildAnalyticsConfig(portfolioId: string): {
 /**
  * Resolve the ProfileData.chatbot block if (and only if) the gates pass.
  * Returns null when any gate fails — template then omits the script.
+ *
+ * Three shapes:
+ *   1. `selfHosted: true` (Phase 9) — iframe hits `/chat.html` on the
+ *      published site. Requires at least one embedding row; does NOT
+ *      require `NEXT_PUBLIC_APP_URL` (published site is fully
+ *      standalone). The renderer will bake the Pages Function bundle.
+ *   2. `selfHosted: false` + `appOrigin` set (Phase 8.5 default) —
+ *      iframe hits the builder's `/embed/chatbot/:pid`. Requires
+ *      `NEXT_PUBLIC_APP_URL`.
+ *   3. null — chatbot disabled / no embeddings / builder URL missing.
  */
 async function buildChatbotEmbed(
   portfolioId: string,
-  portfolio: { id: string; chatbotEnabled: boolean }
+  portfolio: {
+    id: string;
+    chatbotEnabled: boolean;
+    selfHostedChatbot?: boolean | null;
+  }
 ): Promise<ProfileData["chatbot"] | null> {
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
-  if (!appUrl) return null;
   if (!portfolio.chatbotEnabled) return null;
+
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
+  const selfHosted = portfolio.selfHostedChatbot === true;
+
+  // Self-hosted path skips the NEXT_PUBLIC_APP_URL gate — the published
+  // site doesn't need to know the builder's URL. Cross-origin path
+  // keeps the gate.
+  if (!selfHosted && !appUrl) return null;
 
   // Probe for at least one embedding row. The retrieval corpus lives on
   // the `embeddings` table joined to projects by projectId.
@@ -237,8 +266,12 @@ async function buildChatbotEmbed(
 
   return {
     enabled: true,
-    apiEndpoint: `${appUrl}/chatbot-embed.js`,
+    // Phase 8.5 — kept for back-compat; new Layout.tsx uses `appOrigin`
+    // with an inline snippet instead of `<script src={apiEndpoint}>`.
+    apiEndpoint: appUrl ? `${appUrl}/chatbot-embed.js` : "",
+    appOrigin: appUrl,
     portfolioId,
+    selfHosted,
   };
 }
 
@@ -279,6 +312,13 @@ function buildProject(proj: {
   externalUrl?: string | null;
   imageUrl?: string | null;
   techStack?: unknown;
+  // Phase 8 — coaching fields. When
+  // `showCharacterizationOnPortfolio === true`, we read the pre-generated
+  // characterization out of the stored `credibilitySignals.authorshipSignal
+  // .presentation.characterization` and bake it into the Project shape so
+  // the template can render it as a muted byline. Omitting = no byline.
+  credibilitySignals?: unknown;
+  showCharacterizationOnPortfolio?: boolean | null;
   facts: Array<{
     claim: string;
     category: string;
@@ -345,7 +385,45 @@ function buildProject(proj: {
     },
     facts: projectFacts,
     screenshot: proj.imageUrl ?? undefined,
+    // Phase 8 — opt-in characterization byline. Only populated when the
+    // owner has flipped `showCharacterizationOnPortfolio` to true and a
+    // characterization string is present in the stored credibility bundle.
+    // The value is a plain string baked into the generated HTML — no
+    // runtime dependency on the builder.
+    characterization: readCharacterization(
+      proj.showCharacterizationOnPortfolio ?? false,
+      proj.credibilitySignals
+    ),
   };
+}
+
+/**
+ * Phase 8 helper — safely read
+ * `credibilitySignals.authorshipSignal.presentation.characterization` out of
+ * the untyped jsonb column. Returns undefined when the toggle is off, the
+ * signal is missing, or the shape doesn't match. Never throws; the
+ * published site must render even with malformed stored data.
+ */
+function readCharacterization(
+  enabled: boolean,
+  signals: unknown
+): string | undefined {
+  if (!enabled) return undefined;
+  if (!signals || typeof signals !== "object") return undefined;
+  const authorship = (signals as Record<string, unknown>).authorshipSignal;
+  if (
+    !authorship ||
+    typeof authorship !== "object" ||
+    (authorship as Record<string, unknown>).status !== "ok"
+  ) {
+    return undefined;
+  }
+  const presentation = (authorship as Record<string, unknown>).presentation;
+  if (!presentation || typeof presentation !== "object") return undefined;
+  const line = (presentation as Record<string, unknown>).characterization;
+  return typeof line === "string" && line.trim().length > 0
+    ? line.trim()
+    : undefined;
 }
 
 function buildSections(
