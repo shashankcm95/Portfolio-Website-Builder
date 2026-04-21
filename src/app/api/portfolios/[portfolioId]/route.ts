@@ -73,6 +73,9 @@ export async function PATCH(
     // Phase 5.2 — owner-authored greeting + starter chips.
     "chatbotGreeting",
     "chatbotStarters",
+    // Phase 9 — host the chatbot on the published site via a Pages
+    // Function + Workers AI instead of proxying through the builder.
+    "selfHostedChatbot",
   ];
   const filteredUpdates: Record<string, any> = {};
 
@@ -83,6 +86,15 @@ export async function PATCH(
   }
   if ("chatbotEnabled" in filteredUpdates) {
     filteredUpdates.chatbotEnabled = Boolean(filteredUpdates.chatbotEnabled);
+  }
+  if ("selfHostedChatbot" in filteredUpdates) {
+    // Strict boolean — reject anything else to keep the DB column clean.
+    if (typeof filteredUpdates.selfHostedChatbot !== "boolean") {
+      return NextResponse.json(
+        { error: "selfHostedChatbot must be a boolean" },
+        { status: 400 }
+      );
+    }
   }
 
   // Phase 5.2 validation — greeting is a nullable string ≤ MAX_GREETING_CHARS;

@@ -66,11 +66,45 @@ export async function POST(
         .where(eq(portfolios.id, params.portfolioId));
     }
 
+    // Phase 9 — When a self-hosted chatbot portfolio lands, best-effort
+    // provision a WAF rate-limit rule against /api/chat/*. Failures are
+    // logged but never block the deploy — the chatbot works without the
+    // rule; it's just an abuse-protection layer.
+    let rateLimitWarning: string | null = null;
+    if (
+      result.success &&
+      result.url &&
+      portfolio.selfHostedChatbot &&
+      portfolio.chatbotEnabled
+    ) {
+      try {
+        const { provisionChatRateLimit } = await import(
+          "@/lib/deployer/cf-waf-rate-limit"
+        );
+        const rl = await provisionChatRateLimit({
+          deployUrl: result.url,
+          pagesProjectName: cfProjectName,
+        });
+        if (!rl.ok) {
+          rateLimitWarning = rl.reason ?? "Rate-limit provisioning failed";
+          console.warn(
+            "[deploy] WAF rate-limit not provisioned:",
+            rateLimitWarning
+          );
+        }
+      } catch (err) {
+        rateLimitWarning =
+          err instanceof Error ? err.message : "Rate-limit hook failed";
+        console.warn("[deploy] WAF rate-limit hook crashed:", err);
+      }
+    }
+
     return NextResponse.json({
       success: result.success,
       deployment,
       url: result.url,
       error: result.error,
+      rateLimitWarning,
     });
   } catch (error: any) {
     console.error("Deployment error:", error);

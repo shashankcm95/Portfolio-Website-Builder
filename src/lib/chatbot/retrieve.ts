@@ -61,6 +61,73 @@ export function parseEmbeddingCell(raw: string): number[] | null {
   }
 }
 
+// ─── Pure ranking core (shared with the Phase 9 Pages Function port) ──────
+
+/**
+ * A single candidate chunk for the `rankChunks` ranker. Accepts pre-parsed
+ * vectors so callers that already hold the numeric array (e.g. the
+ * Phase 9 Function with a baked JSON corpus) don't pay the JSON.parse
+ * cost per call.
+ */
+export interface RankableChunk {
+  id: string;
+  chunkType: ChunkType;
+  chunkText: string;
+  sourceRef: string | null;
+  metadata: Record<string, unknown>;
+  vector: number[];
+}
+
+/**
+ * Rank a pre-loaded set of chunks by cosine similarity to a query vector
+ * and return the top-K. Pure function — no DB, no I/O. The Phase 9
+ * Pages Function port (`functions/_shared/retrieve.ts`) imports this via
+ * a co-copy so both the builder-side and published-site chatbots rank
+ * identically.
+ *
+ * Ties are broken deterministically (id ASC) so tests don't flake.
+ */
+export function rankChunks(
+  queryEmbedding: number[],
+  candidates: readonly RankableChunk[],
+  k: number = MAX_CONTEXT_CHUNKS
+): RetrievedChunk[] {
+  type Scored = {
+    score: number;
+    id: string;
+    chunkType: ChunkType;
+    chunkText: string;
+    sourceRef: string | null;
+    metadata: Record<string, unknown>;
+  };
+
+  const scored: Scored[] = [];
+  for (const c of candidates) {
+    const score = cosineSimilarity(queryEmbedding, c.vector);
+    scored.push({
+      score,
+      id: c.id,
+      chunkType: c.chunkType,
+      chunkText: c.chunkText,
+      sourceRef: c.sourceRef,
+      metadata: c.metadata,
+    });
+  }
+
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
+
+  return scored.slice(0, k).map((s) => ({
+    chunkType: s.chunkType,
+    chunkText: s.chunkText,
+    sourceRef: s.sourceRef ?? `embeddings:${s.id}`,
+    metadata: s.metadata,
+    score: s.score,
+  }));
+}
+
 // ─── Primary entry point ────────────────────────────────────────────────────
 
 /**
@@ -97,42 +164,21 @@ export async function retrieveTopK(
     .innerJoin(projects, eq(projects.id, embeddings.projectId))
     .where(and(eq(projects.portfolioId, portfolioId)));
 
-  // Rank in JS. We materialize (score, id, row) so ties break by id ASC.
-  type Scored = {
-    score: number;
-    id: string;
-    chunkType: ChunkType;
-    chunkText: string;
-    sourceRef: string | null;
-    metadata: Record<string, unknown>;
-  };
-
-  const scored: Scored[] = [];
+  // Parse DB-stored JSON vectors, then hand the pre-parsed candidates
+  // to the shared ranking core.
+  const candidates: RankableChunk[] = [];
   for (const row of rows) {
     const vec = parseEmbeddingCell(row.embedding);
     if (!vec) continue;
-    const score = cosineSimilarity(queryEmbedding, vec);
-    scored.push({
-      score,
+    candidates.push({
       id: row.id,
       chunkType: (row.chunkType as ChunkType) ?? "fact",
       chunkText: row.chunkText,
       sourceRef: row.sourceRef,
-      metadata:
-        (row.metadata as Record<string, unknown> | null) ?? {},
+      metadata: (row.metadata as Record<string, unknown> | null) ?? {},
+      vector: vec,
     });
   }
 
-  scored.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-  });
-
-  return scored.slice(0, k).map((s) => ({
-    chunkType: s.chunkType,
-    chunkText: s.chunkText,
-    sourceRef: s.sourceRef ?? `embeddings:${s.id}`,
-    metadata: s.metadata,
-    score: s.score,
-  }));
+  return rankChunks(queryEmbedding, candidates, k);
 }

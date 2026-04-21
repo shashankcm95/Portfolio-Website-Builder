@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!--
+  Phase 9 — Static iframe UI served by Cloudflare Pages.
+
+  This file is a TEMPLATE. At publish time,
+  `src/lib/generator/chatbot-bundle.ts` substitutes the placeholder
+  tokens below with the portfolio's real values:
+
+    {{OWNER_NAME}}      — for a11y label + the default launcher title
+    {{CONFIG_JSON}}     — JSON blob consumed by chat.js on load:
+                          { portfolioId, greeting, starters, ownerName }
+
+  The published file has ZERO cross-origin references. Everything (CSS,
+  JS, config) lives in the Pages deploy. The /api/chat/stream endpoint
+  is a Pages Function at the same origin.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Chat with {{OWNER_NAME}}</title>
+  <link rel="stylesheet" href="./chat.css" />
+</head>
+<body>
+  <!--
+    Configuration is inlined as a JSON <script> — cannot execute, cannot
+    be injected into, and chat.js reads it on load. If you rename the id
+    update `readConfig()` in chat.js to match.
+  -->
+  <script type="application/json" id="chat-config">{{CONFIG_JSON}}</script>
+
+  <main id="chat-root" class="chat-root closed" aria-live="polite">
+    <button
+      id="chat-launcher"
+      type="button"
+      class="chat-launcher"
+      aria-label="Open chat with {{OWNER_NAME}}"
+    >
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4V6a2 2 0 0 1 2-2z"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+
+    <section id="chat-panel" class="chat-panel" hidden>
+      <header class="chat-panel-header">
+        <span class="chat-panel-title">Chat with {{OWNER_NAME}}</span>
+        <button
+          id="chat-close"
+          type="button"
+          class="chat-close"
+          aria-label="Close chat"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </header>
+
+      <div id="chat-transcript" class="chat-transcript" role="log" aria-live="polite"></div>
+
+      <div id="chat-starters" class="chat-starters"></div>
+
+      <form id="chat-form" class="chat-form" autocomplete="off">
+        <input
+          id="chat-input"
+          type="text"
+          class="chat-input"
+          placeholder="Ask a question…"
+          maxlength="500"
+          aria-label="Chat message"
+          required
+        />
+        <button
+          id="chat-send"
+          type="submit"
+          class="chat-send"
+          aria-label="Send message"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 12l18-9-7 18-3-7-8-2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <script src="./chat.js"></script>
+</body>
+</html>

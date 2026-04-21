@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  Cloud,
   Loader2,
   MessageCircle,
   RefreshCw,
@@ -46,11 +47,18 @@ interface ChatbotSettingsProps {
   chatbotGreeting?: string | null;
   /** Initial starters (up to MAX_STARTERS strings). */
   chatbotStarters?: string[];
+  /**
+   * Phase 9 — when true, the chatbot is hosted on the published site
+   * itself (Cloudflare Pages Function + Workers AI). Default false
+   * (builder-hosted).
+   */
+  selfHostedChatbot?: boolean;
   onEnabledChange?: (enabled: boolean) => void;
   onCustomizationChange?: (next: {
     greeting: string | null;
     starters: string[];
   }) => void;
+  onSelfHostedChange?: (enabled: boolean) => void;
 }
 
 interface SessionSummary {
@@ -70,13 +78,23 @@ export function ChatbotSettings({
   chatbotEnabled: initialEnabled,
   chatbotGreeting: initialGreeting = null,
   chatbotStarters: initialStarters = [],
+  selfHostedChatbot: initialSelfHosted = false,
   onEnabledChange,
   onCustomizationChange,
+  onSelfHostedChange,
 }: ChatbotSettingsProps) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Phase 9 — self-hosted toggle state
+  const [selfHosted, setSelfHosted] = useState(initialSelfHosted);
+  const [savingSelfHosted, setSavingSelfHosted] = useState(false);
+  const [selfHostedError, setSelfHostedError] = useState<string | null>(null);
+  const [selfHostedSuccess, setSelfHostedSuccess] = useState<string | null>(
+    null
+  );
 
   // Phase 5.2 — customization state. Three starter slots are tracked
   // independently so the UI can keep one blank without collapsing.
@@ -89,7 +107,11 @@ export function ChatbotSettings({
   const [starters, setStarters] = useState<string[]>(paddedStarters);
   const [savingCustomization, setSavingCustomization] = useState(false);
   const [customizationError, setCustomizationError] = useState<string | null>(null);
-  const [customizationSuccess, setCustomizationSuccess] = useState<string | null>(null);
+  // Phase 10 — Track E. Success message is now rich text (bold on
+  // "published") so the reader understands drafts don't reflect changes
+  // until a deploy. Type widens to ReactNode to carry the JSX.
+  const [customizationSuccess, setCustomizationSuccess] =
+    useState<React.ReactNode | null>(null);
 
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
   const [loadingSessions, setLoadingSessions] = useState(false);
@@ -157,8 +179,12 @@ export function ChatbotSettings({
         setCustomizationError(body.error ?? "Save failed");
         return;
       }
+      // Phase 10 — Track E. Clarify that drafts don't reflect changes.
       setCustomizationSuccess(
-        "Customization saved. Re-deploy to update your live site."
+        <>
+          Saved. Changes appear on your <strong>published</strong> site after
+          you deploy — drafts don&apos;t reflect them yet.
+        </>
       );
       onCustomizationChange?.({
         greeting: nextGreeting.length === 0 ? null : nextGreeting,
@@ -178,6 +204,42 @@ export function ChatbotSettings({
       return copy;
     });
   }, []);
+
+  // Phase 9 — toggle the self-hosted flag. Optimistic UI with revert on
+  // server error; same PATCH endpoint as the other chatbot settings.
+  const toggleSelfHosted = useCallback(
+    async (next: boolean) => {
+      setSelfHosted(next);
+      setSavingSelfHosted(true);
+      setSelfHostedError(null);
+      setSelfHostedSuccess(null);
+      try {
+        const res = await fetch(`/api/portfolios/${portfolioId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ selfHostedChatbot: next }),
+        });
+        if (!res.ok) {
+          setSelfHosted(!next); // revert
+          const body = await res.json().catch(() => ({}));
+          setSelfHostedError(body.error ?? "Update failed");
+          return;
+        }
+        setSelfHostedSuccess(
+          next
+            ? "Self-hosted mode enabled. Re-deploy to make the chatbot work standalone on your published site."
+            : "Self-hosted mode disabled. Re-deploy to revert to the builder-hosted chatbot."
+        );
+        onSelfHostedChange?.(next);
+      } catch {
+        setSelfHosted(!next);
+        setSelfHostedError("Network error");
+      } finally {
+        setSavingSelfHosted(false);
+      }
+    },
+    [portfolioId, onSelfHostedChange]
+  );
 
   const toggleEnabled = useCallback(
     async (next: boolean) => {
@@ -228,8 +290,9 @@ export function ChatbotSettings({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        {/* Toggle */}
-        <div className="flex items-center justify-between gap-4">
+        {/* Toggle — Phase 10 Track H: mobile overflow. Stacks under
+            640px, right-aligns from sm upward. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-0.5">
             <Label htmlFor="chatbot-enabled" className="text-sm">
               Enable on published site
@@ -263,6 +326,66 @@ export function ChatbotSettings({
           >
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             {success}
+          </p>
+        )}
+
+        {/* Phase 9 — Self-hosted chatbot toggle. Only actionable when the
+            main chatbot is enabled; otherwise the label dims and the
+            toggle is disabled so there's no "ghost" self-host state when
+            the whole widget is off on the published site. */}
+        <div
+          className="flex flex-col gap-3 rounded-md border border-dashed border-border/60 bg-muted/30 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+          data-testid="self-hosted-chatbot-row"
+        >
+          <div className="space-y-0.5">
+            <Label
+              htmlFor="chatbot-self-hosted"
+              className="flex items-center gap-1.5 text-sm"
+            >
+              <Cloud className="h-3.5 w-3.5" />
+              Host chatbot on the published site (recommended)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Runs on your Cloudflare Pages deploy using Workers AI — no
+              builder dependency. Your portfolio chatbot keeps answering
+              even if the builder is offline. Requires{" "}
+              <a
+                href="https://developers.cloudflare.com/workers-ai/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                Workers AI enabled
+              </a>{" "}
+              on your Cloudflare account. Billed to your Cloudflare
+              account at pennies per conversation.
+            </p>
+          </div>
+          <Switch
+            id="chatbot-self-hosted"
+            checked={selfHosted}
+            disabled={!enabled || savingSelfHosted}
+            onCheckedChange={toggleSelfHosted}
+            data-testid="self-hosted-chatbot-toggle"
+          />
+        </div>
+
+        {selfHostedError && (
+          <p
+            role="alert"
+            className="flex items-start gap-1.5 text-sm text-destructive"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            {selfHostedError}
+          </p>
+        )}
+        {selfHostedSuccess && (
+          <p
+            role="status"
+            className="flex items-start gap-1.5 text-sm text-emerald-700 dark:text-emerald-400"
+          >
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            {selfHostedSuccess}
           </p>
         )}
 

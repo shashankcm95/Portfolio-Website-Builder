@@ -18,8 +18,14 @@
       "@/templates/*": ["./templates/*"]
     },
     "target": "ES2017",
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    // Phase 9 — Prevent `@cloudflare/workers-types` (used only by
+    // `functions/**`) from globally augmenting the Next.js build's type
+    // world. Without this, Cloudflare's stricter `fetch`/`Response`
+    // declarations leak into `src/**` and break `res.json()` assignment
+    // sites that were previously typed as `any`.
+    "types": ["node"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "functions"]
 }

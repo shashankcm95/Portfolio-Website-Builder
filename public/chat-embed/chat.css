@@ -1,0 +1,284 @@
+/* Phase 9 — Static chat widget styles.
+ *
+ * Rendered inside an iframe served by Cloudflare Pages. The outer
+ * chatbot bootstrap (`templates/_shared/chatbot-snippet.ts`) sizes the
+ * iframe based on `chatbot-resize` postMessages emitted by chat.js.
+ *
+ * Design: minimal, platform-neutral, light mode only. The visitor
+ * portfolio controls the surrounding page's palette; the chat widget
+ * is a compact overlay that shouldn't fight the host styles. */
+
+:root {
+  color-scheme: light;
+  --fg: #111;
+  --fg-muted: #666;
+  --bg: #fff;
+  --bg-muted: #f4f4f5;
+  --accent: #111;
+  --accent-fg: #fff;
+  --border: #e4e4e7;
+  --radius: 12px;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-family: var(--font);
+  color: var(--fg);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+body {
+  /* The bootstrap iframe is transparent; anything not inside .chat-panel
+   * or .chat-launcher shows through to the host page. */
+  background: transparent;
+}
+
+.chat-root {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
+/* Launcher — only visible when the panel is closed. */
+.chat-launcher {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--accent);
+  color: var(--accent-fg);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.chat-launcher:hover {
+  transform: translateY(-1px);
+}
+
+.chat-launcher:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.chat-root.open .chat-launcher {
+  display: none;
+}
+
+/* Panel — visible when the panel is open. */
+.chat-panel {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 380px;
+  max-width: calc(100vw - 16px);
+  height: 540px;
+  max-height: calc(100vh - 16px);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.chat-panel[hidden] {
+  display: none;
+}
+
+.chat-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-panel-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.chat-close {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--fg-muted);
+  padding: 4px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+}
+
+.chat-close:hover {
+  background: var(--bg-muted);
+  color: var(--fg);
+}
+
+.chat-transcript {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-msg {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.chat-msg.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-bottom-right-radius: 4px;
+}
+
+.chat-msg.assistant {
+  align-self: flex-start;
+  background: var(--bg-muted);
+  color: var(--fg);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-msg.assistant.streaming::after {
+  content: "▌";
+  display: inline-block;
+  margin-left: 2px;
+  opacity: 0.5;
+  animation: chat-blink 1s steps(2, start) infinite;
+}
+
+@keyframes chat-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+.chat-msg.error {
+  align-self: center;
+  background: #fef2f2;
+  color: #7f1d1d;
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1px solid #fecaca;
+  max-width: 100%;
+}
+
+.chat-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 14px 0;
+}
+
+.chat-starters:empty {
+  display: none;
+}
+
+.chat-starter {
+  appearance: none;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.chat-starter:hover {
+  background: var(--bg-muted);
+  color: var(--fg);
+}
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.chat-input {
+  flex: 1;
+  font: inherit;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+  transition: border-color 120ms ease;
+}
+
+.chat-input:focus {
+  border-color: var(--accent);
+}
+
+.chat-send {
+  appearance: none;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: 0;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.chat-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Small-viewport — the bootstrap already switches iframe dimensions to
+ * full-bleed below 480px; make the panel itself fill. */
+@media (max-width: 480px) {
+  .chat-panel {
+    bottom: 0;
+    right: 0;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    border: 0;
+  }
+  .chat-launcher {
+    bottom: 16px;
+    right: 16px;
+  }
+}
