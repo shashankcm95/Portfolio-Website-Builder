@@ -1,0 +1,254 @@
+/* ─── Phase 7: Terminal template ──────────────────────────────────────────
+ *
+ * CLI / hacker aesthetic. Monospace everywhere, near-black background,
+ * Monokai-derived palette. Section headers render as shell prompts
+ * (`$ cat about.md`); skill chips frame in `[brackets]`.
+ *
+ * Mono font: ui-monospace fallback chain — uses native fonts when
+ * available (SF Mono, Cascadia Code, Consolas, JetBrains Mono if
+ * locally installed). Avoids a network request on first paint.
+ */
+
+:root {
+  --bg: #0a0e14;
+  --bg-elev: #0f1419;
+  --bg-prompt: #161b22;
+  --text: #f8f8f2;
+  --text-dim: #99a3b3;
+  --text-comment: #6c7086;
+  --green: #a6e22e;
+  --pink: #f92672;
+  --yellow: #e6db74;
+  --blue: #66d9ef;
+  --purple: #ae81ff;
+  --orange: #fd971f;
+  --border: #2a2f37;
+  --selection: #44475a;
+
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code",
+    "Source Code Pro", "Menlo", "Consolas", "Liberation Mono", monospace;
+  --max-width: 920px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--selection); color: var(--text); }
+
+a { color: var(--green); text-decoration: none; }
+a:hover { color: var(--text); background: var(--green); }
+
+h1, h2, h3, h4 {
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text);
+  margin: 1.6em 0 0.4em;
+}
+h1 { font-size: 1.4rem; }
+h2 { font-size: 1.1rem; color: var(--blue); }
+h3 { font-size: 1rem; color: var(--yellow); }
+p { margin: 0 0 1em; }
+
+/* ─── Layout ──────────────────────────────────────────────────────── */
+
+.container { max-width: var(--max-width); margin: 0 auto; padding: 0 24px; }
+.section { padding: 2em 0; }
+
+/* ─── Top bar (mock terminal chrome) ───────────────────────────────── */
+
+.term-frame {
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  margin: 24px auto;
+  max-width: var(--max-width);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.term-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-prompt);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+}
+.term-titlebar .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.term-titlebar .dot.red    { background: #ff5f56; }
+.term-titlebar .dot.yellow { background: #ffbd2e; }
+.term-titlebar .dot.green  { background: #27c93f; }
+.term-titlebar-title {
+  flex: 1;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.term-body { padding: 18px 22px; }
+
+/* ─── Top nav (rendered as path) ───────────────────────────────────── */
+
+.nav {
+  background: var(--bg-prompt);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.nav-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+.nav-brand {
+  color: var(--green);
+  font-weight: 700;
+}
+.nav-brand::before { content: "~/"; color: var(--text-comment); }
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 14px;
+  margin: 0 0 0 auto;
+  padding: 0;
+}
+.nav-links a { color: var(--text-dim); }
+.nav-links a:hover, .nav-links a.active {
+  color: var(--green);
+  background: transparent;
+  text-decoration: underline;
+}
+
+/* ─── Prompts ──────────────────────────────────────────────────────── */
+
+.prompt {
+  color: var(--text-comment);
+  font-size: 0.95rem;
+  margin: 1.6em 0 0.4em;
+}
+.prompt::before { content: "$ "; color: var(--green); }
+.prompt + h2 { margin-top: 0; }
+
+.cursor::after {
+  content: "▮";
+  color: var(--green);
+  animation: blink 1s steps(2, start) infinite;
+  margin-left: 4px;
+}
+@keyframes blink { to { visibility: hidden; } }
+
+/* ─── Hero ─────────────────────────────────────────────────────────── */
+
+.hero { padding: 32px 0 8px; }
+.hero-name { color: var(--green); font-size: 1.5rem; }
+.hero-name .at { color: var(--text-comment); }
+.hero-label { color: var(--yellow); margin: 4px 0 12px; }
+.hero-summary { color: var(--text-dim); }
+.hero-links { margin-top: 12px; font-size: 0.9rem; }
+.hero-links a { margin-right: 14px; }
+
+/* ─── Listings (`ls -la`) ──────────────────────────────────────────── */
+
+.ls-listing {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  white-space: pre;
+  overflow-x: auto;
+  margin: 0.6em 0;
+}
+.ls-row {
+  display: grid;
+  grid-template-columns: 88px 1fr 80px 100px;
+  gap: 14px;
+  padding: 4px 0;
+  align-items: baseline;
+  white-space: nowrap;
+}
+.ls-perm { color: var(--text-comment); }
+.ls-name { color: var(--green); }
+.ls-name a { color: var(--green); }
+.ls-name a:hover { background: transparent; color: var(--text); text-decoration: underline; }
+.ls-size { color: var(--purple); text-align: right; }
+.ls-mtime { color: var(--text-comment); text-align: right; }
+.ls-desc {
+  grid-column: 2 / -1;
+  color: var(--text-dim);
+  white-space: normal;
+  font-size: 0.85rem;
+  margin: 2px 0 8px;
+}
+
+/* ─── Skill chips ──────────────────────────────────────────────────── */
+
+.tag-group { display: flex; flex-wrap: wrap; gap: 6px 10px; margin: 6px 0; }
+.tag {
+  font-size: 0.85rem;
+  color: var(--blue);
+}
+.tag::before { content: "["; color: var(--text-comment); }
+.tag::after  { content: "]"; color: var(--text-comment); }
+
+/* ─── Timeline ─────────────────────────────────────────────────────── */
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 16px;
+  padding: 8px 0;
+  border-top: 1px dashed var(--border);
+}
+.timeline-row:first-child { border-top: none; }
+.timeline-when { color: var(--text-comment); font-size: 0.85rem; }
+.timeline-what { color: var(--text); }
+.timeline-where { color: var(--yellow); }
+
+/* ─── Project detail ───────────────────────────────────────────────── */
+
+.project-section { margin: 1.4em 0; }
+.facts-list { margin: 0; padding-left: 1.2em; color: var(--text-dim); }
+.facts-list li { margin: 4px 0; }
+
+/* ─── Footer ───────────────────────────────────────────────────────── */
+
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 18px 0 32px;
+  margin-top: 28px;
+  font-size: 0.8rem;
+  color: var(--text-comment);
+}
+.footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+/* ─── Responsive ───────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  body { font-size: 13px; }
+  .ls-row { grid-template-columns: 1fr; gap: 2px; padding: 6px 0; }
+  .ls-perm, .ls-size, .ls-mtime { text-align: left; }
+  .timeline-row { grid-template-columns: 1fr; gap: 4px; }
+}

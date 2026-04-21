@@ -44,6 +44,85 @@ async function getTemplateComponents(templateId: string) {
         ContactPage,
       };
     }
+    // Phase 7 — academic / research minimal (Karpathy / colah-style).
+    case "research": {
+      const [
+        { Layout },
+        { HomePage },
+        { AboutPage },
+        { ProjectsPage },
+        { ProjectDetailPage },
+        { ContactPage },
+      ] = await Promise.all([
+        import("@/templates/research/components/Layout"),
+        import("@/templates/research/pages/index"),
+        import("@/templates/research/pages/about"),
+        import("@/templates/research/pages/projects"),
+        import("@/templates/research/pages/project-detail"),
+        import("@/templates/research/pages/contact"),
+      ]);
+      return {
+        Layout,
+        HomePage,
+        AboutPage,
+        ProjectsPage,
+        ProjectDetailPage,
+        ContactPage,
+      };
+    }
+    // Phase 7 — CLI / hacker aesthetic for SRE / systems / DevOps.
+    case "terminal": {
+      const [
+        { Layout },
+        { HomePage },
+        { AboutPage },
+        { ProjectsPage },
+        { ProjectDetailPage },
+        { ContactPage },
+      ] = await Promise.all([
+        import("@/templates/terminal/components/Layout"),
+        import("@/templates/terminal/pages/index"),
+        import("@/templates/terminal/pages/about"),
+        import("@/templates/terminal/pages/projects"),
+        import("@/templates/terminal/pages/project-detail"),
+        import("@/templates/terminal/pages/contact"),
+      ]);
+      return {
+        Layout,
+        HomePage,
+        AboutPage,
+        ProjectsPage,
+        ProjectDetailPage,
+        ContactPage,
+      };
+    }
+    // Phase 7 — typography-forward editorial for senior engineers /
+    // technical leaders / designer-developer hybrids.
+    case "editorial": {
+      const [
+        { Layout },
+        { HomePage },
+        { AboutPage },
+        { ProjectsPage },
+        { ProjectDetailPage },
+        { ContactPage },
+      ] = await Promise.all([
+        import("@/templates/editorial/components/Layout"),
+        import("@/templates/editorial/pages/index"),
+        import("@/templates/editorial/pages/about"),
+        import("@/templates/editorial/pages/projects"),
+        import("@/templates/editorial/pages/project-detail"),
+        import("@/templates/editorial/pages/contact"),
+      ]);
+      return {
+        Layout,
+        HomePage,
+        AboutPage,
+        ProjectsPage,
+        ProjectDetailPage,
+        ContactPage,
+      };
+    }
     case "minimal":
     default: {
       // Fall back to minimal so renders never fail on an unknown id.
@@ -79,7 +158,17 @@ async function getTemplateComponents(templateId: string) {
  * "minimal" for unknown ids.
  */
 function resolveTemplateDir(templateId: string): string {
-  return templateId === "classic" ? "classic" : "minimal";
+  // Phase 7 — extend the dir map with the three new templates. Anything
+  // unrecognised falls back to "minimal" so renders never fail.
+  switch (templateId) {
+    case "classic":
+    case "research":
+    case "terminal":
+    case "editorial":
+      return templateId;
+    default:
+      return "minimal";
+  }
 }
 
 /**

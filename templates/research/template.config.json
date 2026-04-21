@@ -1,0 +1,14 @@
+{
+  "id": "research",
+  "name": "Research",
+  "description": "Academic, single-column, content-first. Modeled after researcher home pages (Karpathy, colah). Optimal for ML researchers, PhD candidates, scientists.",
+  "version": "1.0.0",
+  "supportedPages": ["home", "about", "projects", "project-detail", "contact"],
+  "audience": ["research", "ml", "academic"],
+  "defaultSettings": {
+    "primaryColor": "#0066cc",
+    "fontFamily": "Crimson Pro",
+    "showGitHubStats": true,
+    "showTechStack": true
+  }
+}
