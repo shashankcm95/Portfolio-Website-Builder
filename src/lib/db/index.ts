@@ -1,11 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
+import { logger } from "@/lib/log";
 
 if (!process.env.DATABASE_URL) {
-  console.warn(
-    "[db] DATABASE_URL is not set. Database connections will fail."
-  );
+  logger.warn("[db] DATABASE_URL is not set. Database connections will fail.");
 }
 
 const pool = new Pool({

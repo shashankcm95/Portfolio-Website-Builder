@@ -28,6 +28,7 @@ import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { embeddings, projects } from "@/lib/db/schema";
 import type { ChunkType } from "@/lib/chatbot/types";
+import { logger } from "@/lib/log";
 
 /** BGE-base-en-v1.5 dimensionality. */
 export const BGE_DIMENSIONS = 768;
@@ -171,8 +172,7 @@ async function embedBatch(
   texts: string[]
 ): Promise<Array<number[] | null>> {
   if (!CF_ACCOUNT_ID || !CF_API_TOKEN) {
-    // eslint-disable-next-line no-console
-    console.warn(
+    logger.warn(
       "[cf-embed] CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_API_TOKEN not set; skipping BGE embedding — baked corpus will be empty."
     );
     return texts.map(() => null);
@@ -189,11 +189,12 @@ async function embedBatch(
         results[offset + i] = vectors[i] ?? null;
       }
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[cf-embed] Workers AI batch ${offset}-${offset + slice.length} failed; dropping ${slice.length} chunks:`,
-        err instanceof Error ? err.message : err
-      );
+      logger.warn("[cf-embed] Workers AI batch failed; dropping chunks", {
+        batchStart: offset,
+        batchEnd: offset + slice.length,
+        dropped: slice.length,
+        error: err instanceof Error ? err.message : String(err),
+      });
       // Leave these indexes as null — they get dropped upstream.
     }
   }

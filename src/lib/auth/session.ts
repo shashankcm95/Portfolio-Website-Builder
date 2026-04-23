@@ -8,6 +8,6 @@ export async function getCurrentUser() {
     name: session.user.name,
     email: session.user.email,
     image: session.user.image,
-    githubUsername: (session.user as any).githubUsername as string | undefined,
+    githubUsername: session.user.githubUsername as string | undefined,
   }
 }

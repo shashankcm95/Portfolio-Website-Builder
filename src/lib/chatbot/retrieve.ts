@@ -11,6 +11,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { embeddings, projects } from "@/lib/db/schema";
+import { logger } from "@/lib/log";
 import {
   EMBEDDING_DIM,
   MAX_CONTEXT_CHUNKS,
@@ -146,10 +147,10 @@ export async function retrieveTopK(
     // Don't hard-fail — log and still attempt ranking. A mismatch likely
     // means a test provided a short vector; cosine works on the shorter
     // prefix. In production this shouldn't happen.
-    // eslint-disable-next-line no-console
-    console.warn(
-      `[chatbot/retrieve] queryEmbedding length ${queryEmbedding.length} != ${EMBEDDING_DIM}`
-    );
+    logger.warn("[chatbot/retrieve] queryEmbedding length mismatch", {
+      actual: queryEmbedding.length,
+      expected: EMBEDDING_DIM,
+    });
   }
 
   const rows = await db

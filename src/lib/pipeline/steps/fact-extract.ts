@@ -9,6 +9,7 @@ import {
 } from "@/lib/ai/prompts/fact-extraction";
 import type { ContextPack } from "@/lib/ai/schemas/context-pack";
 import { throwIfAborted } from "@/lib/pipeline/abort";
+import { logger } from "@/lib/log";
 
 export interface FactExtractInput {
   contextPack: ContextPack;
@@ -61,10 +62,10 @@ export async function extractFacts(
       return parsed;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.warn(
-        `[fact-extract] Attempt ${attempt + 1} failed:`,
-        lastError.message
-      );
+      logger.warn("[fact-extract] Attempt failed", {
+        attempt: attempt + 1,
+        error: lastError.message,
+      });
 
       if (attempt === 0) {
         continue;

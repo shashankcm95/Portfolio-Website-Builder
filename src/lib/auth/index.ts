@@ -1,5 +1,16 @@
 import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
+import { logger } from "@/lib/log"
+
+/**
+ * Narrow shape of the GitHub OAuth `profile` payload we actually read.
+ * next-auth types `profile` as a loose `Profile` (optional fields only);
+ * we always have `id` and `login` from GitHub's /user response.
+ */
+interface GitHubProfile {
+  id: number | string;
+  login: string;
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -30,7 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           "@/lib/auth/github-token"
         );
 
-        const githubProfile = profile as any;
+        const githubProfile = profile as unknown as GitHubProfile;
         const existingUser = await db.select().from(users).where(eq(users.githubId, String(githubProfile.id))).limit(1);
         const encryptedToken = account?.access_token
           ? await encryptGitHubTokenForStorage(account.access_token)
@@ -59,14 +70,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }).where(eq(users.githubId, String(githubProfile.id)));
         }
       } catch (error) {
-        console.warn("DB not available during sign-in, skipping user upsert:", error);
+        logger.warn("[auth] DB not available during sign-in, skipping user upsert", {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
       return true;
     },
     async jwt({ token, account, profile }) {
       if (profile) {
-        token.githubUsername = (profile as any).login;
-        token.githubId = String((profile as any).id);
+        token.githubUsername = (profile as unknown as GitHubProfile).login;
+        token.githubId = String((profile as unknown as GitHubProfile).id);
       }
       // Look up internal user ID
       if (token.githubId && !token.userId) {
@@ -90,7 +103,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (token.userId) session.user.id = token.userId as string;
-      if (token.githubUsername) (session.user as any).githubUsername = token.githubUsername as string;
+      if (token.githubUsername) session.user.githubUsername = token.githubUsername as string;
       return session;
     }
   }

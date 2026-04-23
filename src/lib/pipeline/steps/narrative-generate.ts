@@ -10,6 +10,7 @@ import {
 import type { ContextPack } from "@/lib/ai/schemas/context-pack";
 import type { Fact } from "@/lib/ai/schemas/facts";
 import { throwIfAborted } from "@/lib/pipeline/abort";
+import { logger } from "@/lib/log";
 
 export interface NarrativeGenerateInput {
   projectName: string;
@@ -60,18 +61,18 @@ export async function generateNarratives(
 
       // Validate we got all 10 expected sections
       if (parsed.sections.length < 10) {
-        console.warn(
-          `[narrative-generate] Expected 10 sections but got ${parsed.sections.length}`
-        );
+        logger.warn("[narrative-generate] Expected 10 sections", {
+          received: parsed.sections.length,
+        });
       }
 
       return parsed;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.warn(
-        `[narrative-generate] Attempt ${attempt + 1} failed:`,
-        lastError.message
-      );
+      logger.warn("[narrative-generate] Attempt failed", {
+        attempt: attempt + 1,
+        error: lastError.message,
+      });
 
       if (attempt === 0) {
         continue;

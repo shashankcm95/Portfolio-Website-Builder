@@ -5,6 +5,7 @@ import {
   buildContextGenerationUserPrompt,
 } from "@/lib/ai/prompts/context-generation";
 import { throwIfAborted } from "@/lib/pipeline/abort";
+import { logger } from "@/lib/log";
 
 /**
  * Maps common npm packages to their categories for rule-based tech stack detection.
@@ -219,9 +220,9 @@ export async function generateContextPack(
     // Validate against schema
     claudeContextPack = contextPackSchema.parse(claudeContextPack);
   } catch (error) {
-    console.warn(
-      "[context-generate] Claude analysis failed, using rule-based fallback:",
-      error instanceof Error ? error.message : error
+    logger.warn(
+      "[context-generate] Claude analysis failed, using rule-based fallback",
+      { error: error instanceof Error ? error.message : String(error) }
     );
 
     // Fallback to purely rule-based context pack

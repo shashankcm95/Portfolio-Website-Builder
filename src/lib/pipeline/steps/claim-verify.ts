@@ -9,6 +9,7 @@ import {
 } from "@/lib/ai/prompts/claim-verification";
 import type { Fact } from "@/lib/ai/schemas/facts";
 import { throwIfAborted } from "@/lib/pipeline/abort";
+import { logger } from "@/lib/log";
 
 export interface ClaimVerifyInput {
   generatedText: string;
@@ -60,10 +61,10 @@ export async function verifyClaims(
       return parsed;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.warn(
-        `[claim-verify] Attempt ${attempt + 1} failed:`,
-        lastError.message
-      );
+      logger.warn("[claim-verify] Attempt failed", {
+        attempt: attempt + 1,
+        error: lastError.message,
+      });
 
       if (attempt === 0) {
         continue;

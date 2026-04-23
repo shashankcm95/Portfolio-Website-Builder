@@ -8,6 +8,7 @@ import {
   buildResumeStructuringUserPrompt,
 } from "@/lib/ai/prompts/resume-structuring";
 import { throwIfAborted } from "@/lib/pipeline/abort";
+import { logger } from "@/lib/log";
 
 /**
  * Sends raw resume text to the caller-supplied LLM for structured extraction.
@@ -40,10 +41,10 @@ export async function structureResume(
       return parsed;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.warn(
-        `[resume-structure] Attempt ${attempt + 1} failed:`,
-        lastError.message
-      );
+      logger.warn("[resume-structure] Attempt failed", {
+        attempt: attempt + 1,
+        error: lastError.message,
+      });
 
       if (attempt === 0) {
         // Retry once

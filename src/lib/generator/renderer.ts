@@ -4,6 +4,7 @@ import path from "path";
 import type { ProfileData, Project } from "@/templates/_shared/types";
 import { generateSitemap, generateRobotsTxt } from "./sitemap";
 import { bakePortfolioOgImage } from "./og-bake";
+import { logger } from "@/lib/log";
 
 // Dynamic import for react-dom/server to avoid Next.js webpack restrictions
 async function getRenderer() {
@@ -349,11 +350,9 @@ export async function renderTemplate(
         files.set(path, content);
       }
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        "[renderer] Self-hosted chatbot bundle failed; publishing without it.",
-        err instanceof Error ? err.message : err
-      );
+      logger.warn("[renderer] Self-hosted chatbot bundle failed; publishing without it", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 

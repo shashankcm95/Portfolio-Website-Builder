@@ -235,7 +235,11 @@ export function cancelPipeline(projectId: string): boolean {
 
   // Update DB — fire-and-forget; writes `pipelineStatus = "cancelled"`.
   updateProjectStatus(projectId, "cancelled", "Cancelled by owner").catch(
-    console.error
+    (err) =>
+      logger.error("[orchestrator] Failed to mark project cancelled", {
+        error: err instanceof Error ? err.message : String(err),
+        projectId,
+      })
   );
 
   return true;
@@ -1022,7 +1026,11 @@ async function updateProjectStatus(
       })
       .where(eq(projects.id, projectId));
   } catch (err) {
-    console.error("[orchestrator] Failed to update project status:", err);
+    logger.error("[orchestrator] Failed to update project status", {
+      error: err instanceof Error ? err.message : String(err),
+      projectId,
+      status,
+    });
   }
 }
 
@@ -1066,7 +1074,10 @@ async function storeResumeRawText(
       .set({ resumeRawText: rawText, updatedAt: new Date() })
       .where(eq(users.id, portfolio[0].userId));
   } catch (err) {
-    console.error("[orchestrator] Failed to store resume raw text:", err);
+    logger.error("[orchestrator] Failed to store resume raw text", {
+      error: err instanceof Error ? err.message : String(err),
+      projectId,
+    });
   }
 }
 
@@ -1096,7 +1107,10 @@ async function getResumeRawText(projectId: string): Promise<string | undefined> 
 
     return user[0]?.resumeRawText ?? undefined;
   } catch (err) {
-    console.error("[orchestrator] Failed to get resume raw text:", err);
+    logger.error("[orchestrator] Failed to get resume raw text", {
+      error: err instanceof Error ? err.message : String(err),
+      projectId,
+    });
     return undefined;
   }
 }
@@ -1127,6 +1141,9 @@ async function storeResumeJson(
       .set({ resumeJson, updatedAt: new Date() })
       .where(eq(users.id, portfolio[0].userId));
   } catch (err) {
-    console.error("[orchestrator] Failed to store resume JSON:", err);
+    logger.error("[orchestrator] Failed to store resume JSON", {
+      error: err instanceof Error ? err.message : String(err),
+      projectId,
+    });
   }
 }

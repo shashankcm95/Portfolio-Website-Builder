@@ -9,17 +9,70 @@ import { eq } from "drizzle-orm";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+// Phase R6.1 — cap list queries so a single user can't accidentally
+// (or adversarially) trigger an unbounded scan. Best-effort pagination;
+// no total-count, callers page by bumping offset until fewer than
+// `limit` rows come back.
+const DEFAULT_LIMIT = 100;
+const MAX_LIMIT = 1000;
+
+/**
+ * Parse a positive-integer query param. Returns:
+ *   - number  → parsed value
+ *   - null    → param absent (use default)
+ *   - string  → error message
+ */
+function parsePositiveInt(
+  raw: string | null,
+  name: string,
+  { allowZero = false }: { allowZero?: boolean } = {}
+): number | null | string {
+  if (raw === null) return null;
+  if (!/^\d+$/.test(raw)) return `${name} must be a positive integer`;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return `${name} must be a positive integer`;
+  if (!allowZero && n <= 0) return `${name} must be a positive integer`;
+  if (allowZero && n < 0) return `${name} must be a positive integer`;
+  return n;
+}
+
+export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+
+  const limitParsed = parsePositiveInt(searchParams.get("limit"), "limit");
+  if (typeof limitParsed === "string") {
+    return NextResponse.json({ error: limitParsed }, { status: 400 });
+  }
+  const offsetParsed = parsePositiveInt(
+    searchParams.get("offset"),
+    "offset",
+    { allowZero: true }
+  );
+  if (typeof offsetParsed === "string") {
+    return NextResponse.json({ error: offsetParsed }, { status: 400 });
+  }
+
+  const limit = limitParsed ?? DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) {
+    return NextResponse.json(
+      { error: `limit must be <= ${MAX_LIMIT}` },
+      { status: 400 }
+    );
+  }
+  const offset = offsetParsed ?? 0;
+
   const userPortfolios = await db
     .select()
     .from(portfolios)
     .where(eq(portfolios.userId, session.user.id))
-    .orderBy(portfolios.createdAt);
+    .orderBy(portfolios.createdAt)
+    .limit(limit)
+    .offset(offset);
 
   return NextResponse.json({ portfolios: userPortfolios });
 }

@@ -26,6 +26,7 @@ import type {
   StorageUploadResult,
   UploadFileInput,
 } from "@/lib/storage/types";
+import { logger } from "@/lib/log";
 
 // ─── Config ────────────────────────────────────────────────────────────────
 
@@ -281,9 +282,9 @@ export async function deleteObject(url: string): Promise<void> {
     );
   } catch (e) {
     // Log and continue — cleanup is best-effort.
-    console.warn(
-      `[r2] deleteObject failed for ${url}:`,
-      e instanceof Error ? e.message : e
-    );
+    logger.warn("[r2] deleteObject failed", {
+      url,
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 }

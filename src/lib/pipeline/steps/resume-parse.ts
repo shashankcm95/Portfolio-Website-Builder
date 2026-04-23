@@ -1,4 +1,5 @@
 import { throwIfAborted } from "@/lib/pipeline/abort";
+import { logger } from "@/lib/log";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require("pdf-parse") as (
@@ -101,7 +102,9 @@ async function parseDocx(fileBuffer: Buffer): Promise<ResumeParseResult> {
         .filter((m) => m.type === "warning")
         .map((m) => m.message);
       if (warnings.length > 0) {
-        console.warn("[resume-parse] DOCX warnings:", warnings.join("; "));
+        logger.warn("[resume-parse] DOCX warnings", {
+          warnings: warnings.join("; "),
+        });
       }
     }
 

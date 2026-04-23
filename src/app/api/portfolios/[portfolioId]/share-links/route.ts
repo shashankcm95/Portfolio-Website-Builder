@@ -107,6 +107,9 @@ export async function GET(
   const authz = await authorizePortfolio(params.portfolioId);
   if (authz.error) return authz.error;
 
+  // Naturally bounded: per-portfolio share tokens are owner-created and
+  // the UI caps creation rate; unbounded growth requires deliberate abuse
+  // from the owner against their own portfolio.
   const rows = await db
     .select()
     .from(shareTokens)

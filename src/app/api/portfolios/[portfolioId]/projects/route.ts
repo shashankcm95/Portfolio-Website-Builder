@@ -195,6 +195,8 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // Naturally bounded: scoped to a single portfolio the caller owns, and
+  // project counts per portfolio are UI-capped well below any scan concern.
   const portfolioProjects = await db
     .select()
     .from(projects)

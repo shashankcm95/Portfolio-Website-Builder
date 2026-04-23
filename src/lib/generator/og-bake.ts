@@ -18,6 +18,7 @@ import path from "node:path";
 import { ImageResponse } from "@vercel/og";
 import { PortfolioOgLayout } from "@/lib/og/layout-portfolio";
 import type { ProfileData } from "@/templates/_shared/types";
+import { logger } from "@/lib/log";
 
 // Matches the edge-route constraint: 1200×630 is the canonical OG card.
 const WIDTH = 1200;
@@ -96,11 +97,9 @@ export async function bakePortfolioOgImage(
     return Buffer.from(ab);
   } catch (err) {
     // Don't blow up the whole generation for a cosmetic artifact.
-    // eslint-disable-next-line no-console
-    console.warn(
-      "[og-bake] portfolio OG image render failed; falling back to avatar:",
-      err instanceof Error ? err.message : err
-    );
+    logger.warn("[og-bake] portfolio OG image render failed; falling back to avatar", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
