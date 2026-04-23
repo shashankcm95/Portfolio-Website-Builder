@@ -77,7 +77,10 @@ describe("bakePortfolioOgImage", () => {
     MockImageResponse.mockImplementationOnce(() => {
       throw new Error("satori boom");
     });
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    // Phase R6.2 migrated this code path from console.warn to logger.warn;
+    // the logger routes warn+error to console.error (both stderr), so we
+    // spy there to observe emission.
+    const warn = jest.spyOn(console, "error").mockImplementation(() => {});
     const buf = await bakePortfolioOgImage(fixtureProfile());
     expect(buf).toBeNull();
     expect(warn).toHaveBeenCalled();
@@ -86,7 +89,10 @@ describe("bakePortfolioOgImage", () => {
 
   it("returns null when arrayBuffer() rejects", async () => {
     mockArrayBuffer.mockRejectedValueOnce(new Error("drain boom"));
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    // Phase R6.2 migrated this code path from console.warn to logger.warn;
+    // the logger routes warn+error to console.error (both stderr), so we
+    // spy there to observe emission.
+    const warn = jest.spyOn(console, "error").mockImplementation(() => {});
     const buf = await bakePortfolioOgImage(fixtureProfile());
     expect(buf).toBeNull();
     warn.mockRestore();
