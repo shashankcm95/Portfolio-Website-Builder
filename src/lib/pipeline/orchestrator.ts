@@ -626,7 +626,12 @@ async function runPipeline(
             signal
           );
 
-          // Store generated sections in DB (upsert so retries are idempotent)
+          // Store generated sections in DB (upsert so retries are idempotent).
+          // Phase R2 — record the actual resolved model from the LLM client
+          // instead of a hardcoded "gpt-4o-mini". Without this, Anthropic
+          // BYOK users' cost attribution was always misreported as the
+          // default platform model.
+          const narrativeModel = llm.model;
           for (const section of narratives.sections) {
             await db
               .insert(generatedSections)
@@ -635,7 +640,7 @@ async function runPipeline(
                 sectionType: section.sectionType,
                 variant: section.variant,
                 content: section.content,
-                modelUsed: "gpt-4o-mini",
+                modelUsed: narrativeModel,
               })
               .onConflictDoUpdate({
                 target: [
@@ -646,7 +651,7 @@ async function runPipeline(
                 ],
                 set: {
                   content: section.content,
-                  modelUsed: "gpt-4o-mini",
+                  modelUsed: narrativeModel,
                   updatedAt: new Date(),
                 },
               });
@@ -939,7 +944,9 @@ export async function regenerateSection(
     );
   }
 
-  // Upsert the single section
+  // Upsert the single section. Phase R2 — use the resolved LLM client's
+  // actual model name instead of hardcoding "gpt-4o-mini".
+  const regenModel = llm.model;
   const [upserted] = await db
     .insert(generatedSections)
     .values({
@@ -947,7 +954,7 @@ export async function regenerateSection(
       sectionType: picked.sectionType,
       variant: picked.variant,
       content: picked.content,
-      modelUsed: "gpt-4o-mini",
+      modelUsed: regenModel,
     })
     .onConflictDoUpdate({
       target: [
@@ -960,7 +967,7 @@ export async function regenerateSection(
         content: picked.content,
         isUserEdited: false,
         userContent: null,
-        modelUsed: "gpt-4o-mini",
+        modelUsed: regenModel,
         updatedAt: new Date(),
       },
     })

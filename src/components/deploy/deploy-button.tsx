@@ -68,6 +68,14 @@ export function DeployButton({ portfolioId }: DeployButtonProps) {
   // that the credentials themselves may be invalid.
   const [deployAuthFailed, setDeployAuthFailed] = useState(false);
 
+  // Phase R2 — the deploy route returns `rateLimitWarning` when the
+  // self-hosted chatbot's WAF rate-limit provisioning was skipped or
+  // failed. Surface it inline so the owner knows protection isn't
+  // active; deploy itself still succeeded.
+  const [rateLimitWarning, setRateLimitWarning] = useState<string | null>(
+    null
+  );
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -172,6 +180,15 @@ export function DeployButton({ portfolioId }: DeployButtonProps) {
       const deployData = await deployRes.json();
       setLiveUrl(deployData.url ?? null);
       setLastDeployedAt(new Date().toISOString());
+      // Phase R2 — surface WAF rate-limit provisioning failures so the
+      // owner knows abuse-protection wasn't set up. Non-fatal: the deploy
+      // itself succeeded; only the rate-limit layer is missing.
+      setRateLimitWarning(
+        typeof deployData.rateLimitWarning === "string" &&
+          deployData.rateLimitWarning.length > 0
+          ? deployData.rateLimitWarning
+          : null
+      );
       setPhase("done");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Deployment failed";
@@ -334,6 +351,31 @@ export function DeployButton({ portfolioId }: DeployButtonProps) {
                   </>
                 )}
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Phase R2 — self-hosted chatbot rate-limit advisory. The deploy
+            succeeded but WAF provisioning didn't, so visitor traffic to
+            /api/chat/* isn't rate-limited at the edge. The reason string
+            comes straight from `cf-waf-rate-limit.ts` — it's already
+            user-facing (e.g. "Pages-default subdomain has no user-owned
+            zone — add a custom domain"). */}
+        {phase === "done" && rateLimitWarning && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                Chatbot rate-limiting not active
+              </p>
+              <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300 break-words">
+                {rateLimitWarning}
+              </p>
+              <p className="mt-1.5 text-xs text-amber-800/80 dark:text-amber-300/80">
+                Your site is live and the chatbot works — this only means
+                visitor requests to <code>/api/chat/*</code> are not
+                throttled at the edge. Abuse could drain your LLM budget.
+              </p>
             </div>
           </div>
         )}

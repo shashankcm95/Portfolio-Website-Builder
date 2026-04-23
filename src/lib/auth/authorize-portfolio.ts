@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { portfolios } from "@/lib/db/schema";
+import { portfolios, projects } from "@/lib/db/schema";
 
 export interface AuthorizeOk {
   error?: undefined;
@@ -46,6 +46,49 @@ export async function authorizePortfolio(
     };
   }
   if (row.userId !== session.user.id) {
+    return {
+      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    };
+  }
+  return { userId: session.user.id };
+}
+
+/**
+ * Phase R2 — project-scoped variant of {@link authorizePortfolio}.
+ *
+ * Joins `projects → portfolios` so the ownership check is a single SQL
+ * round-trip (vs two separate lookups). Used by routes nested under
+ * `/api/portfolios/:portfolioId/projects/:projectId/**` that previously
+ * duplicated the same `innerJoin(portfolios, …)` pattern inline.
+ *
+ * Returns `{ userId }` on success or `{ error: NextResponse }` on failure
+ * with the same 401/404/403 shape as `authorizePortfolio`.
+ */
+export async function authorizeProject(
+  portfolioId: string,
+  projectId: string
+): Promise<AuthorizeResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return {
+      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+  const [row] = await db
+    .select({
+      projectId: projects.id,
+      portfolioUserId: portfolios.userId,
+    })
+    .from(projects)
+    .innerJoin(portfolios, eq(projects.portfolioId, portfolios.id))
+    .where(and(eq(projects.id, projectId), eq(portfolios.id, portfolioId)))
+    .limit(1);
+  if (!row) {
+    return {
+      error: NextResponse.json({ error: "Not found" }, { status: 404 }),
+    };
+  }
+  if (row.portfolioUserId !== session.user.id) {
     return {
       error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
     };

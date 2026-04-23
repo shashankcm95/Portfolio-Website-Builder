@@ -14,9 +14,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, gte } from "drizzle-orm";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { portfolios, visitorEvents } from "@/lib/db/schema";
+import { visitorEvents } from "@/lib/db/schema";
+import { authorizePortfolio } from "@/lib/auth/authorize-portfolio";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
@@ -56,27 +56,6 @@ export interface AnalyticsSummary {
   topCountries: Array<{ country: string; count: number }>;
 }
 
-async function authorize(portfolioId: string) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return {
-      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-  const [row] = await db
-    .select({ id: portfolios.id, userId: portfolios.userId })
-    .from(portfolios)
-    .where(eq(portfolios.id, portfolioId))
-    .limit(1);
-  if (!row) {
-    return { error: NextResponse.json({ error: "Not found" }, { status: 404 }) };
-  }
-  if (row.userId !== session.user.id) {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-  return { userId: session.user.id };
-}
-
 function startOfDayUtc(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
@@ -104,8 +83,8 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { portfolioId: string } }
 ) {
-  const auth = await authorize(params.portfolioId);
-  if ("error" in auth) return auth.error;
+  const authz = await authorizePortfolio(params.portfolioId);
+  if (authz.error) return authz.error;
 
   const now = new Date();
   const windowStart = daysAgoUtc(WINDOW_DAYS - 1, now); // 14 day buckets incl. today

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { portfolios, projectDemos, projects } from "@/lib/db/schema";
+import { projectDemos } from "@/lib/db/schema";
+import { authorizeProject } from "@/lib/auth/authorize-portfolio";
 import { detectDemoType } from "@/lib/demos/platform-detect";
 import { putDemosBodySchema } from "@/lib/demos/validation";
 import type { DemoType, ProjectDemo } from "@/lib/demos/types";
@@ -36,48 +36,6 @@ const OEMBED_TYPES = new Set<DemoType>(["youtube", "loom", "vimeo"]);
  * credibility/refresh/route.ts.
  */
 
-// ─── Shared auth/ownership ──────────────────────────────────────────────────
-
-async function authorize(
-  portfolioId: string,
-  projectId: string
-): Promise<{ userId: string } | { error: NextResponse }> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return {
-      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-
-  const [row] = await db
-    .select({
-      projectId: projects.id,
-      portfolioUserId: portfolios.userId,
-    })
-    .from(projects)
-    .innerJoin(portfolios, eq(projects.portfolioId, portfolios.id))
-    .where(
-      and(
-        eq(projects.id, projectId),
-        eq(portfolios.id, portfolioId)
-      )
-    )
-    .limit(1);
-
-  if (!row) {
-    return {
-      error: NextResponse.json({ error: "Not found" }, { status: 404 }),
-    };
-  }
-  if (row.portfolioUserId !== session.user.id) {
-    return {
-      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
-    };
-  }
-
-  return { userId: session.user.id };
-}
-
 function toProjectDemo(row: typeof projectDemos.$inferSelect): ProjectDemo {
   return {
     id: row.id,
@@ -101,8 +59,8 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { portfolioId: string; projectId: string } }
 ) {
-  const auth = await authorize(params.portfolioId, params.projectId);
-  if ("error" in auth) return auth.error;
+  const authz = await authorizeProject(params.portfolioId, params.projectId);
+  if (authz.error) return authz.error;
 
   const rows = await db
     .select()
@@ -119,8 +77,11 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { portfolioId: string; projectId: string } }
 ) {
-  const authResult = await authorize(params.portfolioId, params.projectId);
-  if ("error" in authResult) return authResult.error;
+  const authResult = await authorizeProject(
+    params.portfolioId,
+    params.projectId
+  );
+  if (authResult.error) return authResult.error;
 
   let rawBody: unknown;
   try {
@@ -298,8 +259,8 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: { portfolioId: string; projectId: string } }
 ) {
-  const auth = await authorize(params.portfolioId, params.projectId);
-  if ("error" in auth) return auth.error;
+  const authz = await authorizeProject(params.portfolioId, params.projectId);
+  if (authz.error) return authz.error;
 
   // Capture URLs before the SQL delete so we know which R2 objects to
   // clean up. Non-fatal — we swallow R2 errors and still return 204.

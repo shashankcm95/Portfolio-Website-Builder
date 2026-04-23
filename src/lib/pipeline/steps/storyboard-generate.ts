@@ -161,6 +161,8 @@ export async function runStoryboardGenerate(
     };
 
     // ─── Persist (upsert on unique (projectId, sectionType, variant, version)) ───
+    // Phase R2 — use the resolved LLM client's model instead of hardcoding.
+    const storyboardModel = llm.model;
     await db
       .insert(generatedSections)
       .values({
@@ -168,7 +170,7 @@ export async function runStoryboardGenerate(
         sectionType: "storyboard",
         variant: "default",
         content: JSON.stringify(verifiedPayload),
-        modelUsed: "gpt-4o-mini",
+        modelUsed: storyboardModel,
       })
       .onConflictDoUpdate({
         target: [
@@ -179,7 +181,7 @@ export async function runStoryboardGenerate(
         ],
         set: {
           content: JSON.stringify(verifiedPayload),
-          modelUsed: "gpt-4o-mini",
+          modelUsed: storyboardModel,
           updatedAt: new Date(),
         },
       });

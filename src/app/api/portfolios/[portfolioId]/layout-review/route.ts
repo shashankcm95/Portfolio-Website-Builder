@@ -40,6 +40,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 
+// Intentionally does NOT use the shared `authorizePortfolio` helper —
+// this route piggybacks the `templateId` fetch onto the same ownership
+// lookup, saving a round-trip. The return shape `{ portfolio }` differs
+// from the shared helper's `{ userId }` on purpose. See Phase R2 commit.
 async function authorize(portfolioId: string) {
   const session = await auth();
   if (!session?.user?.id) {

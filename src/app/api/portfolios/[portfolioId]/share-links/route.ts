@@ -15,9 +15,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { portfolios, shareTokens } from "@/lib/db/schema";
+import { shareTokens } from "@/lib/db/schema";
+import { authorizePortfolio } from "@/lib/auth/authorize-portfolio";
 import { generateShareToken } from "@/lib/share/tokens";
 
 // Prevents static prerender during `next build` — this route queries
@@ -73,27 +73,6 @@ function parseBody(raw: unknown): ParsedBody | string {
   return { label, expiresAt };
 }
 
-// ─── Auth helper ────────────────────────────────────────────────────────────
-
-async function authorize(portfolioId: string) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-  const [row] = await db
-    .select({ id: portfolios.id, userId: portfolios.userId })
-    .from(portfolios)
-    .where(eq(portfolios.id, portfolioId))
-    .limit(1);
-  if (!row) {
-    return { error: NextResponse.json({ error: "Not found" }, { status: 404 }) };
-  }
-  if (row.userId !== session.user.id) {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-  return { userId: session.user.id };
-}
-
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function baseAppUrl(req: NextRequest): string {
@@ -124,8 +103,8 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { portfolioId: string } }
 ) {
-  const auth = await authorize(params.portfolioId);
-  if ("error" in auth) return auth.error;
+  const authz = await authorizePortfolio(params.portfolioId);
+  if (authz.error) return authz.error;
 
   const rows = await db
     .select()
@@ -142,8 +121,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { portfolioId: string } }
 ) {
-  const authResult = await authorize(params.portfolioId);
-  if ("error" in authResult) return authResult.error;
+  const authResult = await authorizePortfolio(params.portfolioId);
+  if (authResult.error) return authResult.error;
 
   let raw: unknown = {};
   try {
