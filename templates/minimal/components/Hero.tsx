@@ -7,9 +7,26 @@ interface HeroProps {
 
 /**
  * Hero section for the home page.
- * Displays name, label, summary, avatar, and social links.
+ *
+ * Phase R4 — retrofitted to render the proof-backed fields added in
+ * Phase A/B (anchorStat, namedEmployers, hiring) when they're set.
+ * All four additions are optional; a portfolio without them looks
+ * identical to the original. `positioning` (user-curated) takes
+ * precedence over `label` (resume-derived) when present.
  */
 export function Hero({ basics }: HeroProps) {
+  const tagline = basics.positioning || basics.label;
+  const showHireCta =
+    basics.hiring && basics.hiring.status !== "not-looking";
+  const hireHref =
+    basics.hiring?.ctaHref ||
+    (basics.email ? `mailto:${basics.email}` : "/contact/");
+  const hireLabel =
+    basics.hiring?.ctaText ||
+    (basics.hiring?.status === "available"
+      ? "Available — let's talk"
+      : "Open to conversations");
+
   return (
     <section className="hero">
       <div className="container">
@@ -21,9 +38,35 @@ export function Hero({ basics }: HeroProps) {
           />
         )}
         <h1>{basics.name}</h1>
-        <p className="hero-label">{basics.label}</p>
+        <p className="hero-label">{tagline}</p>
+
+        {basics.anchorStat && (
+          <p className="hero-anchor">
+            <strong>{basics.anchorStat.value}</strong>{" "}
+            {basics.anchorStat.unit}
+            {basics.anchorStat.context && (
+              <span className="hero-anchor-context">
+                {" "}
+                — {basics.anchorStat.context}
+              </span>
+            )}
+          </p>
+        )}
+
+        {basics.namedEmployers && basics.namedEmployers.length > 0 && (
+          <p className="hero-employers">
+            Previously at <span>{basics.namedEmployers.join(" · ")}</span>
+          </p>
+        )}
+
         <p className="hero-summary">{basics.summary}</p>
+
         <div className="hero-links">
+          {showHireCta && (
+            <a href={hireHref} className="btn btn-primary">
+              {hireLabel}
+            </a>
+          )}
           {basics.profiles.map((profile) => (
             <a
               key={profile.network}
@@ -35,7 +78,7 @@ export function Hero({ basics }: HeroProps) {
               {profile.network}
             </a>
           ))}
-          {basics.email && (
+          {basics.email && !showHireCta && (
             <a href={`mailto:${basics.email}`} className="btn btn-primary">
               Get in Touch
             </a>

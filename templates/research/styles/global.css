@@ -278,3 +278,52 @@ p { margin: 0 0 1em; }
   .timeline-date { padding-top: 0; }
   body { font-size: 16px; }
 }
+
+/* ─── Phase R4 — proof-backed hero additions + testimonials ─────────── */
+/* Kept text-only to match the Karpathy/colah restraint.                */
+
+.hero-anchor {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+.hero-anchor strong { font-weight: 600; }
+.hero-anchor-context { color: var(--color-muted); font-style: italic; }
+
+.hero-employers {
+  margin: 0.5rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.hero-hiring {
+  margin: 0.75rem 0 0;
+  padding: 0.375rem 0.75rem;
+  border-left: 2px solid var(--color-primary, currentColor);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  background: var(--color-subtle, rgba(0,0,0,0.02));
+}
+.hero-hiring a {
+  margin-left: 0.25rem;
+  font-weight: 500;
+}
+
+.testimonials-section { margin-top: 2.5rem; }
+.testimonial {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 2px solid var(--color-border, rgba(0,0,0,0.1));
+}
+.testimonial blockquote {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+.testimonial cite {
+  font-style: normal;
+  color: var(--color-muted);
+  font-size: 0.88rem;
+}
+.testimonial cite strong { color: var(--color-text); font-weight: 600; }

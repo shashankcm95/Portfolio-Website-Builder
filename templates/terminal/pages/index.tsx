@@ -1,5 +1,6 @@
 import React from "react";
 import type { ProfileData } from "@/templates/_shared/types";
+import { TestimonialsBlock } from "@/templates/_shared/testimonials-block";
 import { Hero } from "../components/Hero";
 import { ProjectCard } from "../components/ProjectCard";
 
@@ -35,6 +36,13 @@ export function HomePage({ profileData }: HomePageProps) {
           </div>
         </section>
       )}
+
+      {/* Phase R4 — shared testimonials block. Terminal CSS restyles
+          the shared markup with shell-prompt glyphs ("> quote", "# cite"). */}
+      <TestimonialsBlock
+        testimonials={profileData.testimonials ?? []}
+        heading="cat references.md"
+      />
     </div>
   );
 }

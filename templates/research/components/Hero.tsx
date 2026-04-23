@@ -27,8 +27,41 @@ export function Hero({ basics }: HeroProps) {
         )}
         <div className="hero-text">
           <h1 className="hero-name">{basics.name}</h1>
-          <p className="hero-label">{basics.label}</p>
+          <p className="hero-label">{basics.positioning || basics.label}</p>
+          {/* Phase R4 — anchor + employers in an academic "at a glance"
+              footnote style. No CTA button — the template's philosophy
+              (per Phase 7 Hero comment) is that the page itself is the
+              call to action. Hire status surfaces as a subtle text line
+              when available, consistent with the template's quiet voice. */}
+          {basics.anchorStat && (
+            <p className="hero-anchor">
+              <strong>{basics.anchorStat.value}</strong>{" "}
+              {basics.anchorStat.unit}
+              {basics.anchorStat.context && (
+                <span className="hero-anchor-context">
+                  {" "}— {basics.anchorStat.context}
+                </span>
+              )}
+            </p>
+          )}
+          {basics.namedEmployers && basics.namedEmployers.length > 0 && (
+            <p className="hero-employers">
+              Previously at {basics.namedEmployers.join(", ")}
+            </p>
+          )}
           <p className="hero-summary">{truncate(basics.summary, 280)}</p>
+          {basics.hiring && basics.hiring.status !== "not-looking" && (
+            <p className="hero-hiring">
+              {basics.hiring.status === "available"
+                ? "Available for new work."
+                : "Open to conversations."}{" "}
+              {basics.hiring.ctaHref && (
+                <a href={basics.hiring.ctaHref}>
+                  {basics.hiring.ctaText || "Get in touch"}
+                </a>
+              )}
+            </p>
+          )}
           <p className="hero-links">
             {basics.email && (
               <a href={`mailto:${basics.email}`}>{basics.email}</a>

@@ -8,8 +8,24 @@ interface HeroProps {
 /**
  * Editorial-style hero: asymmetric split with oversized serif name on the left,
  * portrait on the right, and a rule + tagline underneath.
+ *
+ * Phase R4 — Renders the proof-backed fields (anchor stat, named
+ * employers, hire CTA) when set. Positioning supersedes label as the
+ * tagline when present.
  */
 export function Hero({ basics }: HeroProps) {
+  const tagline = basics.positioning || basics.label;
+  const showHireCta =
+    basics.hiring && basics.hiring.status !== "not-looking";
+  const hireHref =
+    basics.hiring?.ctaHref ||
+    (basics.email ? `mailto:${basics.email}` : "/contact/");
+  const hireLabel =
+    basics.hiring?.ctaText ||
+    (basics.hiring?.status === "available"
+      ? "Available — let's talk"
+      : "Open to conversations");
+
   return (
     <section className="hero">
       <div className="container">
@@ -17,14 +33,41 @@ export function Hero({ basics }: HeroProps) {
           <div className="hero-text">
             <p className="hero-eyebrow">Portfolio &mdash; {new Date().getFullYear()}</p>
             <h1>{basics.name}</h1>
-            <p className="hero-label">{basics.label}</p>
+            <p className="hero-label">{tagline}</p>
             <div className="hero-rule" />
+
+            {basics.anchorStat && (
+              <p className="hero-anchor">
+                <strong>{basics.anchorStat.value}</strong>{" "}
+                {basics.anchorStat.unit}
+                {basics.anchorStat.context && (
+                  <span className="hero-anchor-context">
+                    {" "}
+                    — {basics.anchorStat.context}
+                  </span>
+                )}
+              </p>
+            )}
+
+            {basics.namedEmployers && basics.namedEmployers.length > 0 && (
+              <p className="hero-employers">
+                Previously at{" "}
+                <span>{basics.namedEmployers.join(" · ")}</span>
+              </p>
+            )}
+
             <p className="hero-summary">{basics.summary}</p>
             <div className="hero-links">
-              {basics.email && (
-                <a href={`mailto:${basics.email}`} className="btn btn-primary">
-                  Get in Touch
+              {showHireCta ? (
+                <a href={hireHref} className="btn btn-primary">
+                  {hireLabel}
                 </a>
+              ) : (
+                basics.email && (
+                  <a href={`mailto:${basics.email}`} className="btn btn-primary">
+                    Get in Touch
+                  </a>
+                )
               )}
               {basics.profiles.map((profile) => (
                 <a

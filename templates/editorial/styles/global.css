@@ -386,3 +386,66 @@ p { margin: 0 0 1.2em; }
   .section { padding: 3em 0; }
   body { font-size: 16px; }
 }
+
+/* ─── Phase R4 — proof-backed hero additions + testimonials ─────────── */
+
+.hero-anchor {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+.hero-anchor strong { font-weight: 600; }
+.hero-anchor em { font-style: italic; color: var(--color-muted); }
+.hero-anchor-context { color: var(--color-muted); font-style: italic; }
+
+.hero-employers {
+  margin: 0.75rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-family: var(--font-sans, system-ui);
+}
+.hero-employers span {
+  color: var(--color-text);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+  font-family: var(--font-serif, Georgia, serif);
+  font-style: italic;
+}
+
+.hero-hiring {
+  margin: 1rem 0 0;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1rem;
+  color: var(--color-text);
+}
+.hero-hiring em { font-style: italic; }
+.hero-hiring a { margin-left: 0.5rem; font-weight: 500; }
+
+.testimonials-section {
+  border-top: 1px solid var(--color-border);
+  padding-top: 2rem;
+}
+.testimonial {
+  max-width: 52em;
+  margin: 1.5rem auto;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.testimonial:last-child { border-bottom: none; }
+.testimonial blockquote {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1.15rem;
+  line-height: 1.6;
+  font-style: italic;
+  color: var(--color-text);
+}
+.testimonial cite {
+  font-style: normal;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+.testimonial cite strong { color: var(--color-text); font-weight: 600; }

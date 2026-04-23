@@ -252,3 +252,56 @@ p { margin: 0 0 1em; }
   .ls-perm, .ls-size, .ls-mtime { text-align: left; }
   .timeline-row { grid-template-columns: 1fr; gap: 4px; }
 }
+
+/* ─── Phase R4 — proof-backed hero additions + testimonials ─────────── */
+/* Keeps the "every new line is a shell line" aesthetic of this theme.  */
+
+.hero-anchor,
+.hero-employers,
+.hero-hiring {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  margin: 0.5rem 0 0;
+  line-height: 1.6;
+}
+.hero-anchor .str,
+.hero-hiring .str {
+  color: var(--color-str, #ce9178);
+}
+.hero-anchor .prompt-inline,
+.hero-hiring .prompt-inline {
+  color: var(--color-prompt, #4ec9b0);
+  font-weight: 700;
+  margin-right: 0.25em;
+}
+.hero-hiring .kw { color: var(--color-kw, #c586c0); }
+.hero-employers {
+  color: var(--color-muted, #808080);
+}
+
+.testimonials-section { margin-top: 2rem; }
+.testimonial {
+  margin: 1rem 0;
+  padding: 0.75rem 0 0.75rem 1rem;
+  border-left: 2px solid var(--color-prompt, #4ec9b0);
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.testimonial blockquote {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+.testimonial blockquote::before {
+  content: "> ";
+  color: var(--color-prompt, #4ec9b0);
+  font-weight: 700;
+}
+.testimonial cite {
+  font-style: normal;
+  color: var(--color-muted, #808080);
+  font-size: 0.85rem;
+}
+.testimonial cite::before {
+  content: "# ";
+  color: var(--color-muted, #808080);
+}
+.testimonial cite strong { color: var(--color-text); font-weight: 600; }

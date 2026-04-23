@@ -1,5 +1,6 @@
 import React from "react";
 import type { ProfileData } from "@/templates/_shared/types";
+import { TestimonialsBlock } from "@/templates/_shared/testimonials-block";
 import { Hero } from "../components/Hero";
 import { ProjectCard } from "../components/ProjectCard";
 
@@ -39,6 +40,13 @@ export function HomePage({ profileData }: HomePageProps) {
           </div>
         </section>
       )}
+
+      {/* Phase R4 — testimonials, rendered when present. The research
+          template's voice is quiet, so we pass a lower-key heading. */}
+      <TestimonialsBlock
+        testimonials={profileData.testimonials ?? []}
+        heading="Notes from collaborators"
+      />
     </div>
   );
 }

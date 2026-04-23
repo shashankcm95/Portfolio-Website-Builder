@@ -98,6 +98,12 @@ function emptyState(): IdentityState {
 
 export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
   const [state, setState] = useState<IdentityState>(emptyState);
+  // Phase R4 — `cleanState` mirrors the last snapshot known to be
+  // persisted on the server. Comparing against `state` (via
+  // canonical-JSON) gives us a dirty flag we use to render an
+  // unsaved-changes dot next to the card title and to gate the
+  // beforeunload warning. Refreshed on every successful load / save.
+  const [cleanState, setCleanState] = useState<IdentityState>(emptyState);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{
@@ -115,7 +121,7 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
         const data = await res.json();
         const id = data.identity ?? {};
         if (cancelled) return;
-        setState({
+        const loadedState: IdentityState = {
           positioning: id.positioning ?? null,
           namedEmployers: Array.isArray(id.namedEmployers)
             ? id.namedEmployers
@@ -124,7 +130,9 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
           hireCtaText: id.hireCtaText ?? null,
           hireCtaHref: id.hireCtaHref ?? null,
           anchorStatOverride: id.anchorStatOverride ?? null,
-        });
+        };
+        setState(loadedState);
+        setCleanState(loadedState);
       } catch (err) {
         if (!cancelled) {
           setMessage({
@@ -151,6 +159,29 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
     positioningLength === 0 ||
     (positioningLength >= POSITIONING_MIN &&
       positioningLength <= POSITIONING_MAX);
+
+  // Phase R4 — dirty-flag via canonical JSON comparison. Cheap for the
+  // small object we hold here; avoids writing a field-by-field diff
+  // that would drift as the shape grows.
+  const isDirty = useMemo(
+    () => loaded && JSON.stringify(state) !== JSON.stringify(cleanState),
+    [loaded, state, cleanState]
+  );
+
+  // Phase R4 — beforeunload warning. Triggers the browser's native
+  // "changes you made may not be saved" dialog only when the form is
+  // dirty; saved + pristine states navigate freely. Attaches once per
+  // dirty transition and cleans up on unmount or when clean again.
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Legacy browsers need a returnValue; modern ones ignore the text.
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   const addEmployer = useCallback((raw: string) => {
     const name = raw.trim();
@@ -204,6 +235,18 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
           err?.issues?.[0]?.message || err?.error || `HTTP ${res.status}`
         );
       }
+      // Phase R4 — refresh the dirty-state baseline to the body we just
+      // persisted. `body` is the canonical shape we posted; the server
+      // echoes it back, but using `body` keeps the success path
+      // synchronous-looking even if the response parse were to fail.
+      setCleanState({
+        positioning: body.positioning,
+        namedEmployers: body.namedEmployers,
+        hireStatus: body.hireStatus,
+        hireCtaText: body.hireCtaText,
+        hireCtaHref: body.hireCtaHref,
+        anchorStatOverride: body.anchorStatOverride,
+      });
       setMessage({ kind: "ok", text: "Saved. Republish to go live." });
     } catch (err) {
       setMessage({
@@ -226,7 +269,18 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Sparkles className="h-4 w-4" />
-          Identity & pitch
+          Identity &amp; pitch
+          {/* Phase R4 — dirty-state dot. A warning-tone pulse tells the
+              owner they have edits that haven't been persisted yet. We
+              keep the copy out of the title itself (just the dot) so
+              the heading stays readable at a glance. */}
+          {isDirty && (
+            <span
+              className="inline-block h-2 w-2 rounded-full bg-amber-500"
+              title="Unsaved changes"
+              aria-label="Unsaved changes"
+            />
+          )}
         </CardTitle>
         <CardDescription>
           The hero copy, named employers, and hiring signal your portfolio leads
@@ -363,8 +417,9 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">
-            Changes persist on save but don't reach the live site until you
-            republish.
+            {isDirty
+              ? "Unsaved changes — click Save to persist them, then Republish to go live."
+              : "Changes persist on save but don't reach the live site until you republish."}
           </span>
         )}
         <Button onClick={onSave} disabled={!canSave}>

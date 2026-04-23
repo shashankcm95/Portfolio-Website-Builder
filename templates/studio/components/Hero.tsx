@@ -20,9 +20,21 @@ export function Hero({ basics }: HeroProps) {
   const { anchorStat, namedEmployers, summary, hiring, positioning, label } =
     basics;
   const headline = positioning || label;
+  // Phase R4 — explicit null-safety on the CTA copy. The original code
+  // fell through to "Let's build something" even when `hiring` was
+  // undefined, implying availability the owner hadn't claimed. Now the
+  // CTA text is driven entirely by the three resolvable shapes:
+  //   - explicit hiring.ctaText wins if set
+  //   - hiring.status === "available" → the "build something" pitch
+  //   - hiring.status === "open"      → the softer "start a conversation"
+  //   - no hiring object at all       → neutral "get in touch"
   const ctaPrimaryText =
     hiring?.ctaText ||
-    (hiring?.status === "available" ? "Let's build something" : "Start a conversation");
+    (hiring?.status === "available"
+      ? "Let's build something"
+      : hiring?.status === "open"
+        ? "Start a conversation"
+        : "Get in touch");
   const ctaPrimaryHref = hiring?.ctaHref || "/contact/";
 
   return (

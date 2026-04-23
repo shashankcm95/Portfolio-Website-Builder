@@ -715,3 +715,66 @@ code {
     align-items: center;
   }
 }
+
+/* ─── Phase R4 — proof-backed hero additions + testimonials ─────────── */
+/* Kept lightweight — inherits the minimal template's existing tokens.   */
+
+.hero-anchor {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: var(--space-3) auto 0;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+.hero-anchor strong {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.hero-anchor-context {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.hero-employers {
+  margin: var(--space-3) 0 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hero-employers span {
+  color: var(--color-text);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.testimonials-section {
+  border-top: 1px solid var(--color-border);
+}
+.testimonial {
+  padding: var(--space-6) 0;
+  border-bottom: 1px solid var(--color-border);
+  max-width: 52em;
+  margin: 0 auto;
+}
+.testimonial:last-child { border-bottom: none; }
+.testimonial blockquote {
+  margin: 0 0 var(--space-3);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+.testimonial cite {
+  font-style: normal;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+.testimonial cite strong {
+  color: var(--color-text);
+  font-weight: 600;
+}

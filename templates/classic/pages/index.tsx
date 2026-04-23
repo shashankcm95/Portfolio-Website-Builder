@@ -1,5 +1,6 @@
 import React from "react";
 import type { ProfileData } from "@/templates/_shared/types";
+import { TestimonialsBlock } from "@/templates/_shared/testimonials-block";
 import { Hero } from "../components/Hero";
 import { ProjectCard } from "../components/ProjectCard";
 
@@ -52,6 +53,9 @@ export function HomePage({ profileData }: HomePageProps) {
           </div>
         </section>
       )}
+
+      {/* Phase R4 — shared testimonials block; see templates/_shared. */}
+      <TestimonialsBlock testimonials={profileData.testimonials ?? []} />
 
       {/* Skills Overview */}
       {topSkills.length > 0 && (

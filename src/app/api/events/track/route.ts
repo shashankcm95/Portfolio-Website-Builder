@@ -69,9 +69,45 @@ function parseBody(raw: unknown): ParsedBody | string {
   };
 }
 
+/**
+ * Phase R4 — explicit CORS headers for the cross-origin beacon.
+ *
+ * This route is called from every published portfolio's static HTML
+ * (Cloudflare Pages origin, e.g. `foo.pages.dev` or a user custom
+ * domain), which is cross-origin relative to the builder. Next's
+ * same-origin default works today because `navigator.sendBeacon()`
+ * doesn't require a CORS preflight for simple POSTs with
+ * `text/plain`-ish bodies — but the moment someone tightens a
+ * middleware or the client switches to `fetch()` with a JSON content
+ * type, browsers would start blocking. Emitting `*` here is safe:
+ *
+ *   - Nothing in this endpoint is authenticated (it's an ingest).
+ *   - A forged request costs nothing more than a valid one; the
+ *     rate-limit + bot-UA + self-referrer filters still apply.
+ *   - Response body is 204 with no payload to exfiltrate.
+ *
+ * If we ever tighten this to a specific origin (e.g. a PagesProject
+ * CNAME registry), this is the single place to change.
+ */
+const CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "content-type",
+  "Access-Control-Max-Age": "86400",
+};
+
 /** Success + silent-drop share the same 204 response. */
 function accepted(): NextResponse {
-  return new NextResponse(null, { status: 204 });
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
+/**
+ * Preflight handler. Required when a published site uses `fetch()`
+ * with a JSON content-type rather than `navigator.sendBeacon()` — the
+ * browser sends an OPTIONS first. For `sendBeacon()` this is a no-op.
+ */
+export async function OPTIONS(): Promise<NextResponse> {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
 /**
@@ -97,11 +133,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const text = await req.text();
     raw = text.trim() ? JSON.parse(text) : {};
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid JSON body" },
+      { status: 400, headers: CORS_HEADERS }
+    );
   }
   const parsed = parseBody(raw);
   if (typeof parsed === "string") {
-    return NextResponse.json({ error: parsed }, { status: 400 });
+    return NextResponse.json(
+      { error: parsed },
+      { status: 400, headers: CORS_HEADERS }
+    );
   }
 
   // Rate limit per IP (silent drop on exhaust — never tells clients they're capped).

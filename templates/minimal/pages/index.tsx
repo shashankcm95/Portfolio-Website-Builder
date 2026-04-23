@@ -1,5 +1,6 @@
 import React from "react";
 import type { ProfileData } from "@/templates/_shared/types";
+import { TestimonialsBlock } from "@/templates/_shared/testimonials-block";
 import { Hero } from "../components/Hero";
 import { ProjectCard } from "../components/ProjectCard";
 
@@ -52,6 +53,10 @@ export function HomePage({ profileData }: HomePageProps) {
           </div>
         </section>
       )}
+
+      {/* Phase R4 — testimonials. Already filtered by isVisible in the
+          profile-data assembler; shared block handles the empty case. */}
+      <TestimonialsBlock testimonials={profileData.testimonials ?? []} />
 
       {/* Skills Overview */}
       {topSkills.length > 0 && (
