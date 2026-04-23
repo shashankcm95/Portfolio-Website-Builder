@@ -139,7 +139,9 @@ export async function runLayoutReview(
         })
         .where(eq(layoutReviews.id, reviewRowId));
     } catch {
-      // best-effort
+      // Best-effort: the caller already has the failure info in `message`;
+      // failing to stamp the row as "failed" just means the UI will show
+      // "running" until the next review.
     }
     return {
       id: reviewRowId,

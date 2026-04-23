@@ -17,6 +17,7 @@ import type {
   Education,
   Testimonial,
 } from "@/templates/_shared/types";
+import { getAppUrl } from "@/lib/env/app-url";
 
 /**
  * Assemble a complete ProfileData object from the database.
@@ -321,7 +322,7 @@ function buildAnalyticsConfig(portfolioId: string): {
   analyticsEndpoint: string | null;
   analyticsPortfolioId: string | null;
 } {
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
+  const appUrl = getAppUrl();
   if (!appUrl) {
     return { analyticsEndpoint: null, analyticsPortfolioId: null };
   }
@@ -355,7 +356,7 @@ async function buildChatbotEmbed(
 ): Promise<ProfileData["chatbot"] | null> {
   if (!portfolio.chatbotEnabled) return null;
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
+  const appUrl = getAppUrl();
   const selfHosted = portfolio.selfHostedChatbot === true;
 
   // Self-hosted path skips the NEXT_PUBLIC_APP_URL gate — the published
@@ -387,7 +388,10 @@ async function buildChatbotEmbed(
     // Phase 8.5 — kept for back-compat; new Layout.tsx uses `appOrigin`
     // with an inline snippet instead of `<script src={apiEndpoint}>`.
     apiEndpoint: appUrl ? `${appUrl}/chatbot-embed.js` : "",
-    appOrigin: appUrl,
+    // Phase R5 — `appUrl` is string|null now. The self-hosted branch
+    // skips the NEXT_PUBLIC_APP_URL gate (line 365) so null can reach
+    // here; fall through to "" to match the pre-R5 string contract.
+    appOrigin: appUrl ?? "",
     portfolioId,
     selfHosted,
   };

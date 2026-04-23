@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { GitHubClient } from "@/lib/github/client";
 import { readGitHubToken } from "@/lib/auth/github-token";
+import { logger } from "@/lib/log";
 
 /**
  * Construct a {@link GitHubClient} pre-loaded with the signed-in user's
@@ -36,8 +37,14 @@ export async function getAuthenticatedGitHubClient(
     // to the unauthenticated 60-req/h bucket instead of crashing.
     const token = await readGitHubToken(row?.githubToken);
     return new GitHubClient(token || undefined);
-  } catch {
+  } catch (err) {
     // DB unavailable at call time — degrade gracefully to unauthenticated.
+    // Log the failure so operators can see rate-limit regressions aren't
+    // a stealth DB outage.
+    logger.warn("[github/authenticated-client] DB lookup failed; falling back to unauthenticated GitHub client", {
+      userId,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return new GitHubClient();
   }
 }
@@ -54,6 +61,7 @@ export async function clearStaleGitHubToken(userId: string): Promise<void> {
       .set({ githubToken: null })
       .where(eq(users.id, userId));
   } catch {
-    // Best-effort — not critical enough to surface.
+    // Best-effort cleanup; next sign-in will also overwrite the stale
+    // token, so a transient DB blip here is not worth surfacing.
   }
 }

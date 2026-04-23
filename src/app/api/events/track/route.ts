@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { portfolios, visitorEvents } from "@/lib/db/schema";
+import { getAppUrl } from "@/lib/env/app-url";
 import {
   bucketUserAgent,
   isSelfReferrer,
@@ -154,7 +155,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (bucket === "bot") return accepted(); // drop silently
 
   // Drop self-traffic (owner previewing from the app).
-  const appOrigin = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim();
+  const appOrigin = getAppUrl();
   if (
     parsed.referrer &&
     isSelfReferrer(parsed.referrer, appOrigin)
@@ -181,8 +182,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       userAgentBucket: bucket,
       country,
     });
-  } catch {
-    // DB hiccup shouldn't surface to the beacon client.
+  } catch (err) {
+    // DB hiccup shouldn't surface to the beacon client, but we do want
+    // visibility on persistent insert failures.
+    const { logger } = await import("@/lib/log");
+    logger.warn("[events/track] visitorEvents insert failed", {
+      portfolioId: parsed.portfolioId,
+      eventType: parsed.eventType,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   return accepted();

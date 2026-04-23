@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { portfolios, deployments } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { logger } from "@/lib/log";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
@@ -92,15 +93,18 @@ export async function POST(
         });
         if (!rl.ok) {
           rateLimitWarning = rl.reason ?? "Rate-limit provisioning failed";
-          console.warn(
-            "[deploy] WAF rate-limit not provisioned:",
-            rateLimitWarning
-          );
+          logger.warn("[deploy] WAF rate-limit not provisioned", {
+            portfolioId: params.portfolioId,
+            reason: rateLimitWarning,
+          });
         }
       } catch (err) {
         rateLimitWarning =
           err instanceof Error ? err.message : "Rate-limit hook failed";
-        console.warn("[deploy] WAF rate-limit hook crashed:", err);
+        logger.warn("[deploy] WAF rate-limit hook crashed", {
+          portfolioId: params.portfolioId,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
@@ -111,8 +115,11 @@ export async function POST(
       error: result.error,
       rateLimitWarning,
     });
-  } catch (error: any) {
-    console.error("Deployment error:", error);
+  } catch (error: unknown) {
+    logger.error("[deploy] Deployment error", {
+      portfolioId: params.portfolioId,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { error: "Failed to deploy" },
       { status: 500 }

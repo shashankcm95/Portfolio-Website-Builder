@@ -14,8 +14,14 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./src/*"],
-      "@/templates/*": ["./templates/*"]
+      // Phase R5 — the specific rule must come first. swc's tsconfig-paths
+      // resolver uses first-match ordering (unlike tsc which tries longest
+      // match), so the broader `@/*` would otherwise swallow every
+      // `@/templates/…` import and resolve it to `src/templates/…` which
+      // doesn't exist. Fixing this order unblocks template snapshot tests
+      // and removes the workaround comment in `analytics-offline.test.ts`.
+      "@/templates/*": ["./templates/*"],
+      "@/*": ["./src/*"]
     },
     "target": "ES2017",
     "forceConsistentCasingInFileNames": true,

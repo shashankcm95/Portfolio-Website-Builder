@@ -282,8 +282,14 @@ export async function recordChatbotEvent(
       userAgentBucket: bucketFromUserAgent(userAgent),
       country,
     });
-  } catch {
-    // Non-fatal. Analytics dropouts are strictly worse than failed chats.
+  } catch (err) {
+    // Non-fatal: analytics dropouts are strictly worse than failed chats.
+    // Log once so operators can notice persistent outages.
+    const { logger } = await import("@/lib/log");
+    logger.warn("[chatbot/runner] recordChatbotEvent insert failed", {
+      portfolioId,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 

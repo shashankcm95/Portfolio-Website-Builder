@@ -57,6 +57,7 @@ export function parseEmbeddingCell(raw: string): number[] | null {
     }
     return parsed as number[];
   } catch {
+    // Embedding cell corrupt — treat as absent so retrieval skips this row.
     return null;
   }
 }

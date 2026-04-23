@@ -178,6 +178,7 @@ function hostFromUrl(url: string | null | undefined): string | null {
   try {
     return new URL(url).hostname || null;
   } catch {
+    // Malformed URL — hostname is simply unknown.
     return null;
   }
 }

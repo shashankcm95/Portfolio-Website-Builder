@@ -19,8 +19,15 @@ const config = {
     "<rootDir>/tests/setup/integration.setup.js",
   ],
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/src/$1",
+    // Phase R5 — the `@/templates/*` rule MUST come first. nextJest
+    // applies moduleNameMapper entries in declaration order and the
+    // broader `@/(.*)` catch-all would otherwise swallow any
+    // `@/templates/…` import and resolve it to the non-existent
+    // `src/templates/…` path. Ordering these specific-first fixes the
+    // issue the decoupling test + earlier analytics-offline test had
+    // to work around by using relative imports.
     "^@/templates/(.*)$": "<rootDir>/templates/$1",
+    "^@/(.*)$": "<rootDir>/src/$1",
   },
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",

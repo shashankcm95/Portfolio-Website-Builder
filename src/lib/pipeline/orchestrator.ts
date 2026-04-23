@@ -30,6 +30,7 @@ import {
 } from "@/lib/pipeline/history";
 import { getLlmClientForProject } from "@/lib/ai/providers/factory";
 import { PipelineAbortError } from "./abort";
+import { logger } from "@/lib/log";
 import {
   LlmInvalidKeyError,
   LlmNotConfiguredError,
@@ -165,7 +166,10 @@ export function startPipeline(
   // Run pipeline asynchronously (fire-and-forget)
   runPipeline(projectId, jobId, options, controller.signal)
     .catch((error) => {
-      console.error(`[orchestrator] Pipeline failed for project ${projectId}:`, error);
+      logger.error("[orchestrator] Pipeline failed", {
+        projectId,
+        error: error instanceof Error ? error.message : String(error),
+      });
     })
     .finally(() => {
       // Ensure the controller map doesn't leak, even on unexpected errors.
@@ -390,9 +394,9 @@ async function runPipeline(
             if (existingSources.length === 0) {
               stepDef.status = "skipped";
               stepDef.completedAt = new Date();
-              console.warn(
-                `[orchestrator] No repo data available for project ${projectId}. Skipping repo_fetch.`
-              );
+              logger.warn("[orchestrator] No repo data available; skipping repo_fetch", {
+                projectId,
+              });
               recordStepFinish({
                 jobId,
                 stepName,
@@ -797,10 +801,11 @@ async function runPipeline(
       stepDef.error = errorMessage;
       stepDef.completedAt = new Date();
 
-      console.error(
-        `[orchestrator] Step "${stepName}" failed for project ${projectId}:`,
-        errorMessage
-      );
+      logger.error("[orchestrator] Step failed", {
+        projectId,
+        stepName,
+        error: errorMessage,
+      });
 
       recordStepFinish({
         jobId,

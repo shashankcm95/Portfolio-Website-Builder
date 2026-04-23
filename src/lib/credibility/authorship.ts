@@ -395,7 +395,7 @@ export function resolveExternalUrl(
       return htmlUrl;
     }
   } catch {
-    // invalid URL — ignore
+    // Malformed htmlUrl — treat as no deploy URL rather than crash.
   }
   return null;
 }

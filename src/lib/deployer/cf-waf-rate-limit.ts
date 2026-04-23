@@ -184,7 +184,14 @@ async function lookupZoneIdForHost(hostname: string): Promise<string | null> {
       }
     }
     return best?.id ?? null;
-  } catch {
+  } catch (err) {
+    // Zone-list network failure — log so operators see why WAF
+    // provisioning silently skipped; caller surfaces "no zone" to UI.
+    const { logger } = await import("@/lib/log");
+    logger.warn("[cf-waf-rate-limit] zone lookup failed", {
+      hostname,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }

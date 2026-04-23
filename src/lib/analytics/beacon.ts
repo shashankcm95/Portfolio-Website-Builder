@@ -66,6 +66,7 @@ export function sanitizeReferrer(referrer: string | null | undefined): string | 
     if (url.protocol !== "http:" && url.protocol !== "https:") return null;
     return `${url.protocol}//${url.host}`;
   } catch {
+    // Malformed Referer — not worth alerting on, just drop it.
     return null;
   }
 }

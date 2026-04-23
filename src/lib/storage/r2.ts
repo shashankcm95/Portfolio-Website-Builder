@@ -246,6 +246,7 @@ export function isOurObject(url: string): boolean {
     const base = new URL(cfg.config.publicBaseUrl);
     return target.hostname.toLowerCase() === base.hostname.toLowerCase();
   } catch {
+    // Either URL is malformed — treat as "not ours" rather than crash.
     return false;
   }
 }

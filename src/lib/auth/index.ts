@@ -76,7 +76,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const { eq } = await import("drizzle-orm");
           const [user] = await db.select({ id: users.id }).from(users).where(eq(users.githubId, token.githubId as string)).limit(1);
           if (user) token.userId = user.id;
-        } catch {}
+        } catch (err) {
+          // DB unreachable at JWT-mint time — log and carry on without
+          // userId; the session will lack DB-backed fields but the user
+          // remains authenticated.
+          const { logger } = await import("@/lib/log");
+          logger.warn("[auth/jwt] userId lookup failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
       return token;
     },

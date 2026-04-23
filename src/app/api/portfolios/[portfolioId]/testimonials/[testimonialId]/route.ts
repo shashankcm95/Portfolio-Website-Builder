@@ -53,8 +53,9 @@ export async function PATCH(
 
   const body = parsed.data;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const set: Record<string, any> = { updatedAt: new Date() };
+  const set: Partial<typeof testimonials.$inferInsert> = {
+    updatedAt: new Date(),
+  };
   if (body.quote !== undefined) set.quote = body.quote;
   if (body.authorName !== undefined) set.authorName = body.authorName;
   if (body.authorTitle !== undefined) set.authorTitle = body.authorTitle ?? null;

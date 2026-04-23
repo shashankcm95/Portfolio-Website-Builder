@@ -1,5 +1,6 @@
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { logger } from "@/lib/log";
 
 const exec = promisify(execFile);
 
@@ -18,7 +19,7 @@ export async function deployToCloudflare(
   projectName: string
 ): Promise<DeployResult> {
   try {
-    const { stdout, stderr } = await exec(
+    const { stdout, stderr: _stderr } = await exec(
       "npx",
       [
         "wrangler",
@@ -42,6 +43,12 @@ export async function deployToCloudflare(
     const urlMatch = stdout.match(/https:\/\/[^\s]+\.pages\.dev/);
     const idMatch = stdout.match(/Deployment ID: ([a-f0-9-]+)/i);
 
+    logger.info("[deployer/cloudflare] deploy succeeded", {
+      projectName,
+      url: urlMatch?.[0],
+      deploymentId: idMatch?.[1],
+    });
+
     return {
       success: true,
       url: urlMatch?.[0],
@@ -50,6 +57,10 @@ export async function deployToCloudflare(
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Deployment failed";
+    logger.error("[deployer/cloudflare] deploy failed", {
+      projectName,
+      error: message,
+    });
     return {
       success: false,
       error: message,

@@ -82,10 +82,10 @@ export async function readGitHubToken(
       if (err instanceof SecretDecryptError) {
         // Key rotation / tampering / corruption — clear log, no secret
         // in the message (SecretDecryptError never includes the token).
-        console.warn(
-          "[github-token] decrypt failed, treating as absent:",
-          err.message
-        );
+        const { logger } = await import("@/lib/log");
+        logger.warn("[github-token] decrypt failed, treating as absent", {
+          reason: err.message,
+        });
       }
       return null;
     }

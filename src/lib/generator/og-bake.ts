@@ -52,7 +52,8 @@ function loadFonts(): LoadedFont[] {
       ) as ArrayBuffer;
       out.push({ name: "Inter", data: ab, weight, style: "normal" });
     } catch {
-      // Missing file — skip.
+      // Font asset missing on disk — skip this weight; @vercel/og
+      // falls back to a system font for missing weights.
     }
   }
   return out;

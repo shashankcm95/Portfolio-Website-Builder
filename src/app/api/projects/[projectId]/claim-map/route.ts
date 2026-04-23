@@ -93,7 +93,8 @@ export async function GET(
         parsedFactIds = parsed.map(String);
       }
     } catch {
-      // Leave empty if malformed
+      // Malformed JSON in factIds — ignore, leave empty; this only hides
+      // the row's linked facts, not the sentence itself.
     }
 
     if (!claimsBySection[row.sectionId]) {

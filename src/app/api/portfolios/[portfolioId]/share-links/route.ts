@@ -18,6 +18,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { shareTokens } from "@/lib/db/schema";
 import { authorizePortfolio } from "@/lib/auth/authorize-portfolio";
+import { getAppUrl } from "@/lib/env/app-url";
 import { generateShareToken } from "@/lib/share/tokens";
 
 // Prevents static prerender during `next build` — this route queries
@@ -76,7 +77,7 @@ function parseBody(raw: unknown): ParsedBody | string {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function baseAppUrl(req: NextRequest): string {
-  const env = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
+  const env = getAppUrl();
   if (env) return env;
   // Fallback: reconstruct from the request. Host + protocol on x-forwarded-*.
   const proto = req.headers.get("x-forwarded-proto") ?? "http";

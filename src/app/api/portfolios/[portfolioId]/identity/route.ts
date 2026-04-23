@@ -91,9 +91,9 @@ export async function PATCH(
   // Build the update set only from keys the client explicitly sent. `null`
   // is an intentional clear; `undefined` means the client didn't touch the
   // field and we leave the DB value alone.
-  //
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const set: Record<string, any> = { updatedAt: new Date() };
+  const set: Partial<typeof portfolios.$inferInsert> = {
+    updatedAt: new Date(),
+  };
   if (body.positioning !== undefined) {
     set.positioning =
       body.positioning === null || body.positioning.trim() === ""
