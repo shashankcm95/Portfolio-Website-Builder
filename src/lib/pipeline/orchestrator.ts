@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   projects,
@@ -493,44 +493,79 @@ async function runPipeline(
 
           extractedFacts = factExtractionResult.facts;
 
-          // Store facts in DB
-          for (const fact of factExtractionResult.facts) {
-            await db.insert(factsTable).values({
-              projectId,
-              claim: fact.claim,
-              category: fact.category,
-              confidence: fact.confidence,
-              evidenceType: fact.evidenceType,
-              evidenceRef: fact.evidenceRef,
-              evidenceText: fact.evidenceText,
-            });
-          }
+          // Phase R1 — idempotent fact persistence.
+          //
+          // The prior implementation inserted rows in bare loops without
+          // conflict handling, so any retry after a successful fact-extract
+          // (e.g. a later step failing and the owner re-running) crashed
+          // with duplicate-key or duplicated-data drift.
+          //
+          // Approach: replace-on-retry, but preserve `ownerEdited = true`
+          // facts. The fact-edit endpoint at
+          // /portfolios/.../projects/.../facts/:factId stamps `ownerEdited`
+          // to surface UI provenance; blindly deleting would wipe those
+          // user corrections. Derived facts have no owner-edit column today
+          // and are safe to fully replace.
+          //
+          // The writes are wrapped in a single transaction so a mid-step
+          // abort leaves the DB in its pre-step state — no orphan rows,
+          // no half-populated outcomes.
+          await db.transaction(async (tx) => {
+            // Preserve owner-edited facts (Phase 10); drop the rest.
+            await tx
+              .delete(factsTable)
+              .where(
+                and(
+                  eq(factsTable.projectId, projectId),
+                  eq(factsTable.ownerEdited, false)
+                )
+              );
+            // Derived facts are ephemeral — always fully replaced.
+            await tx
+              .delete(derivedFactsTable)
+              .where(eq(derivedFactsTable.projectId, projectId));
 
-          // Store derived facts in DB
-          for (const derived of factExtractionResult.derivedFacts) {
-            await db.insert(derivedFactsTable).values({
-              projectId,
-              claim: derived.claim,
-              derivationRule: derived.derivationRule,
-              sourceFactIds: JSON.stringify(derived.sourceFactClaims),
-              confidence: derived.confidence,
-            });
-          }
+            // Re-insert fresh facts. Use .values([...]) once instead of
+            // looping `.insert()` per row — fewer round-trips and a
+            // single statement inside the transaction.
+            if (factExtractionResult!.facts.length > 0) {
+              await tx.insert(factsTable).values(
+                factExtractionResult!.facts.map((fact) => ({
+                  projectId,
+                  claim: fact.claim,
+                  category: fact.category,
+                  confidence: fact.confidence,
+                  evidenceType: fact.evidenceType,
+                  evidenceRef: fact.evidenceRef,
+                  evidenceText: fact.evidenceText,
+                }))
+              );
+            }
+            if (factExtractionResult!.derivedFacts.length > 0) {
+              await tx.insert(derivedFactsTable).values(
+                factExtractionResult!.derivedFacts.map((derived) => ({
+                  projectId,
+                  claim: derived.claim,
+                  derivationRule: derived.derivationRule,
+                  sourceFactIds: JSON.stringify(derived.sourceFactClaims),
+                  confidence: derived.confidence,
+                }))
+              );
+            }
 
-          // Phase B — persist extracted project outcomes onto the project
-          // row. `projects.outcomes` is the single source of truth templates
-          // read via profile-data.ts. Replace-on-extract keeps retries
-          // idempotent; the user's manual hide/edit state lives in a
-          // separate column in Phase C (when inline edit lands).
-          if (factExtractionResult.outcomes.length > 0) {
-            await db
+            // Phase B — replace the outcomes jsonb. An empty extraction
+            // result means "no numeric evidence this run"; we still
+            // replace the column with [] so stale outcomes from a prior
+            // run don't leak through. This matches the "re-extraction
+            // wins" semantic of the rest of this block.
+            await tx
               .update(projects)
               .set({
-                outcomes: factExtractionResult.outcomes,
+                outcomes: factExtractionResult!.outcomes,
                 updatedAt: new Date(),
               })
               .where(eq(projects.id, projectId));
-          }
+          });
 
           break;
         }
@@ -669,7 +704,13 @@ async function runPipeline(
             }));
           }
 
-          // Verify each section
+          // Phase R1 — Verify each section.
+          //
+          // LLM call is outside the transaction (long-running; we don't
+          // want a 30-second provider hang holding a row lock). The
+          // delete-then-bulk-insert for each section's claim map runs in
+          // a short transaction so a partial write is impossible: either
+          // all sentences land or none do.
           for (const section of sections) {
             const verificationResult = await verifyClaims(
               {
@@ -682,22 +723,24 @@ async function runPipeline(
               signal
             );
 
-            // Clear stale claim-map rows for this section before re-inserting
-            await db
-              .delete(claimMap)
-              .where(eq(claimMap.sectionId, section.id));
+            await db.transaction(async (tx) => {
+              await tx
+                .delete(claimMap)
+                .where(eq(claimMap.sectionId, section.id));
 
-            // Store claim map entries
-            for (const claim of verificationResult.claims) {
-              await db.insert(claimMap).values({
-                sectionId: section.id,
-                sentenceIndex: claim.sentenceIndex,
-                sentenceText: claim.sentenceText,
-                factIds: JSON.stringify(claim.factIds),
-                verification: claim.verification,
-                confidence: claim.confidence,
-              });
-            }
+              if (verificationResult.claims.length > 0) {
+                await tx.insert(claimMap).values(
+                  verificationResult.claims.map((claim) => ({
+                    sectionId: section.id,
+                    sentenceIndex: claim.sentenceIndex,
+                    sentenceText: claim.sentenceText,
+                    factIds: JSON.stringify(claim.factIds),
+                    verification: claim.verification,
+                    confidence: claim.confidence,
+                  }))
+                );
+              }
+            });
           }
 
           break;

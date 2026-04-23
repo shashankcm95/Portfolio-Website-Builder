@@ -23,9 +23,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const { db } = await import("@/lib/db");
         const { users } = await import("@/lib/db/schema");
         const { eq } = await import("drizzle-orm");
+        // Phase R1 — Encrypt the GitHub OAuth token at-rest. The helper
+        // returns null when ENCRYPTION_KEY is missing so we never silently
+        // persist cleartext; see `src/lib/auth/github-token.ts`.
+        const { encryptGitHubTokenForStorage } = await import(
+          "@/lib/auth/github-token"
+        );
 
         const githubProfile = profile as any;
         const existingUser = await db.select().from(users).where(eq(users.githubId, String(githubProfile.id))).limit(1);
+        const encryptedToken = account?.access_token
+          ? await encryptGitHubTokenForStorage(account.access_token)
+          : null;
 
         if (existingUser.length === 0) {
           await db.insert(users).values({
@@ -34,14 +43,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             name: user.name || githubProfile.login,
             avatarUrl: user.image || null,
             githubUsername: githubProfile.login,
-            githubToken: account?.access_token || null,
+            githubToken: encryptedToken,
           });
         } else {
           await db.update(users).set({
             email: user.email || existingUser[0].email,
             name: user.name || existingUser[0].name,
             avatarUrl: user.image || existingUser[0].avatarUrl,
-            githubToken: account?.access_token || existingUser[0].githubToken,
+            // Re-write the row's token with a freshly-encrypted value on
+            // every sign-in. Legacy plaintext rows are self-healed on the
+            // user's next login. Falls back to the prior value when no
+            // new access_token arrived (refresh flow, no re-consent).
+            githubToken: encryptedToken ?? existingUser[0].githubToken,
             updatedAt: new Date(),
           }).where(eq(users.githubId, String(githubProfile.id)));
         }

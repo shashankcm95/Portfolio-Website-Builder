@@ -18,7 +18,14 @@
  * - authentication failure (tampered ciphertext, wrong master key).
  */
 
-import * as nodeCrypto from "node:crypto";
+// Phase R1 — use the bare "crypto" specifier rather than "node:crypto".
+// Both resolve to the same Node.js built-in in the Node runtime, but
+// webpack's Edge-runtime analyzer rejects `node:`-prefixed imports
+// whenever a static path from middleware (Edge) reaches this module —
+// which now includes the auth → github-token chain after Phase R1
+// started encrypting stored OAuth tokens. Bare "crypto" threads the
+// Edge analyzer without changing runtime behavior.
+import * as nodeCrypto from "crypto";
 import { getMasterKey } from "@/lib/crypto/master-key";
 
 const ALGORITHM = "aes-256-gcm";

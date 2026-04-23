@@ -564,7 +564,12 @@ export const pipelineJobs = pgTable(
     // "running" | "completed" | "failed"
     status: text("status").notNull(),
     error: text("error"),
-    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    // Phase R1 — every writer (history.ts) passes this explicitly, but the
+    // default-now makes the column migration-safe: if the column is added
+    // to an existing DB with rows, the default back-fills cleanly.
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
@@ -631,7 +636,10 @@ export const layoutReviews = pgTable(
     // Tier 3 narrative summary (Claude-generated).
     aiSummary: text("ai_summary"),
     error: text("error"),
-    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    // Phase R1 — default-now for migration safety; see pipeline_jobs note.
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },

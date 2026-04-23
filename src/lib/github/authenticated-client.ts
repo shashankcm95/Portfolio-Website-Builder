@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { GitHubClient } from "@/lib/github/client";
+import { readGitHubToken } from "@/lib/auth/github-token";
 
 /**
  * Construct a {@link GitHubClient} pre-loaded with the signed-in user's
@@ -29,7 +30,11 @@ export async function getAuthenticatedGitHubClient(
       .where(eq(users.id, userId))
       .limit(1);
 
-    const token = row?.githubToken ?? undefined;
+    // Phase R1 — the DB value may be ciphertext (new writes) or legacy
+    // plaintext (pre-R1 rows). `readGitHubToken` discriminates and
+    // decrypts transparently, returning null on failure so we degrade
+    // to the unauthenticated 60-req/h bucket instead of crashing.
+    const token = await readGitHubToken(row?.githubToken);
     return new GitHubClient(token || undefined);
   } catch {
     // DB unavailable at call time — degrade gracefully to unauthenticated.
