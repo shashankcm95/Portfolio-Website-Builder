@@ -8,6 +8,7 @@ import {
   type UserRepoSummary,
 } from "@/lib/github/repo-fetcher";
 import { getAuthenticatedGitHubClient } from "@/lib/github/authenticated-client";
+import { logger } from "@/lib/log";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
@@ -99,7 +100,7 @@ export async function GET(
         { status: 404 }
       );
     }
-    console.error("listUserRepos failed:", err);
+    logger.error("listUserRepos failed", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to fetch repos from GitHub" },
       { status: 502 }

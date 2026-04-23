@@ -52,6 +52,7 @@ import {
   MAX_CONTEXT_CHUNKS,
   MAX_VISITOR_MESSAGE_CHARS,
 } from "@/lib/chatbot/types";
+import { logger } from "@/lib/log";
 
 const MAX_SEED_CONTEXT_CHARS = 2000; // GitHub suggestion titles/descriptions
 
@@ -195,7 +196,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         err instanceof LlmInvalidKeyError ? "not_configured" : "internal";
       const errMsg = err instanceof Error ? err.message : "Streaming failed";
       // eslint-disable-next-line no-console
-      console.error("[chatbot/owner-ask] LLM failed:", err);
+      logger.error("[chatbot/owner-ask] LLM failed", { error: err instanceof Error ? err.message : String(err) });
       yield encodeError(code, errMsg);
       return;
     }

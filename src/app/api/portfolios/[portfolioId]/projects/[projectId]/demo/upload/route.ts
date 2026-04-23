@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { portfolios, projects } from "@/lib/db/schema";
 import { R2UploadError, putObject } from "@/lib/storage/r2";
+import { logger } from "@/lib/log";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
@@ -110,13 +111,13 @@ export async function POST(
         );
       }
       // put_failed — infrastructure error; log and surface a 500.
-      console.error("[upload] R2 put failed:", e.message);
+      logger.error("[upload] R2 put failed", { error: String(e.message) });
       return NextResponse.json(
         { error: "Upload failed — please try again" },
         { status: 500 }
       );
     }
-    console.error("[upload] unexpected:", e);
+    logger.error("[upload] unexpected", { error: e instanceof Error ? e.message : String(e) });
     return NextResponse.json(
       { error: "Unexpected error" },
       { status: 500 }

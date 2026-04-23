@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { logger } from "@/lib/log";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
       topics: metadata.topics ?? [],
     });
   } catch (error: any) {
-    console.error("Repo validation error:", error);
+    logger.error("Repo validation error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to validate repository" },
       { status: 500 }

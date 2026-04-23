@@ -8,6 +8,7 @@ import { getAuthenticatedGitHubClient } from "@/lib/github/authenticated-client"
 import { RepoFetcher } from "@/lib/github/repo-fetcher";
 import { CredibilityFetcher } from "@/lib/github/credibility-fetcher";
 import type { DependencyFile } from "@/lib/github/repo-fetcher";
+import { logger } from "@/lib/log";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
@@ -126,7 +127,7 @@ export async function POST(
       repoData.metadata,
       storedDeps,
       {
-        userGithubLogin: (session.user as any).githubUsername ?? null,
+        userGithubLogin: session.user.githubUsername ?? null,
         overrideCategory: manualOverride,
         overrideCategorySource: manualOverride ? "manual" : undefined,
       }
@@ -160,7 +161,7 @@ export async function POST(
       credibilityFetchedAt: fetchedAt.toISOString(),
     });
   } catch (error) {
-    console.error("Credibility refresh failed:", error);
+    logger.error("Credibility refresh failed", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to refresh credibility signals" },
       { status: 500 }

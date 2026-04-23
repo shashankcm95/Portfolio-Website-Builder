@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "@/lib/log";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
         maxTokens: 4096,
       });
     } catch (error) {
-      console.warn("AI structuring failed, saving raw text only:", error);
+      logger.warn("AI structuring failed, saving raw text only", { error: error instanceof Error ? error.message : String(error) });
     }
 
     // Save to database
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("Resume upload error:", error);
+    logger.error("Resume upload error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to process resume" },
       { status: 500 }

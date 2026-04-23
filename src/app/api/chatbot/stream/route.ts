@@ -44,6 +44,7 @@ import type {
   ChatMessage,
   ChatMessageErrorBody,
 } from "@/lib/chatbot/types";
+import { logger } from "@/lib/log";
 
 function errorJson(status: number, body: ChatMessageErrorBody) {
   return NextResponse.json(body, { status });
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const message =
         err instanceof Error ? err.message : "LLM streaming failed";
       // eslint-disable-next-line no-console
-      console.error("[chatbot/stream] LLM failed:", err);
+      logger.error("[chatbot/stream] LLM failed", { error: err instanceof Error ? err.message : String(err) });
       yield encodeError(code, message);
       return; // No `done` after `error`.
     }
@@ -132,7 +133,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error("[chatbot/stream] session upsert failed:", err);
+      logger.error("[chatbot/stream] session upsert failed", { error: err instanceof Error ? err.message : String(err) });
       sessionId = `synthetic-${Date.now()}`;
     }
 

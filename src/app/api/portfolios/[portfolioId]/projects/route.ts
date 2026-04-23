@@ -13,6 +13,7 @@ import { RepoFetcher } from "@/lib/github/repo-fetcher";
 import { getAuthenticatedGitHubClient } from "@/lib/github/authenticated-client";
 import { CredibilityFetcher } from "@/lib/github/credibility-fetcher";
 import { extractVerifiedStack } from "@/lib/github/stack-detector";
+import { logger } from "@/lib/log";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
@@ -81,7 +82,7 @@ export async function importSingleRepo(
         ? bundle.authorshipSignal.presentation?.category ?? "unspecified"
         : "unspecified";
   } catch (credError) {
-    console.warn("Credibility fetch failed (non-fatal):", credError);
+    logger.warn("Credibility fetch failed (non-fatal)", { error: credError instanceof Error ? credError.message : String(credError) });
   }
 
   const verifiedStack = extractVerifiedStack(repoData.dependencies);
@@ -346,7 +347,7 @@ export async function POST(
       parsed.repo,
       {
         userId: session.user.id,
-        userGithubLogin: (session.user as any).githubUsername ?? null,
+        userGithubLogin: session.user.githubUsername ?? null,
         displayOrder: maxOrder + 1,
       }
     );
@@ -356,7 +357,7 @@ export async function POST(
       { status: 201 }
     );
   } catch (error: unknown) {
-    console.error("Project creation error:", error);
+    logger.error("Project creation error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to add project" },
       { status: 500 }

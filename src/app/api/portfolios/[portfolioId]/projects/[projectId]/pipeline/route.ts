@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { portfolios, projects } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { logger } from "@/lib/log";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
@@ -63,7 +64,7 @@ export async function POST(
 
     return NextResponse.json({ jobId, status: "started" });
   } catch (error: any) {
-    console.error("Pipeline start error:", error);
+    logger.error("Pipeline start error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to start pipeline" },
       { status: 500 }

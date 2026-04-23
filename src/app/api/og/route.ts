@@ -29,6 +29,7 @@ import { db } from "@/lib/db";
 import { portfolios, projects } from "@/lib/db/schema";
 import { PortfolioOgLayout } from "@/lib/og/layout-portfolio";
 import { ProjectOgLayout } from "@/lib/og/layout-project";
+import { logger } from "@/lib/log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -194,7 +195,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     return image;
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error("[api/og] render failed:", err);
+    logger.error("[api/og] render failed", { error: err instanceof Error ? err.message : String(err) });
     return errorPng(500, "Image render failed");
   }
 }

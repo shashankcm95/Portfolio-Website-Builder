@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { portfolios } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "@/lib/log";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       );
     }
-    console.error("Portfolio creation error:", error);
+    logger.error("Portfolio creation error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to create portfolio" },
       { status: 500 }

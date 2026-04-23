@@ -34,6 +34,7 @@ import type {
   ChatMessageErrorBody,
   ChatMessageResponse,
 } from "@/lib/chatbot/types";
+import { logger } from "@/lib/log";
 
 function errorResponse(
   status: number,
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
     }
     // eslint-disable-next-line no-console
-    console.error("[chatbot] LLM call failed:", err);
+    logger.error("[chatbot] LLM call failed", { error: err instanceof Error ? err.message : String(err) });
     return errorResponse(500, {
       error: "Something went wrong",
       code: "internal",
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error("[chatbot] session upsert failed:", err);
+    logger.error("[chatbot] session upsert failed", { error: err instanceof Error ? err.message : String(err) });
     sessionId = `synthetic-${Date.now()}`;
   }
 

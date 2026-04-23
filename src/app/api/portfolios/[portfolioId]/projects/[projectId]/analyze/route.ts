@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { portfolios, projects } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { logger } from "@/lib/log";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
@@ -91,7 +92,7 @@ export async function POST(
           repoData.metadata,
           repoData.dependencies,
           {
-            userGithubLogin: (session.user as any).githubUsername ?? null,
+            userGithubLogin: session.user.githubUsername ?? null,
             overrideCategory: manualOverride,
             overrideCategorySource: manualOverride ? "manual" : undefined,
           }
@@ -115,7 +116,7 @@ export async function POST(
     } catch (credError) {
       // Non-fatal: the narrative pipeline is the primary outcome of
       // /analyze, not credibility refresh.
-      console.warn("Credibility refresh during analyze failed:", credError);
+      logger.warn("Credibility refresh during analyze failed", { error: credError instanceof Error ? credError.message : String(credError) });
     }
   }
 
@@ -144,7 +145,7 @@ export async function POST(
 
     return NextResponse.json({ jobId, status: "started" });
   } catch (error: any) {
-    console.error("Analysis start error:", error);
+    logger.error("Analysis start error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to start analysis" },
       { status: 500 }

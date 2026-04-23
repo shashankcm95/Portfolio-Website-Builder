@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { portfolios, projects } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
+import { logger } from "@/lib/log";
 import { pLimit } from "@/lib/github/concurrency";
 import { importSingleRepo } from "@/app/api/portfolios/[portfolioId]/projects/route";
 
@@ -214,10 +215,12 @@ export async function POST(
             );
             startPipeline(project.id);
           } catch (pipelineErr) {
-            console.warn(
-              `startPipeline failed for ${project.id}:`,
-              pipelineErr
-            );
+            logger.warn(`startPipeline failed for ${project.id}`, {
+              error:
+                pipelineErr instanceof Error
+                  ? pipelineErr.message
+                  : String(pipelineErr),
+            });
           }
 
           results.push({
