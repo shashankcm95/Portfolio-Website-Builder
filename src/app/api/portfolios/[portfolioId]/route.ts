@@ -9,6 +9,11 @@ import {
   MAX_STARTERS,
 } from "@/lib/chatbot/types";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 async function getAuthenticatedPortfolio(portfolioId: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Unauthorized", status: 401 };

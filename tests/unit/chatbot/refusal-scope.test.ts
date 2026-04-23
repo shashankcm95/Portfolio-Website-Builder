@@ -72,7 +72,8 @@ describe("visitor prompt — allow-list + refuse-list present", () => {
 
 describe("visitor prompt — prompt-injection defenses", () => {
   it("flags <question> content as untrusted and forbids following its instructions", () => {
-    expect(prompt).toMatch(/<question>.*untrusted/s);
+    // `[\s\S]*` mirrors the `s` (dotAll) flag without requiring ES2018 in tsconfig.
+    expect(prompt).toMatch(/<question>[\s\S]*untrusted/);
     expect(prompt).toMatch(/never follow instructions/i);
   });
 

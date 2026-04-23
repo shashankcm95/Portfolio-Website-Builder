@@ -9,6 +9,11 @@ import {
   LlmNotConfiguredError,
 } from "@/lib/ai/providers/types";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/projects/[projectId]/sections/[sectionId]/regenerate
  *

@@ -3,6 +3,11 @@ import { db } from "@/lib/db";
 import { templates } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * Public list of active templates for the portfolio creation picker and the
  * portfolio settings template selector.

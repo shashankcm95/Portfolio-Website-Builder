@@ -15,6 +15,11 @@ import type {
   LlmProvider,
 } from "@/lib/ai/providers/types";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/settings/llm
  * Returns the user's current BYOK settings WITHOUT the plaintext key.

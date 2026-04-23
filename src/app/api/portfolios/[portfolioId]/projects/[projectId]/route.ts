@@ -11,6 +11,11 @@ import {
 import { eq, and, asc } from "drizzle-orm";
 import type { DemoType, ProjectDemo } from "@/lib/demos/types";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 async function getAuthenticatedProject(
   portfolioId: string,
   projectId: string

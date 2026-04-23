@@ -9,6 +9,11 @@ import {
 } from "@/lib/github/repo-fetcher";
 import { getAuthenticatedGitHubClient } from "@/lib/github/authenticated-client";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * Phase 10 Track A — list the signed-in user's public repos for the
  * bulk-import picker.

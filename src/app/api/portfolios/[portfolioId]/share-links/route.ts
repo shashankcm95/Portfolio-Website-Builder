@@ -20,6 +20,11 @@ import { db } from "@/lib/db";
 import { portfolios, shareTokens } from "@/lib/db/schema";
 import { generateShareToken } from "@/lib/share/tokens";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // ─── Body shape ─────────────────────────────────────────────────────────────
 
 type ExpiryWindow = "24h" | "7d" | "30d";

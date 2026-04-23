@@ -74,6 +74,32 @@ export const portfolios = pgTable(
     // the iframe still points at the builder. Opt-in so existing
     // published portfolios don't change behavior.
     selfHostedChatbot: boolean("self_hosted_chatbot").notNull().default(false),
+    // Phase A — sharp one-line positioning statement shown in the hero
+    // ("I build accessible, pixel-perfect experiences"). When null the
+    // template falls back to the resume-derived label. User-authored text,
+    // Tier 1 in the editability model — direct editable.
+    positioning: text("positioning"),
+    // Phase A — recognizable employer/client brand names ["Apple", "Klaviyo"]
+    // rendered as a "Previously at" line in the hero. User-authored list,
+    // Tier 1. Empty array = no hero line.
+    namedEmployers: jsonb("named_employers").notNull().default("[]"),
+    // Phase A — hiring status controls whether (and how) a hire-me CTA is
+    // rendered in the hero. One of "available" | "open" | "not-looking".
+    // Default "not-looking" keeps existing portfolios visually unchanged.
+    hireStatus: text("hire_status").notNull().default("not-looking"),
+    // Phase A — user-authored CTA copy ("Hire me", "Available for Q2"). Null
+    // when hireStatus is "not-looking" or when the template's default copy
+    // is fine.
+    hireCtaText: text("hire_cta_text"),
+    // Phase A — destination for the hire CTA (mailto:, calendar link, contact
+    // form URL). Null = template falls back to the contact page.
+    hireCtaHref: text("hire_cta_href"),
+    // Phase A — user override for the anchor stat (the single strongest
+    // credential the hero leads with). Phase B fills in a pipeline-computed
+    // default; this column lets the user override with one of the ranked
+    // candidates (Tier 3 — choose, not type-freely). Shape:
+    //   { value: "4k+", unit: "GitHub stars", context?: string, sourceRef?: string }
+    anchorStatOverride: jsonb("anchor_stat_override"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
@@ -134,9 +160,49 @@ export const projects = pgTable("projects", {
   showCharacterizationOnPortfolio: boolean(
     "show_characterization_on_portfolio"
   ).default(false),
+  // Phase A — quantified outcomes extracted from README/commits by Phase B's
+  // fact-extract step (category "outcome"). Shape: array of
+  //   { metric, value, context?, evidenceRef? }
+  // Surfaces in the project card + detail page. Tier 3 in the editability
+  // model — values stay tied to extracted facts; user may hide entries or
+  // edit only the `context` phrasing. Empty array default keeps existing
+  // projects unchanged.
+  outcomes: jsonb("outcomes").notNull().default("[]"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
+
+// ─── Testimonials (Phase A) ──────────────────────────────────────────────────
+//
+// User-curated testimonials with named authors. Tier 1 content — fully
+// editable by the user because the quote is attributed to a named third
+// party who takes responsibility for the claim. No pipeline involvement;
+// users paste a LinkedIn recommendation or direct quote into the editor.
+
+export const testimonials = pgTable(
+  "testimonials",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    portfolioId: uuid("portfolio_id")
+      .notNull()
+      .references(() => portfolios.id, { onDelete: "cascade" }),
+    quote: text("quote").notNull(),
+    authorName: text("author_name").notNull(),
+    authorTitle: text("author_title"),
+    authorCompany: text("author_company"),
+    authorUrl: text("author_url"),
+    avatarUrl: text("avatar_url"),
+    displayOrder: integer("display_order").notNull().default(0),
+    isVisible: boolean("is_visible").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    portfolioIdIdx: index("testimonials_portfolio_id_idx").on(
+      table.portfolioId
+    ),
+  })
+);
 
 // ─── Project Demos (Phase 4) ─────────────────────────────────────────────────
 //
@@ -624,6 +690,15 @@ export const portfoliosRelations = relations(portfolios, ({ one, many }) => ({
   shareTokens: many(shareTokens),
   visitorEvents: many(visitorEvents),
   layoutReviews: many(layoutReviews),
+  testimonials: many(testimonials),
+}));
+
+// Phase A — testimonials belong to one portfolio.
+export const testimonialsRelations = relations(testimonials, ({ one }) => ({
+  portfolio: one(portfolios, {
+    fields: [testimonials.portfolioId],
+    references: [portfolios.id],
+  }),
 }));
 
 // Phase 7 — reverse relation for layout_reviews + cascade-style child rows.

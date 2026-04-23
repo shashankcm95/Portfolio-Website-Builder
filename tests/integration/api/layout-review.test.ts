@@ -118,27 +118,27 @@ beforeEach(() => {
 describe("POST /api/portfolios/:pid/layout-review", () => {
   it("401 when unauthenticated", async () => {
     mockAuth.mockResolvedValue(null);
-    const res = await POST(makeReq({}) as any, {
+    const res = (await POST(makeReq({}) as any, {
       params: { portfolioId: "pf-1" },
-    });
+    }))!;
     expect(res.status).toBe(401);
   });
 
   it("404 when the portfolio doesn't exist", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     primeOwnerCheck("u1", null);
-    const res = await POST(makeReq({}) as any, {
+    const res = (await POST(makeReq({}) as any, {
       params: { portfolioId: "pf-1" },
-    });
+    }))!;
     expect(res.status).toBe(404);
   });
 
   it("403 when the portfolio belongs to another user", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     primeOwnerCheck("u1", "u2-someone-else");
-    const res = await POST(makeReq({}) as any, {
+    const res = (await POST(makeReq({}) as any, {
       params: { portfolioId: "pf-1" },
-    });
+    }))!;
     expect(res.status).toBe(403);
   });
 
@@ -172,9 +172,9 @@ describe("POST /api/portfolios/:pid/layout-review", () => {
       error: null,
     });
 
-    const res = await POST(makeReq({}) as any, {
+    const res = (await POST(makeReq({}) as any, {
       params: { portfolioId: "pf-1" },
-    });
+    }))!;
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.review.id).toBe("lr-new");
@@ -225,9 +225,9 @@ describe("POST /api/portfolios/:pid/layout-review", () => {
     ]);
     mockSelectQueues.push([]); // no issues yet
 
-    const res = await POST(makeReq({}) as any, {
+    const res = (await POST(makeReq({}) as any, {
       params: { portfolioId: "pf-1" },
-    });
+    }))!;
     expect(res.status).toBe(200); // 200 (existing), not 201 (newly created)
     const body = await res.json();
     expect(body.review.id).toBe("lr-running");
@@ -269,7 +269,7 @@ describe("POST /api/portfolios/:pid/layout-review", () => {
       headers: { "Content-Type": "application/json" },
       body: "{not-json",
     });
-    const res = await POST(req as any, { params: { portfolioId: "pf-1" } });
+    const res = (await POST(req as any, { params: { portfolioId: "pf-1" } }))!;
     expect(res.status).toBe(400);
   });
 });
@@ -279,9 +279,9 @@ describe("POST /api/portfolios/:pid/layout-review", () => {
 describe("GET /api/portfolios/:pid/layout-review", () => {
   it("401 when unauthenticated", async () => {
     mockAuth.mockResolvedValue(null);
-    const res = await GET(makeReq() as any, {
+    const res = (await GET(makeReq() as any, {
       params: { portfolioId: "pf-1" },
-    });
+    }))!;
     expect(res.status).toBe(401);
   });
 
@@ -289,9 +289,9 @@ describe("GET /api/portfolios/:pid/layout-review", () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     primeOwnerCheck("u1", "u1");
     mockSelectQueues.push([]); // latest-row lookup empty
-    const res = await GET(makeReq() as any, {
+    const res = (await GET(makeReq() as any, {
       params: { portfolioId: "pf-1" },
-    });
+    }))!;
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.review).toBeNull();
@@ -331,9 +331,9 @@ describe("GET /api/portfolios/:pid/layout-review", () => {
       },
     ]);
 
-    const res = await GET(makeReq() as any, {
+    const res = (await GET(makeReq() as any, {
       params: { portfolioId: "pf-1" },
-    });
+    }))!;
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.review.id).toBe("lr-1");

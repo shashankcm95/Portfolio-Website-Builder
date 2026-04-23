@@ -16,6 +16,11 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { portfolios, shareTokens } from "@/lib/db/schema";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: { portfolioId: string; tokenId: string } }

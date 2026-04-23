@@ -22,7 +22,11 @@ import {
   projects,
 } from "@/lib/db/schema";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 
 const JOB_LIMIT = 50;
 const COST_WINDOW_DAYS = 30;

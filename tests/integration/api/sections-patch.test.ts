@@ -84,18 +84,18 @@ beforeEach(() => {
 describe("PATCH /api/projects/:projectId/sections/:sectionId", () => {
   it("returns 401 when unauthenticated", async () => {
     mockAuth.mockResolvedValue(null);
-    const res = await PATCH(makeReq({ userContent: "new" }) as any, {
+    const res = (await PATCH(makeReq({ userContent: "new" }) as any, {
       params: { projectId: "p1", sectionId: "s1" },
-    } as any);
+    } as any))!;
     expect(res.status).toBe(401);
   });
 
   it("returns 404 when the section does not exist", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     mockSteps.push({ kind: "authSelect", value: [] });
-    const res = await PATCH(makeReq({ userContent: "new" }) as any, {
+    const res = (await PATCH(makeReq({ userContent: "new" }) as any, {
       params: { projectId: "p1", sectionId: "s1" },
-    } as any);
+    } as any))!;
     expect(res.status).toBe(404);
   });
 
@@ -111,9 +111,9 @@ describe("PATCH /api/projects/:projectId/sections/:sectionId", () => {
         },
       ],
     });
-    const res = await PATCH(makeReq({ userContent: "new" }) as any, {
+    const res = (await PATCH(makeReq({ userContent: "new" }) as any, {
       params: { projectId: "p1", sectionId: "s1" },
-    } as any);
+    } as any))!;
     expect(res.status).toBe(403);
   });
 
@@ -129,9 +129,9 @@ describe("PATCH /api/projects/:projectId/sections/:sectionId", () => {
         },
       ],
     });
-    const res = await PATCH(makeReq("not json{") as any, {
+    const res = (await PATCH(makeReq("not json{") as any, {
       params: { projectId: "p1", sectionId: "s1" },
-    } as any);
+    } as any))!;
     expect(res.status).toBe(400);
   });
 
@@ -147,9 +147,9 @@ describe("PATCH /api/projects/:projectId/sections/:sectionId", () => {
         },
       ],
     });
-    const res = await PATCH(makeReq({}) as any, {
+    const res = (await PATCH(makeReq({}) as any, {
       params: { projectId: "p1", sectionId: "s1" },
-    } as any);
+    } as any))!;
     expect(res.status).toBe(400);
   });
 
@@ -177,10 +177,10 @@ describe("PATCH /api/projects/:projectId/sections/:sectionId", () => {
         ],
       }
     );
-    const res = await PATCH(
+    const res = (await PATCH(
       makeReq({ userContent: "edited text" }) as any,
       { params: { projectId: "p1", sectionId: "s1" } } as any
-    );
+    ))!;
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.section).toMatchObject({

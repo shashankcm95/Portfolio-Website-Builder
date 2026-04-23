@@ -103,27 +103,27 @@ beforeEach(() => {
 describe("POST /api/portfolios/:pid/share-links", () => {
   it("401 when unauthenticated", async () => {
     mockAuth.mockResolvedValue(null);
-    const res = await createLink(makeReq({}) as any, {
+    const res = (await createLink(makeReq({}) as any, {
       params: { portfolioId: "pf1" },
-    });
+    }))!;
     expect(res.status).toBe(401);
   });
 
   it("404 when the portfolio doesn't exist", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     primeOwnerCheck("u1", null);
-    const res = await createLink(makeReq({}) as any, {
+    const res = (await createLink(makeReq({}) as any, {
       params: { portfolioId: "pf1" },
-    });
+    }))!;
     expect(res.status).toBe(404);
   });
 
   it("403 when the portfolio belongs to another user", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     primeOwnerCheck("u1", "u2-someone-else");
-    const res = await createLink(makeReq({}) as any, {
+    const res = (await createLink(makeReq({}) as any, {
       params: { portfolioId: "pf1" },
-    });
+    }))!;
     expect(res.status).toBe(403);
   });
 
@@ -144,9 +144,9 @@ describe("POST /api/portfolios/:pid/share-links", () => {
       },
     ]);
 
-    const res = await createLink(makeReq({}) as any, {
+    const res = (await createLink(makeReq({}) as any, {
       params: { portfolioId: "pf1" },
-    });
+    }))!;
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.link.token).toBe("ABCDEFGHJKMNPQRSTVWXYZ00");
@@ -173,10 +173,10 @@ describe("POST /api/portfolios/:pid/share-links", () => {
         createdAt: new Date(),
       },
     ]);
-    const res = await createLink(
+    const res = (await createLink(
       makeReq({ label: "for Jane", expiresIn: "7d" }) as any,
       { params: { portfolioId: "pf1" } }
-    );
+    ))!;
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.link.label).toBe("for Jane");
@@ -189,20 +189,20 @@ describe("POST /api/portfolios/:pid/share-links", () => {
   it("400 on invalid expiresIn", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     primeOwnerCheck("u1", "u1");
-    const res = await createLink(
+    const res = (await createLink(
       makeReq({ expiresIn: "5y" }) as any,
       { params: { portfolioId: "pf1" } }
-    );
+    ))!;
     expect(res.status).toBe(400);
   });
 
   it("400 on oversized label", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     primeOwnerCheck("u1", "u1");
-    const res = await createLink(
+    const res = (await createLink(
       makeReq({ label: "x".repeat(100) }) as any,
       { params: { portfolioId: "pf1" } }
-    );
+    ))!;
     expect(res.status).toBe(400);
   });
 
@@ -214,9 +214,9 @@ describe("POST /api/portfolios/:pid/share-links", () => {
       headers: { "Content-Type": "application/json" },
       body: "not-json{",
     });
-    const res = await createLink(req as any, {
+    const res = (await createLink(req as any, {
       params: { portfolioId: "pf1" },
-    });
+    }))!;
     expect(res.status).toBe(400);
   });
 });
@@ -226,9 +226,9 @@ describe("POST /api/portfolios/:pid/share-links", () => {
 describe("GET /api/portfolios/:pid/share-links", () => {
   it("401 when unauthenticated", async () => {
     mockAuth.mockResolvedValue(null);
-    const res = await listLinks(makeReq(undefined, "GET") as any, {
+    const res = (await listLinks(makeReq(undefined, "GET") as any, {
       params: { portfolioId: "pf1" },
-    });
+    }))!;
     expect(res.status).toBe(401);
   });
 
@@ -259,9 +259,9 @@ describe("GET /api/portfolios/:pid/share-links", () => {
         createdAt: new Date("2026-01-10"),
       },
     ]);
-    const res = await listLinks(makeReq(undefined, "GET") as any, {
+    const res = (await listLinks(makeReq(undefined, "GET") as any, {
       params: { portfolioId: "pf1" },
-    });
+    }))!;
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.links).toHaveLength(2);
@@ -275,20 +275,20 @@ describe("GET /api/portfolios/:pid/share-links", () => {
 describe("DELETE /api/portfolios/:pid/share-links/:tokenId", () => {
   it("401 when unauthenticated", async () => {
     mockAuth.mockResolvedValue(null);
-    const res = await revokeLink(
+    const res = (await revokeLink(
       new Request("http://localhost/x", { method: "DELETE" }) as any,
       { params: { portfolioId: "pf1", tokenId: "lk-1" } }
-    );
+    ))!;
     expect(res.status).toBe(401);
   });
 
   it("403 when portfolio belongs to another user", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     primeOwnerCheck("u1", "u2");
-    const res = await revokeLink(
+    const res = (await revokeLink(
       new Request("http://localhost/x", { method: "DELETE" }) as any,
       { params: { portfolioId: "pf1", tokenId: "lk-1" } }
-    );
+    ))!;
     expect(res.status).toBe(403);
   });
 
@@ -296,10 +296,10 @@ describe("DELETE /api/portfolios/:pid/share-links/:tokenId", () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     primeOwnerCheck("u1", "u1");
     mockSelectQueues.push([]); // token lookup — empty
-    const res = await revokeLink(
+    const res = (await revokeLink(
       new Request("http://localhost/x", { method: "DELETE" }) as any,
       { params: { portfolioId: "pf1", tokenId: "lk-1" } }
-    );
+    ))!;
     expect(res.status).toBe(404);
   });
 
@@ -307,10 +307,10 @@ describe("DELETE /api/portfolios/:pid/share-links/:tokenId", () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     primeOwnerCheck("u1", "u1");
     mockSelectQueues.push([{ id: "lk-1" }]); // token lookup hit
-    const res = await revokeLink(
+    const res = (await revokeLink(
       new Request("http://localhost/x", { method: "DELETE" }) as any,
       { params: { portfolioId: "pf1", tokenId: "lk-1" } }
-    );
+    ))!;
     expect(res.status).toBe(204);
     expect(mockUpdateCalls).toHaveLength(1);
     expect(mockUpdateCalls[0].revokedAt).toBeInstanceOf(Date);

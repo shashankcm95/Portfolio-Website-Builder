@@ -18,7 +18,11 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { portfolios, visitorEvents } from "@/lib/db/schema";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 
 /** Days of history considered. Split into "current 7d" vs "prior 7d". */
 const WINDOW_DAYS = 14;

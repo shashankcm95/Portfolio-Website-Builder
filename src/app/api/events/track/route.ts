@@ -30,7 +30,11 @@ import {
 } from "@/lib/analytics/beacon";
 import { check } from "@/lib/chatbot/rate-limit";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 
 /** Keep event types to the set we report on. Unknown → 400. */
 const ALLOWED_EVENT_TYPES = new Set([

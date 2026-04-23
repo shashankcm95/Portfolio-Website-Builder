@@ -1,9 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import { CredibilityBadges } from "@/components/github/credibility-badges";
-import type { CredibilitySignals } from "@/lib/credibility/types";
+import {
+  CREDIBILITY_SCHEMA_VERSION,
+  type CredibilitySignals,
+} from "@/lib/credibility/types";
 
 const okSignals: CredibilitySignals = {
-  schemaVersion: 1,
+  schemaVersion: CREDIBILITY_SCHEMA_VERSION,
   ci: {
     status: "ok",
     conclusion: "success",
@@ -44,6 +47,17 @@ const okSignals: CredibilitySignals = {
   issuesAndPRs: { status: "ok", closedTotal: 47 },
   testFramework: { status: "ok", name: "jest" },
   verifiedStack: { status: "ok", items: ["Next.js", "Drizzle ORM"] },
+  // v2 fields required by the schema — minimal values that satisfy the
+  // types without changing existing assertions.
+  commitActivity: { status: "ok", activeDayCount: 45, totalWeeks: 52 },
+  commitMessages: {
+    status: "ok",
+    total: 30,
+    meaningfulCount: 25,
+    sample: ["feat: add CI config", "fix: handle null token"],
+  },
+  externalUrl: null,
+  authorshipSignal: { status: "missing", reason: "fixture" },
 };
 
 describe("<CredibilityBadges />", () => {

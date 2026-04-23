@@ -97,6 +97,64 @@ async function getTemplateComponents(templateId: string) {
         ContactPage,
       };
     }
+    // Phase D — Signal: dark, motion-driven design-engineer template.
+    // Pinned left rail + scrolling work column. Anchor-stat + named
+    // employers in the hero. Skills surface inline on projects, not
+    // as a logo grid. Testimonials render as pull-quotes between cases.
+    case "signal": {
+      const [
+        { Layout },
+        { HomePage },
+        { AboutPage },
+        { ProjectsPage },
+        { ProjectDetailPage },
+        { ContactPage },
+      ] = await Promise.all([
+        import("@/templates/signal/components/Layout"),
+        import("@/templates/signal/pages/index"),
+        import("@/templates/signal/pages/about"),
+        import("@/templates/signal/pages/projects"),
+        import("@/templates/signal/pages/project-detail"),
+        import("@/templates/signal/pages/contact"),
+      ]);
+      return {
+        Layout,
+        HomePage,
+        AboutPage,
+        ProjectsPage,
+        ProjectDetailPage,
+        ContactPage,
+      };
+    }
+    // Phase D — Studio: light, freelancer-first template. Hire-status
+    // chip in the sticky top bar, testimonial carousel, client-name
+    // wall, closing conversion CTA. Optimized to turn visitors into
+    // inbound work, not just to display a resume.
+    case "studio": {
+      const [
+        { Layout },
+        { HomePage },
+        { AboutPage },
+        { ProjectsPage },
+        { ProjectDetailPage },
+        { ContactPage },
+      ] = await Promise.all([
+        import("@/templates/studio/components/Layout"),
+        import("@/templates/studio/pages/index"),
+        import("@/templates/studio/pages/about"),
+        import("@/templates/studio/pages/projects"),
+        import("@/templates/studio/pages/project-detail"),
+        import("@/templates/studio/pages/contact"),
+      ]);
+      return {
+        Layout,
+        HomePage,
+        AboutPage,
+        ProjectsPage,
+        ProjectDetailPage,
+        ContactPage,
+      };
+    }
     // Phase 7 — typography-forward editorial for senior engineers /
     // technical leaders / designer-developer hybrids.
     case "editorial": {
@@ -166,6 +224,8 @@ function resolveTemplateDir(templateId: string): string {
     case "research":
     case "terminal":
     case "editorial":
+    case "signal":
+    case "studio":
       return templateId;
     default:
       return "minimal";

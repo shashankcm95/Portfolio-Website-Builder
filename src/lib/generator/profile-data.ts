@@ -1,14 +1,21 @@
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, asc } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { embeddings, portfolios, projects } from "@/lib/db/schema";
+import {
+  embeddings,
+  portfolios,
+  projects,
+  testimonials as testimonialsTable,
+} from "@/lib/db/schema";
 import type {
   ProfileData,
   Project,
   Skill,
   SocialProfile,
   ProjectFact,
+  ProjectOutcome,
   Experience,
   Education,
+  Testimonial,
 } from "@/templates/_shared/types";
 
 /**
@@ -137,6 +144,49 @@ export async function assembleProfileData(
   const { analyticsEndpoint, analyticsPortfolioId } =
     buildAnalyticsConfig(portfolioId);
 
+  // ── Phase A: testimonials ──────────────────────────────────────────────
+  // Visible only. Ordered by displayOrder. Empty ⇒ omit the field entirely
+  // so templates can gate whole sections on its presence.
+  const testimonialRows = await db.query.testimonials.findMany({
+    where: and(
+      eq(testimonialsTable.portfolioId, portfolioId),
+      eq(testimonialsTable.isVisible, true)
+    ),
+    orderBy: [asc(testimonialsTable.displayOrder)],
+  });
+  const testimonialsList: Testimonial[] = testimonialRows.map((t) => ({
+    quote: t.quote,
+    authorName: t.authorName,
+    authorTitle: t.authorTitle ?? undefined,
+    authorCompany: t.authorCompany ?? undefined,
+    authorUrl: t.authorUrl ?? undefined,
+    avatarUrl: t.avatarUrl ?? undefined,
+  }));
+
+  // ── Phase A: hero extensions ───────────────────────────────────────────
+  // positioning, namedEmployers, hiring, anchorStat — all optional. New
+  // templates read these; old templates ignore them and render exactly as
+  // before (keeps the backwards-compatibility guarantee).
+  const namedEmployers = readNamedEmployers(portfolio.namedEmployers);
+  const hiring = readHiring(
+    portfolio.hireStatus,
+    portfolio.hireCtaText,
+    portfolio.hireCtaHref
+  );
+  // Phase B — deterministic anchor selection. User override wins; when
+  // absent, `deriveAnchorStat` ranks verified candidates from project
+  // metadata, outcomes, and resume employers and picks the strongest.
+  const anchorStat =
+    readAnchorStat(portfolio.anchorStatOverride) ??
+    deriveAnchorStat(projectList, namedEmployers, resumeJson);
+
+  // Phase B — skills filtered to those with at least one piece of
+  // evidence. The "skills as logo grid" anti-pattern surfaces every
+  // extracted topic; now we only surface skills backed by a project
+  // (and sort by evidence count so the most-used land first).
+  const allSkills = Array.from(skillsMap.values());
+  const evidencedSkills = filterEvidencedSkills(allSkills);
+
   // ── Assemble ProfileData ───────────────────────────────────────────────
   const profileData: ProfileData = {
     meta: {
@@ -156,15 +206,83 @@ export async function assembleProfileData(
       summary,
       avatar: user.avatarUrl || undefined,
       profiles,
+      positioning: portfolio.positioning ?? undefined,
+      namedEmployers: namedEmployers.length > 0 ? namedEmployers : undefined,
+      hiring,
+      anchorStat,
     },
-    skills: Array.from(skillsMap.values()),
+    skills: evidencedSkills,
     projects: projectList,
     experience: experience.length > 0 ? experience : undefined,
     education: education.length > 0 ? education : undefined,
+    testimonials:
+      testimonialsList.length > 0 ? testimonialsList : undefined,
     chatbot: chatbotEmbed ?? undefined,
   };
 
   return profileData;
+}
+
+/**
+ * Phase A — read `portfolios.named_employers` jsonb, tolerating malformed
+ * stored data. Returns [] for null/non-array/non-string items.
+ */
+function readNamedEmployers(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (x): x is string => typeof x === "string" && x.trim().length > 0
+  );
+}
+
+/**
+ * Phase A — build the `basics.hiring` object from the three portfolio
+ * columns. "not-looking" (default for existing rows) returns undefined so
+ * old portfolios render no CTA. Missing CTA text/href is fine — templates
+ * carry sensible fallback copy and can route to the contact page.
+ */
+function readHiring(
+  status: string | null,
+  ctaText: string | null,
+  ctaHref: string | null
+): ProfileData["basics"]["hiring"] {
+  const s = (status ?? "not-looking").trim();
+  if (s !== "available" && s !== "open" && s !== "not-looking") {
+    return undefined;
+  }
+  if (s === "not-looking") return undefined;
+  return {
+    status: s,
+    ctaText: ctaText ?? undefined,
+    ctaHref: ctaHref ?? undefined,
+  };
+}
+
+/**
+ * Phase A — read the `anchor_stat_override` jsonb. Returns undefined when
+ * the override is absent or malformed. Phase B will layer a pipeline-
+ * computed default underneath this (currently: no default — undefined ⇒
+ * templates skip the anchor pill).
+ */
+function readAnchorStat(
+  raw: unknown
+): ProfileData["basics"]["anchorStat"] {
+  if (!raw || typeof raw !== "object") return undefined;
+  const o = raw as Record<string, unknown>;
+  const value = typeof o.value === "string" ? o.value.trim() : "";
+  const unit = typeof o.unit === "string" ? o.unit.trim() : "";
+  if (!value || !unit) return undefined;
+  return {
+    value,
+    unit,
+    context:
+      typeof o.context === "string" && o.context.trim().length > 0
+        ? o.context.trim()
+        : undefined,
+    sourceRef:
+      typeof o.sourceRef === "string" && o.sourceRef.trim().length > 0
+        ? o.sourceRef.trim()
+        : undefined,
+  };
 }
 
 /**
@@ -319,6 +437,8 @@ function buildProject(proj: {
   // the template can render it as a muted byline. Omitting = no byline.
   credibilitySignals?: unknown;
   showCharacterizationOnPortfolio?: boolean | null;
+  // Phase A — user-editable outcomes seeded from Phase B's fact-extract.
+  outcomes?: unknown;
   facts: Array<{
     claim: string;
     category: string;
@@ -394,7 +514,190 @@ function buildProject(proj: {
       proj.showCharacterizationOnPortfolio ?? false,
       proj.credibilitySignals
     ),
+    // Phase A — quantified outcomes. Empty ⇒ templates render no outcomes
+    // block (graceful degradation for existing projects that predate the
+    // fact-extraction update).
+    outcomes: readOutcomes(proj.outcomes),
   };
+}
+
+/**
+ * Phase B — deterministic anchor-stat selection.
+ *
+ * Ranks every verifiable candidate from the already-assembled ProfileData
+ * against a fixed rubric and returns the single strongest. Candidates come
+ * from three sources:
+ *   1. Project outcomes (numeric value × parsed magnitude)
+ *   2. Project GitHub metadata (stars, forks)
+ *   3. Resume work history + user-supplied named employers (presence, not count)
+ *
+ * No LLM involvement — keeps the step deterministic, test-free, and
+ * rebuildable without a provider key. An optional LLM tie-break for
+ * phrasing was considered but shelved: the candidates already carry their
+ * own display copy (value + unit), so there's nothing meaningful for an
+ * LLM to improve. The `anchorStatOverride` column (set via the Phase C
+ * editor) still lets users pick a different candidate manually.
+ */
+function deriveAnchorStat(
+  projectList: Project[],
+  namedEmployers: string[],
+  resumeJson: Record<string, unknown> | null
+): ProfileData["basics"]["anchorStat"] {
+  type Candidate = {
+    value: string;
+    unit: string;
+    context?: string;
+    sourceRef?: string;
+    score: number;
+  };
+  const candidates: Candidate[] = [];
+
+  for (const p of projectList) {
+    // Outcome pills already carry an explicit value + unit — highest-signal.
+    // Score = magnitude of the parsed numeric (roughly). "10M" beats "100".
+    if (p.outcomes && p.outcomes.length > 0) {
+      for (const o of p.outcomes) {
+        const magnitude = parseMagnitude(o.value);
+        candidates.push({
+          value: o.value,
+          unit: o.metric,
+          context: o.context ?? `on ${p.name}`,
+          sourceRef: o.evidenceRef ?? p.repoUrl,
+          score: 1000 + magnitude, // outcomes always outrank raw metadata
+        });
+      }
+    }
+
+    // GitHub stars / forks are verifiable from the API. Stars ≥ 10 is the
+    // classifier's OSS-author floor (src/lib/credibility/category.ts).
+    const stars = p.metadata.stars ?? 0;
+    if (stars >= 10) {
+      candidates.push({
+        value: formatCount(stars),
+        unit: "GitHub stars",
+        context: `on ${p.name}`,
+        sourceRef: p.repoUrl,
+        score: Math.min(900, 500 + stars), // caps under outcome tier
+      });
+    }
+  }
+
+  // Resume / user-supplied employer anchor — "Previously at Apple, Klaviyo".
+  // Scored below numeric signals but above nothing. Phase A populated
+  // `namedEmployers` from the portfolios column; we also mine resume work
+  // history when the user hasn't curated a list yet.
+  const employerSources =
+    namedEmployers.length > 0
+      ? namedEmployers
+      : extractEmployerNames(resumeJson);
+  if (employerSources.length > 0) {
+    const top = employerSources.slice(0, 3).join(", ");
+    candidates.push({
+      value: "Previously at",
+      unit: top,
+      score: 200 + Math.min(50, employerSources.length * 10),
+    });
+  }
+
+  if (candidates.length === 0) return undefined;
+
+  candidates.sort((a, b) => b.score - a.score);
+  const top = candidates[0];
+  return {
+    value: top.value,
+    unit: top.unit,
+    context: top.context,
+    sourceRef: top.sourceRef,
+  };
+}
+
+/**
+ * Phase B — very rough magnitude parser used only for ranking outcome
+ * candidates ("10M" > "5k" > "80"). Not a general number parser. Returns
+ * 0 when no digits found so unparseable values don't crash the rank.
+ */
+function parseMagnitude(raw: string): number {
+  const match = raw.match(/([\d.]+)\s*([kKmMbB]?)/);
+  if (!match) return 0;
+  const n = parseFloat(match[1]);
+  if (!isFinite(n)) return 0;
+  const suffix = match[2]?.toLowerCase();
+  switch (suffix) {
+    case "b":
+      return n * 1e9;
+    case "m":
+      return n * 1e6;
+    case "k":
+      return n * 1e3;
+    default:
+      return n;
+  }
+}
+
+function formatCount(n: number): string {
+  if (n >= 1000) return `${Math.floor(n / 100) / 10}k+`.replace(/\.0k/, "k");
+  return `${n}+`;
+}
+
+function extractEmployerNames(
+  resumeJson: Record<string, unknown> | null
+): string[] {
+  if (!resumeJson || !Array.isArray(resumeJson.work)) return [];
+  const names = new Set<string>();
+  for (const w of resumeJson.work as Array<Record<string, unknown>>) {
+    const name =
+      (typeof w.name === "string" && w.name) ||
+      (typeof w.company === "string" && w.company);
+    if (name && typeof name === "string") names.add(name);
+  }
+  return Array.from(names);
+}
+
+/**
+ * Phase B — filter skills to those with real evidence, sorted by evidence
+ * count (most-used first). The existing assembly already attaches
+ * `evidence[]` when a skill is extracted from a project fact or topic;
+ * this just drops entries that slipped through with an empty list and
+ * orders the survivors.
+ */
+function filterEvidencedSkills(skills: Skill[]): Skill[] {
+  return skills
+    .filter((s) => Array.isArray(s.evidence) && s.evidence.length > 0)
+    .sort(
+      (a, b) =>
+        (b.evidence?.length ?? 0) - (a.evidence?.length ?? 0) ||
+        a.name.localeCompare(b.name)
+    );
+}
+
+/**
+ * Phase A — read `projects.outcomes` jsonb. Drops malformed entries. Each
+ * valid entry needs a `metric` and a `value`; `context` and `evidenceRef`
+ * are optional phrasing/traceability fields.
+ */
+function readOutcomes(raw: unknown): ProjectOutcome[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const list: ProjectOutcome[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const o = entry as Record<string, unknown>;
+    const metric = typeof o.metric === "string" ? o.metric.trim() : "";
+    const value = typeof o.value === "string" ? o.value.trim() : "";
+    if (!metric || !value) continue;
+    list.push({
+      metric,
+      value,
+      context:
+        typeof o.context === "string" && o.context.trim().length > 0
+          ? o.context.trim()
+          : undefined,
+      evidenceRef:
+        typeof o.evidenceRef === "string" && o.evidenceRef.trim().length > 0
+          ? o.evidenceRef.trim()
+          : undefined,
+    });
+  }
+  return list.length > 0 ? list : undefined;
 }
 
 /**

@@ -4,6 +4,11 @@ import { db } from "@/lib/db";
 import { generatedSections, projects, portfolios } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * Authorize access to a section by traversing
  * section → project → portfolio → userId. Returns the section row or an

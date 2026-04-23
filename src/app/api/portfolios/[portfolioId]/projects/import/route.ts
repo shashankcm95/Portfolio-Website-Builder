@@ -6,6 +6,11 @@ import { eq, and, inArray } from "drizzle-orm";
 import { pLimit } from "@/lib/github/concurrency";
 import { importSingleRepo } from "@/app/api/portfolios/[portfolioId]/projects/route";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * Phase 10 Track A — bulk repo import.
  *

@@ -517,6 +517,21 @@ async function runPipeline(
             });
           }
 
+          // Phase B — persist extracted project outcomes onto the project
+          // row. `projects.outcomes` is the single source of truth templates
+          // read via profile-data.ts. Replace-on-extract keeps retries
+          // idempotent; the user's manual hide/edit state lives in a
+          // separate column in Phase C (when inline edit lands).
+          if (factExtractionResult.outcomes.length > 0) {
+            await db
+              .update(projects)
+              .set({
+                outcomes: factExtractionResult.outcomes,
+                updatedAt: new Date(),
+              })
+              .where(eq(projects.id, projectId));
+          }
+
           break;
         }
 

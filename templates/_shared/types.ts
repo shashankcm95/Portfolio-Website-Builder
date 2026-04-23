@@ -47,12 +47,54 @@ export interface ProfileData {
     };
     avatar?: string;
     profiles: SocialProfile[];
+    /**
+     * Phase A — sharp one-liner positioning the owner (e.g. "I build
+     * accessible, pixel-perfect experiences for the web"). When present,
+     * templates prefer this over `label` as the hero tagline. Absent means
+     * no positioning set — fall through to `label`.
+     */
+    positioning?: string;
+    /**
+     * Phase A — recognizable employer/client names surfaced in the hero
+     * (e.g. ["Apple", "Klaviyo"]). Source of truth is `portfolios
+     * .namedEmployers` jsonb. Empty array ⇒ no "Previously at" line.
+     */
+    namedEmployers?: string[];
+    /**
+     * Phase A — explicit hiring status surfaced as a hero CTA. Absent
+     * means no CTA rendered (default neutral portfolio). "available"
+     * renders the CTA prominently; "open" renders a muted CTA; "not-
+     * looking" suppresses the CTA.
+     */
+    hiring?: {
+      status: "available" | "open" | "not-looking";
+      ctaText?: string;
+      ctaHref?: string;
+    };
+    /**
+     * Phase A — the single strongest credential the hero leads with
+     * ("4k+ GitHub stars on text-to-handwriting"). Phase A only exposes
+     * the user-supplied override; Phase B fills in a pipeline-computed
+     * default when no override is set.
+     */
+    anchorStat?: {
+      value: string;
+      unit: string;
+      context?: string;
+      sourceRef?: string;
+    };
   };
 
   skills: Skill[];
   projects: Project[];
   experience?: Experience[];
   education?: Education[];
+  /**
+   * Phase A — user-curated testimonials with named authors. Stored in a
+   * dedicated `testimonials` table keyed on portfolioId. Omitted when
+   * the portfolio has none.
+   */
+  testimonials?: Testimonial[];
 
   chatbot?: {
     enabled: boolean;
@@ -132,6 +174,16 @@ export interface Project {
   screenshot?: string;
 
   /**
+   * Phase A — quantified outcomes the project produced (user counts,
+   * performance wins, adoption). Seeded by Phase B's fact-extract step
+   * (facts with category === "outcome") and user-editable via the
+   * project editor. Each entry should have a numeric value; the
+   * `context` phrase is freely editable but the value itself stays
+   * tied to an extracted fact (Tier 3 in the editability model).
+   */
+  outcomes?: ProjectOutcome[];
+
+  /**
    * Phase 8 — optional one-line honest characterization of the project
    * ("Solo side project — 4 months, 18 active days, deployed at …"). When
    * present, templates render it as a muted byline under the project title.
@@ -159,6 +211,22 @@ export interface Experience {
   endDate?: string;
   summary?: string;
   highlights?: string[];
+}
+
+export interface Testimonial {
+  quote: string;
+  authorName: string;
+  authorTitle?: string;
+  authorCompany?: string;
+  authorUrl?: string;
+  avatarUrl?: string;
+}
+
+export interface ProjectOutcome {
+  metric: string;
+  value: string;
+  context?: string;
+  evidenceRef?: string;
 }
 
 export interface Education {

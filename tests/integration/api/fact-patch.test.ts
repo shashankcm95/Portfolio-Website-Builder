@@ -122,14 +122,14 @@ beforeEach(() => {
 describe("PATCH /api/portfolios/:portfolioId/projects/:projectId/facts/:factId", () => {
   it("returns 401 when unauthenticated", async () => {
     mockAuth.mockResolvedValue(null);
-    const res = await PATCH(makeReq({ claim: "x" }) as any, params());
+    const res = (await PATCH(makeReq({ claim: "x" }) as any, params()))!;
     expect(res.status).toBe(401);
   });
 
   it("returns 404 when the fact does not exist", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     mockSteps.push({ kind: "authSelect", value: [] });
-    const res = await PATCH(makeReq({ claim: "new claim" }) as any, params());
+    const res = (await PATCH(makeReq({ claim: "new claim" }) as any, params()))!;
     expect(res.status).toBe(404);
   });
 
@@ -139,21 +139,21 @@ describe("PATCH /api/portfolios/:portfolioId/projects/:projectId/facts/:factId",
       kind: "authSelect",
       value: [{ ...factRow(), portfolioUserId: "u2" }],
     });
-    const res = await PATCH(makeReq({ claim: "new claim" }) as any, params());
+    const res = (await PATCH(makeReq({ claim: "new claim" }) as any, params()))!;
     expect(res.status).toBe(403);
   });
 
   it("returns 400 when body is not JSON", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     mockSteps.push({ kind: "authSelect", value: [factRow()] });
-    const res = await PATCH(makeReq("not json{") as any, params());
+    const res = (await PATCH(makeReq("not json{") as any, params()))!;
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when no fields are provided", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     mockSteps.push({ kind: "authSelect", value: [factRow()] });
-    const res = await PATCH(makeReq({}) as any, params());
+    const res = (await PATCH(makeReq({}) as any, params()))!;
     expect(res.status).toBe(400);
   });
 
@@ -161,21 +161,21 @@ describe("PATCH /api/portfolios/:portfolioId/projects/:projectId/facts/:factId",
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     mockSteps.push({ kind: "authSelect", value: [factRow()] });
     const longClaim = "x".repeat(501);
-    const res = await PATCH(makeReq({ claim: longClaim }) as any, params());
+    const res = (await PATCH(makeReq({ claim: longClaim }) as any, params()))!;
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when claim is blank", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     mockSteps.push({ kind: "authSelect", value: [factRow()] });
-    const res = await PATCH(makeReq({ claim: "   " }) as any, params());
+    const res = (await PATCH(makeReq({ claim: "   " }) as any, params()))!;
     expect(res.status).toBe(400);
   });
 
   it("returns 400 when confidence is out of range", async () => {
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     mockSteps.push({ kind: "authSelect", value: [factRow()] });
-    const res = await PATCH(makeReq({ confidence: 1.5 }) as any, params());
+    const res = (await PATCH(makeReq({ confidence: 1.5 }) as any, params()))!;
     expect(res.status).toBe(400);
   });
 
@@ -183,10 +183,10 @@ describe("PATCH /api/portfolios/:portfolioId/projects/:projectId/facts/:factId",
     mockAuth.mockResolvedValue({ user: { id: "u1" } });
     mockSteps.push({ kind: "authSelect", value: [factRow()] });
     const longCategory = "y".repeat(101);
-    const res = await PATCH(
+    const res = (await PATCH(
       makeReq({ category: longCategory }) as any,
       params()
-    );
+    ))!;
     expect(res.status).toBe(400);
   });
 
@@ -207,14 +207,14 @@ describe("PATCH /api/portfolios/:portfolioId/projects/:projectId/facts/:factId",
         ],
       }
     );
-    const res = await PATCH(
+    const res = (await PATCH(
       makeReq({
         claim: "Updated claim",
         category: "architecture",
         confidence: 0.95,
       }) as any,
       params()
-    );
+    ))!;
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.fact).toMatchObject({
@@ -252,7 +252,7 @@ describe("PATCH /api/portfolios/:portfolioId/projects/:projectId/facts/:factId",
         ],
       }
     );
-    const res = await PATCH(makeReq({ confidence: 0.3 }) as any, params());
+    const res = (await PATCH(makeReq({ confidence: 0.3 }) as any, params()))!;
     expect(res.status).toBe(200);
     const call = mockSet.mock.calls[0][0];
     expect(call).toEqual(

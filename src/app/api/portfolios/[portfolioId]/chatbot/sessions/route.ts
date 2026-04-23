@@ -21,6 +21,11 @@ import { db } from "@/lib/db";
 import { chatbotSessions, portfolios } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/chatbot/types";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const MAX_SESSIONS = 25;
 
 export async function GET(

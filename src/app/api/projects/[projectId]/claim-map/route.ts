@@ -10,6 +10,11 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, inArray, asc } from "drizzle-orm";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * Returns the full claim map for a project so the narrative UI can render
  * sentence-level verification and drill into backing evidence.

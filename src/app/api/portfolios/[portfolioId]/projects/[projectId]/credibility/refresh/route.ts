@@ -9,6 +9,11 @@ import { RepoFetcher } from "@/lib/github/repo-fetcher";
 import { CredibilityFetcher } from "@/lib/github/credibility-fetcher";
 import type { DependencyFile } from "@/lib/github/repo-fetcher";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/portfolios/:portfolioId/projects/:projectId/credibility/refresh
  *

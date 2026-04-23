@@ -9,6 +9,11 @@ import type { DemoType, ProjectDemo } from "@/lib/demos/types";
 import { deleteObject, isOurObject } from "@/lib/storage/r2";
 import { fetchOembed, type OembedProvider } from "@/lib/demos/oembed";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // Phase 4.2 — enrichment TTL + timebox.
 const OEMBED_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const ENRICHMENT_DEADLINE_MS = 3000;

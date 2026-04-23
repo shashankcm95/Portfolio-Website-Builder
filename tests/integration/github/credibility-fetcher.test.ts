@@ -56,6 +56,7 @@ const baseMetadata: RepoMetadata = {
   updatedAt: "2026-04-10T00:00:00Z",
   license: null,
   htmlUrl: "https://github.com/acme/demo",
+  homepage: null,
 };
 
 const jsDeps: DependencyFile[] = [

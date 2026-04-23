@@ -38,10 +38,14 @@ const mockDelete = jest.fn(() => ({ where: jest.fn(async () => undefined) }));
 
 jest.mock("@/lib/db", () => ({
   db: {
-    select: (...a: unknown[]) => mockSelect(...a),
-    insert: (...a: unknown[]) => mockInsert(...a),
-    update: (...a: unknown[]) => mockProjectsUpdate(...a),
-    delete: (...a: unknown[]) => mockDelete(...a),
+    // Cast each mock to a variadic any-returning signature so spreading into
+    // it satisfies TypeScript's tuple-spread check. jest.fn() without a
+    // generic arg infers a zero-parameter signature in strict mode.
+    select: (...a: unknown[]) => (mockSelect as (...args: unknown[]) => unknown)(...a),
+    insert: (...a: unknown[]) => (mockInsert as (...args: unknown[]) => unknown)(...a),
+    update: (...a: unknown[]) =>
+      (mockProjectsUpdate as (...args: unknown[]) => unknown)(...a),
+    delete: (...a: unknown[]) => (mockDelete as (...args: unknown[]) => unknown)(...a),
   },
 }));
 

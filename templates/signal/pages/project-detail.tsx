@@ -1,0 +1,98 @@
+import React from "react";
+import type { Project } from "@/templates/_shared/types";
+
+interface ProjectDetailPageProps {
+  project: Project;
+}
+
+/**
+ * Detail view for a single project. Surfaces every narrative section that
+ * exists (engineer variant preferred for detail page), plus outcomes +
+ * full tech stack. Falls back gracefully when sections are unset.
+ */
+export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
+  const { sections } = project;
+
+  return (
+    <article>
+      <div className="section-head">
+        <span className="section-eyebrow">Case study</span>
+        <h2>{project.name}</h2>
+      </div>
+
+      {project.characterization && (
+        <p className="case-byline" style={{ marginTop: "-16px" }}>
+          {project.characterization}
+        </p>
+      )}
+
+      {project.outcomes && project.outcomes.length > 0 && (
+        <ul
+          className="case-outcomes"
+          aria-label="Project outcomes"
+          style={{ margin: "20px 0 28px" }}
+        >
+          {project.outcomes.map((o, i) => (
+            <li className="outcome-pill" key={`${o.metric}-${i}`}>
+              <b>{o.value}</b>
+              <span>{o.metric}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="prose">
+        {sections.summary && <p>{sections.summary}</p>}
+
+        {sections.architecture && (
+          <>
+            <h3>Architecture</h3>
+            <p>{sections.architecture}</p>
+          </>
+        )}
+
+        {sections.techNarrative && (
+          <>
+            <h3>Stack</h3>
+            <p>{sections.techNarrative}</p>
+          </>
+        )}
+
+        {sections.engineerDeepDive && (
+          <>
+            <h3>Deep dive</h3>
+            <p>{sections.engineerDeepDive}</p>
+          </>
+        )}
+      </div>
+
+      {project.techStack.length > 0 && (
+        <>
+          <div className="section-head" style={{ marginTop: "48px" }}>
+            <span className="section-eyebrow">Built with</span>
+          </div>
+          <ul className="case-tags" aria-label="Tech stack">
+            {project.techStack.map((t) => (
+              <li key={t} className="case-tag">
+                {t}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {project.repoUrl && (
+        <p style={{ marginTop: "40px" }}>
+          <a
+            className="contact-link"
+            href={project.repoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View repository ↗
+          </a>
+        </p>
+      )}
+    </article>
+  );
+}

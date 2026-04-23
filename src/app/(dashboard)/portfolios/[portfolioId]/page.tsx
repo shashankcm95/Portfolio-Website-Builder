@@ -25,6 +25,8 @@ import { ChatbotSettings } from "@/components/portfolio/chatbot-settings";
 import { ShareLinksCard } from "@/components/portfolio/share-links-card";
 import { PortfolioAnalytics } from "@/components/portfolio/portfolio-analytics";
 import { LayoutReviewPanel } from "@/components/portfolio/layout-review-panel";
+import { IdentityPitchCard } from "@/components/portfolio/identity-pitch-card";
+import { TestimonialsCard } from "@/components/portfolio/testimonials-card";
 
 interface Portfolio {
   id: string;
@@ -41,6 +43,7 @@ interface Portfolio {
 const TAB_VALUES = [
   "overview",
   "projects",
+  "identity",
   "preview",
   "deploy",
   "domains",
@@ -149,6 +152,7 @@ export default function PortfolioDetailPage() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="identity">Identity &amp; pitch</TabsTrigger>
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="deploy">Deploy</TabsTrigger>
           <TabsTrigger value="domains">Domains</TabsTrigger>
@@ -212,6 +216,15 @@ export default function PortfolioDetailPage() {
             key={refreshKey}
             portfolioId={params.portfolioId}
           />
+        </TabsContent>
+
+        {/* Phase C — Identity & pitch tab.
+            Tier-1 editor: positioning, named employers, hire status +
+            CTA, anchor stat override + testimonials list. All user-authored
+            content that doesn't go through the proof-backed pipeline. */}
+        <TabsContent value="identity" className="space-y-6">
+          <IdentityPitchCard portfolioId={params.portfolioId} />
+          <TestimonialsCard portfolioId={params.portfolioId} />
         </TabsContent>
 
         {/* Preview tab — combines Phase 6.1 "Share this preview" shortcut

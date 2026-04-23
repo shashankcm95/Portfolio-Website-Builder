@@ -14,6 +14,11 @@ import { getAuthenticatedGitHubClient } from "@/lib/github/authenticated-client"
 import { CredibilityFetcher } from "@/lib/github/credibility-fetcher";
 import { extractVerifiedStack } from "@/lib/github/stack-detector";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // ─── importSingleRepo (Phase 10 Track A) ────────────────────────────────────
 //
 // Extracted from the original single-repo POST body so the new batch

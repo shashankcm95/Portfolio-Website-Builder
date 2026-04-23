@@ -5,6 +5,11 @@ import { db } from "@/lib/db";
 import { portfolios, projects } from "@/lib/db/schema";
 import { R2UploadError, putObject } from "@/lib/storage/r2";
 
+// Prevents static prerender during `next build` — this route queries
+// Postgres at request time, so there is nothing meaningful to bake.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/portfolios/:portfolioId/projects/:projectId/demo/upload
  *
