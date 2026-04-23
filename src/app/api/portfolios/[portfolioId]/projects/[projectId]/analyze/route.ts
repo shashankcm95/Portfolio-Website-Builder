@@ -104,9 +104,9 @@ export async function POST(
         await db
           .update(projects)
           .set({
-            credibilitySignals: signals as any,
+            credibilitySignals: signals,
             credibilityFetchedAt: new Date(),
-            repoMetadata: repoData.metadata as any,
+            repoMetadata: repoData.metadata,
             ...(project.projectCategorySource !== "manual"
               ? { projectCategory: resolvedCategory }
               : {}),

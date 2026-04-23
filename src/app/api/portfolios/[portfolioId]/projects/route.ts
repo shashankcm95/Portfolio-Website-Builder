@@ -110,9 +110,9 @@ export async function importSingleRepo(
       repoName: repo,
       displayName: repoData.metadata.name,
       displayOrder,
-      repoMetadata: repoData.metadata as any,
+      repoMetadata: repoData.metadata,
       techStack: verifiedStack,
-      credibilitySignals: credibilitySignals as any,
+      credibilitySignals,
       credibilityFetchedAt,
       // Phase 8 — persist the classifier result so the coaching UI has
       // something to read without re-classifying on every page load.

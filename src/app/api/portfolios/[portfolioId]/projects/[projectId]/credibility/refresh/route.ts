@@ -145,9 +145,9 @@ export async function POST(
     await db
       .update(projects)
       .set({
-        credibilitySignals: signals as any,
+        credibilitySignals: signals,
         credibilityFetchedAt: fetchedAt,
-        repoMetadata: repoData.metadata as any,
+        repoMetadata: repoData.metadata,
         // Only update the stored category when the source is "auto" —
         // manual overrides persist across refreshes.
         ...(project.projectCategorySource !== "manual"

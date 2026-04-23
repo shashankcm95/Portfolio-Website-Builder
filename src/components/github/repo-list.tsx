@@ -22,6 +22,7 @@ import { aggregateSuggestions } from "@/lib/credibility/suggestions";
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 import type {
+  CredibilitySignals,
   RepoCategory,
   StoredCredibilitySignals,
 } from "@/lib/credibility/types";
@@ -264,7 +265,14 @@ export function RepoList({ portfolioId }: RepoListProps) {
       .map((p) => ({
         projectId: p.id,
         projectName: p.displayName ?? p.repoName ?? "project",
-        signals: p.credibilitySignals as any,
+        // `StoredCredibilitySignals` has the v2 fields (commitActivity,
+        // commitMessages, externalUrl, authorshipSignal) as optional to
+        // round-trip legacy rows. `aggregateSuggestions` wants the full
+        // `CredibilitySignals` shape. The .filter() above narrows to rows
+        // with `authorshipSignal.status === "ok"`, which implies a freshly
+        // scored signal that has every v2 field populated, so the widening
+        // cast is runtime-safe.
+        signals: p.credibilitySignals as CredibilitySignals,
         category: (p.projectCategory ?? "unspecified") as RepoCategory,
         dismissedIds: p.dismissedSuggestions ?? [],
       }))
