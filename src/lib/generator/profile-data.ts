@@ -538,7 +538,7 @@ function buildProject(proj: {
  * LLM to improve. The `anchorStatOverride` column (set via the Phase C
  * editor) still lets users pick a different candidate manually.
  */
-function deriveAnchorStat(
+export function deriveAnchorStat(
   projectList: Project[],
   namedEmployers: string[],
   resumeJson: Record<string, unknown> | null
@@ -616,7 +616,7 @@ function deriveAnchorStat(
  * candidates ("10M" > "5k" > "80"). Not a general number parser. Returns
  * 0 when no digits found so unparseable values don't crash the rank.
  */
-function parseMagnitude(raw: string): number {
+export function parseMagnitude(raw: string): number {
   const match = raw.match(/([\d.]+)\s*([kKmMbB]?)/);
   if (!match) return 0;
   const n = parseFloat(match[1]);
@@ -634,12 +634,12 @@ function parseMagnitude(raw: string): number {
   }
 }
 
-function formatCount(n: number): string {
+export function formatCount(n: number): string {
   if (n >= 1000) return `${Math.floor(n / 100) / 10}k+`.replace(/\.0k/, "k");
   return `${n}+`;
 }
 
-function extractEmployerNames(
+export function extractEmployerNames(
   resumeJson: Record<string, unknown> | null
 ): string[] {
   if (!resumeJson || !Array.isArray(resumeJson.work)) return [];
@@ -660,7 +660,7 @@ function extractEmployerNames(
  * this just drops entries that slipped through with an empty list and
  * orders the survivors.
  */
-function filterEvidencedSkills(skills: Skill[]): Skill[] {
+export function filterEvidencedSkills(skills: Skill[]): Skill[] {
   return skills
     .filter((s) => Array.isArray(s.evidence) && s.evidence.length > 0)
     .sort(

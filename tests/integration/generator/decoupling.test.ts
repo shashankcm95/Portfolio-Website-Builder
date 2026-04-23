@@ -21,15 +21,56 @@
  *   - tests/unit/generator/og-bake.test.ts
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve(__dirname, "../../..");
 
-const TEMPLATES = ["classic", "minimal", "research", "terminal", "editorial"];
+/**
+ * Phase R3 — Auto-discover every template directory so new templates
+ * inherit the decoupling guarantees without anyone remembering to
+ * update this array. Previously hardcoded, which silently excluded
+ * the Phase D `signal` + `studio` templates.
+ *
+ * A directory counts as a "template" when it has a `components/Layout.tsx`.
+ * Everything else (shared utilities like `templates/_shared`) is skipped.
+ */
+function discoverTemplates(): string[] {
+  const templatesDir = path.join(ROOT, "templates");
+  const entries = readdirSync(templatesDir, { withFileTypes: true });
+  const out: string[] = [];
+  for (const e of entries) {
+    if (!e.isDirectory() || e.name.startsWith("_")) continue;
+    const layoutPath = path.join(
+      templatesDir,
+      e.name,
+      "components",
+      "Layout.tsx"
+    );
+    if (existsSync(layoutPath) && statSync(layoutPath).isFile()) {
+      out.push(e.name);
+    }
+  }
+  return out.sort();
+}
+
+const TEMPLATES = discoverTemplates();
 
 function readFile(relative: string): string {
   return readFileSync(path.join(ROOT, relative), "utf-8");
+}
+
+/**
+ * Return the first file under a template that exists — lets us handle
+ * templates that split contact rendering across a dedicated component
+ * (minimal/classic/…) vs inlining it in the contact page (signal/studio).
+ */
+function readFirstExisting(relatives: string[]): string {
+  for (const rel of relatives) {
+    const abs = path.join(ROOT, rel);
+    if (existsSync(abs)) return readFileSync(abs, "utf-8");
+  }
+  throw new Error(`None of these paths exist: ${relatives.join(", ")}`);
 }
 
 describe("Phase 8.5 — published portfolio is standalone", () => {
@@ -49,15 +90,30 @@ describe("Phase 8.5 — published portfolio is standalone", () => {
     });
   });
 
+  it("auto-discovery finds every template directory (safety net)", () => {
+    // Guards against a future refactor that accidentally narrows the
+    // discovery predicate. We expect at least the original five + the
+    // Phase D additions; more is fine.
+    expect(TEMPLATES.length).toBeGreaterThanOrEqual(5);
+    expect(TEMPLATES).toEqual(expect.arrayContaining(["minimal", "classic"]));
+  });
+
   for (const templateId of TEMPLATES) {
     describe(`template: ${templateId}`, () => {
       const layoutPath = `templates/${templateId}/components/Layout.tsx`;
-      const contactPath = `templates/${templateId}/components/ContactSection.tsx`;
       const projectCardPath = `templates/${templateId}/components/ProjectCard.tsx`;
 
       const layout = readFile(layoutPath);
-      const contact = readFile(contactPath);
       const projectCard = readFile(projectCardPath);
+      // Templates are split into two shapes: classic-style with a
+      // dedicated ContactSection component (minimal/classic/research/
+      // terminal/editorial), or Phase-D style where contact content
+      // is inlined on the page itself (signal/studio). The decoupling
+      // rule — no <form action>, only mailto: — is identical in both.
+      const contact = readFirstExisting([
+        `templates/${templateId}/components/ContactSection.tsx`,
+        `templates/${templateId}/pages/contact.tsx`,
+      ]);
 
       it("(1) Layout has no cross-origin <script src={...}>", () => {
         // The Phase-5 shape `<script src={chatbot.apiEndpoint}>` is
