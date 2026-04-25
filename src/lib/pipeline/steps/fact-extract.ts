@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { LlmClient } from "@/lib/ai/providers/types";
 import {
   factExtractionResultSchema,
@@ -40,6 +41,8 @@ export async function extractFacts(
 
   let lastError: Error | null = null;
 
+  let lastZodIssues: string | null = null;
+
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const result = await llm.structured<unknown>({
@@ -47,7 +50,11 @@ export async function extractFacts(
         userPrompt:
           attempt === 0
             ? userPrompt
-            : `${userPrompt}\n\nIMPORTANT: Your previous response was not valid JSON. Please return ONLY a valid JSON object with no additional text, no markdown code fences, and no explanation.`,
+            : // Phase R7 — the retry now surfaces the specific zod issues
+              // (paths + expected values) back to the LLM. The previous
+              // "not valid JSON" message was misleading: in practice the
+              // JSON parsed fine, only enum values were off.
+              `${userPrompt}\n\nIMPORTANT: Your previous response had validation errors. Fix these specific issues and return ONLY valid JSON:\n${lastZodIssues ?? "Unknown validation failure"}`,
         maxTokens: 8192,
       });
 
@@ -66,6 +73,17 @@ export async function extractFacts(
         attempt: attempt + 1,
         error: lastError.message,
       });
+
+      // Phase R7 — capture zod issues so the retry attempt sees them.
+      if (error instanceof z.ZodError) {
+        lastZodIssues = error.issues
+          .slice(0, 8) // cap to keep the retry prompt short
+          .map(
+            (i) =>
+              `- ${i.path.join(".")}: ${i.message}`
+          )
+          .join("\n");
+      }
 
       if (attempt === 0) {
         continue;

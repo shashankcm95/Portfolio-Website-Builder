@@ -34,6 +34,41 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // Phase R7 — defensive pre-flight: the prerequisites endpoint already
+  // gates the UI button on real Cloudflare creds, but we re-check here
+  // so direct API calls (curl, scripted clients) get a clean 412 instead
+  // of a wrangler 7003 like
+  //   "/accounts/your-cloudflare-account-id/pages/projects/... [code: 7003]"
+  // which leaks the placeholder string into logs and is genuinely
+  // confusing to debug.
+  const PLACEHOLDERS = new Set([
+    "your-cloudflare-account-id",
+    "your-cloudflare-api-token",
+    "your_cloudflare_account_id",
+    "your_cloudflare_api_token",
+    "<your-cloudflare-account-id>",
+    "<your-cloudflare-api-token>",
+    "changeme",
+    "example",
+    "placeholder",
+  ]);
+  const cfAccountId = (process.env.CLOUDFLARE_ACCOUNT_ID ?? "").trim();
+  const cfApiToken = (process.env.CLOUDFLARE_API_TOKEN ?? "").trim();
+  if (
+    !cfAccountId ||
+    !cfApiToken ||
+    PLACEHOLDERS.has(cfAccountId.toLowerCase()) ||
+    PLACEHOLDERS.has(cfApiToken.toLowerCase())
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Cloudflare credentials are not configured. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN to real values in your .env.local (the .env.example placeholders won't work).",
+      },
+      { status: 412 }
+    );
+  }
+
   try {
     // Generate site first
     const { generatePortfolioSite } = await import("@/lib/generator");

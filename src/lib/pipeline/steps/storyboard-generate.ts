@@ -141,7 +141,14 @@ export async function runStoryboardGenerate(
     void fileTreeBlob;
 
     // ─── Parse + validate the payload ───
-    const parsed = storyboardPayloadSchema.safeParse(raw);
+    // Phase R7 — pre-filter malformed verifiers before zod sees them.
+    // The LLM occasionally returns `kind: "grep"` without `pattern` /
+    // `sources` (or `kind: "dep"` without `package`), which makes the
+    // cross-field superRefine fail and we used to bail on the whole
+    // storyboard. Dropping the offending claims (and entire cards if
+    // they end up empty) salvages the rest of the payload.
+    const sanitized = sanitizeStoryboardRaw(raw);
+    const parsed = storyboardPayloadSchema.safeParse(sanitized);
     if (!parsed.success) {
       return {
         ok: false,
@@ -229,6 +236,65 @@ function verifyAndFilterCard(
 
 function dedupe(arr: string[]): string[] {
   return Array.from(new Set(arr));
+}
+
+/**
+ * Phase R7 — Pre-filter malformed claims out of the raw LLM payload
+ * before zod's strict superRefine rejects the entire storyboard. Each
+ * verifier kind has a required-field rule (grep needs pattern + sources;
+ * dep needs package; file needs glob; workflow needs category). When the
+ * LLM omits one, we drop just that claim. Cards left with zero claims
+ * are themselves dropped.
+ *
+ * Untyped input/output by design — we re-validate downstream.
+ */
+function sanitizeStoryboardRaw(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const root = raw as Record<string, unknown>;
+  const cards = Array.isArray(root.cards) ? root.cards : null;
+  if (!cards) return raw;
+
+  function claimIsValid(c: unknown): boolean {
+    if (!c || typeof c !== "object") return false;
+    const v = (c as { verifier?: unknown }).verifier;
+    if (!v || typeof v !== "object") return false;
+    const ver = v as Record<string, unknown>;
+    switch (ver.kind) {
+      case "grep":
+        return (
+          typeof ver.pattern === "string" &&
+          ver.pattern.length > 0 &&
+          Array.isArray(ver.sources) &&
+          ver.sources.length > 0
+        );
+      case "dep":
+        return typeof ver.package === "string" && ver.package.length > 0;
+      case "file":
+        return typeof ver.glob === "string" && ver.glob.length > 0;
+      case "workflow":
+        return typeof ver.category === "string" && ver.category.length > 0;
+      default:
+        // Unknown verifier kinds will be rejected by zod proper — pass
+        // through and let the outer parse surface the error.
+        return true;
+    }
+  }
+
+  const cleanedCards: unknown[] = [];
+  for (const card of cards) {
+    if (!card || typeof card !== "object") continue;
+    const c = card as Record<string, unknown>;
+    const claims = Array.isArray(c.claims) ? c.claims : [];
+    const filtered = claims.filter(claimIsValid);
+    // Only drop a card if filtering ate ALL of its claims (i.e. it had
+    // claims, and none survived). Cards with `claims: []` from the start
+    // are legitimate — the "try it / demo" card carries an `extra.demo`
+    // URL instead of verifier claims and must not be filtered out.
+    if (claims.length > 0 && filtered.length === 0) continue;
+    cleanedCards.push({ ...c, claims: filtered });
+  }
+
+  return { ...root, cards: cleanedCards };
 }
 
 /**

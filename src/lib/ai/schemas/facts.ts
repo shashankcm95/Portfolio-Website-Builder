@@ -1,23 +1,37 @@
 import { z } from "zod";
 
-export const factSchema = z.object({
-  claim: z.string(),
-  category: z.enum([
+/**
+ * Tolerant enum — coerces values the LLM hallucinates (e.g. `complexity`,
+ * `architecture` for evidenceType, `context pack`) to the closest valid
+ * fallback rather than failing the whole batch. We chose this over strict
+ * rejection because the LLM occasionally invents semantically reasonable
+ * but undefined values, and one bad row was killing the entire extraction
+ * run after two retries — meanwhile the other 20+ facts in the same
+ * payload were perfectly usable.
+ *
+ * The `.catch(default)` modifier is zod's built-in coercion: when parse
+ * fails for that field, substitute the default and continue.
+ */
+const categoryEnum = z
+  .enum([
     "tech_stack",
     "architecture",
     "feature",
     "metric",
     "methodology",
     "role",
-  ]),
+  ])
+  .catch("feature");
+
+const evidenceTypeEnum = z
+  .enum(["repo_file", "readme", "dependency", "resume", "inferred"])
+  .catch("inferred");
+
+export const factSchema = z.object({
+  claim: z.string(),
+  category: categoryEnum,
   confidence: z.number().min(0).max(1),
-  evidenceType: z.enum([
-    "repo_file",
-    "readme",
-    "dependency",
-    "resume",
-    "inferred",
-  ]),
+  evidenceType: evidenceTypeEnum,
   evidenceRef: z.string(),
   evidenceText: z.string(),
 });
