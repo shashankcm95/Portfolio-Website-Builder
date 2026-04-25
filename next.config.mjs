@@ -9,6 +9,16 @@ const nextConfig = {
   },
   webpack: (config) => {
     config.resolve.alias.canvas = false;
+    // Silence the pg-native module-not-found warning. `pg` ships an
+    // optional native client wrapper (lib/native/*) that does
+    // `require("pg-native")` so it can offer libpq-backed pooling when
+    // the user installs `pg-native` separately. We use the pure-JS
+    // client (`new Pool(...)`), so pg-native is never loaded at
+    // runtime — but webpack's static analyzer still walks the require
+    // and warns it can't resolve the module. Aliasing it to `false`
+    // makes webpack treat it as an empty module, eliminating the
+    // warning without changing runtime behavior.
+    config.resolve.alias["pg-native"] = false;
     return config;
   },
 };
