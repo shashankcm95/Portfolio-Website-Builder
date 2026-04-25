@@ -1,6 +1,8 @@
-import { eq, and, inArray, asc } from "drizzle-orm";
+import { eq, and, inArray, asc, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+  deployments,
+  domains,
   embeddings,
   portfolios,
   projects,
@@ -188,13 +190,28 @@ export async function assembleProfileData(
   const allSkills = Array.from(skillsMap.values());
   const evidencedSkills = filterEvidencedSkills(allSkills);
 
+  // ── Resolve the public site URL for canonical / og:url / sitemap ──────
+  // Priority:
+  //   1. The first verified custom domain → `https://${domain}`
+  //      Cloudflare Pages auto-provisions Let's Encrypt for attached
+  //      custom domains, so HTTPS is the right scheme regardless of
+  //      what the registrar has historically served. HSTS-preloaded
+  //      TLDs (.dev / .app / etc.) require it; legacy TLDs benefit
+  //      from canonical-https for SEO.
+  //   2. Latest successful Cloudflare Pages deployment URL — already
+  //      `https://…pages.dev`.
+  //   3. Empty string — preserves the previous behavior so templates
+  //      that gate canonical-link emission on truthy siteUrl don't
+  //      break for portfolios that haven't deployed yet.
+  const siteUrl = await resolveSiteUrl(portfolioId);
+
   // ── Assemble ProfileData ───────────────────────────────────────────────
   const profileData: ProfileData = {
     meta: {
       generatedAt: new Date().toISOString(),
       templateId: portfolio.templateId || "minimal",
       portfolioSlug: portfolio.slug,
-      siteUrl: "",
+      siteUrl,
       ogImageUrl,
       analyticsEndpoint,
       analyticsPortfolioId,
@@ -307,6 +324,59 @@ function readAnchorStat(
  * via the existing `meta.ogImageUrl || basics.avatar` pattern.
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+/**
+ * Phase R7 — Resolve the public site URL for the published portfolio.
+ *
+ * Used as the canonical link, og:url, and sitemap base. Returns "" when
+ * the portfolio has neither a verified custom domain nor a successful
+ * deploy — templates already gate emission on truthy siteUrl, so a
+ * never-deployed portfolio renders sane partial meta tags.
+ *
+ * The protocol is always `https://`. Cloudflare Pages auto-provisions
+ * Let's Encrypt certs for both `*.pages.dev` and attached custom
+ * domains, so we never need to emit an `http://` canonical URL.
+ * HSTS-preloaded TLDs (`.dev`, `.app`, `.bank`, etc.) reject HTTP
+ * unconditionally — emitting `https://` here is what they expect.
+ */
+async function resolveSiteUrl(portfolioId: string): Promise<string> {
+  // 1. Verified custom domain wins — owner explicitly set this up and
+  //    stored it through the domain-attach flow. Most-recently-verified
+  //    first if multiple exist (rare, but possible during a transition).
+  const [verifiedDomain] = await db
+    .select({ domain: domains.domain })
+    .from(domains)
+    .where(
+      and(
+        eq(domains.portfolioId, portfolioId),
+        eq(domains.verificationStatus, "verified")
+      )
+    )
+    .orderBy(desc(domains.verifiedAt))
+    .limit(1);
+  if (verifiedDomain?.domain) {
+    return `https://${verifiedDomain.domain}`;
+  }
+
+  // 2. Fall back to the latest successful Pages deployment. Its `url`
+  //    is already `https://…pages.dev` from Cloudflare's response.
+  const [latestDeployment] = await db
+    .select({ url: deployments.url })
+    .from(deployments)
+    .where(
+      and(
+        eq(deployments.portfolioId, portfolioId),
+        eq(deployments.status, "active")
+      )
+    )
+    .orderBy(desc(deployments.deployedAt))
+    .limit(1);
+  if (latestDeployment?.url) {
+    return latestDeployment.url.replace(/\/+$/, "");
+  }
+
+  return "";
+}
+
 function buildOgImageUrl(
   _portfolioId: string,
   _updatedAt: Date | null | undefined

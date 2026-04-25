@@ -51,6 +51,38 @@ type VerificationStatus = "pending" | "verified" | "failed";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+/**
+ * HSTS-preloaded TLDs that browsers force HTTPS for. Mirrors the
+ * server-side list in `src/lib/deployer/domain-manager.ts` — kept
+ * client-side so we don't have to round-trip an API call to render
+ * the "HTTPS handled automatically" hint. Not exhaustive; covers
+ * the consumer-developer TLDs most likely to be used here.
+ */
+const HSTS_TLDS = new Set([
+  "dev",
+  "app",
+  "page",
+  "foo",
+  "bank",
+  "google",
+  "new",
+  "play",
+  "search",
+  "youtube",
+]);
+
+function tldOf(domain: string): string {
+  const parts = domain.toLowerCase().split(".");
+  return parts[parts.length - 1] ?? "";
+}
+
+function isApexDomain(domain: string): boolean {
+  // "apex" here = no `www.` prefix. Sibling subdomains like `app.foo.com`
+  // also don't get the apex-A-record treatment because Pages CNAMEs work
+  // for them.
+  return !domain.toLowerCase().startsWith("www.");
+}
+
 function getStatusConfig(status: string): {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -328,6 +360,23 @@ export function DomainSetup({ portfolioId }: DomainSetupProps) {
                     </Button>
                   </div>
 
+                  {/* Phase R7 — HSTS-preloaded TLD note. Surfaces above the
+                      DNS instructions so users on .dev / .app / etc. don't
+                      worry about cert procurement. Renders for both pending
+                      AND verified rows because the operator may want to
+                      see the explanation post-attach too. */}
+                  {HSTS_TLDS.has(tldOf(domain.domain)) && (
+                    <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+                      <p className="text-xs text-emerald-900 dark:text-emerald-200">
+                        <span className="font-medium">.{tldOf(domain.domain)}</span>{" "}
+                        is HSTS-preloaded — browsers force HTTPS. Cloudflare
+                        provides the SSL certificate automatically once the
+                        domain is attached to your Pages project; no separate
+                        cert setup required.
+                      </p>
+                    </div>
+                  )}
+
                   {/* DNS instructions */}
                   {domain.verificationStatus !== "verified" && (
                     <div className="rounded-md bg-muted/50 p-3 space-y-2">
@@ -378,6 +427,31 @@ export function DomainSetup({ portfolioId }: DomainSetupProps) {
                           </div>
                         </div>
                       </div>
+
+                      {/* Phase R7 — apex-domain A-record fallback. Some
+                          registrars (Namecheap free, GoDaddy basic, etc.)
+                          don't support CNAME at the apex (@). For apex
+                          attachments we surface the A-record alternative;
+                          users copy IPs from Cloudflare's "Add custom
+                          domain" wizard at attach time (CF rotates them,
+                          so we don't hardcode). */}
+                      {isApexDomain(domain.domain) && (
+                        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                          <p className="font-medium">
+                            Registrar doesn&apos;t support CNAME at the apex?
+                          </p>
+                          <p className="mt-1 text-amber-900/80 dark:text-amber-200/80">
+                            Use A records instead. Copy the two IP addresses
+                            shown in Cloudflare&apos;s &ldquo;Add custom
+                            domain&rdquo; dialog when you attach this domain
+                            to your Pages project, and create A records for
+                            <span className="mx-1 font-mono">@</span>
+                            pointing to them. Apex CNAMEs work on Cloudflare
+                            DNS, DNSimple, and Cloudns; the A-record path
+                            covers everything else.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
