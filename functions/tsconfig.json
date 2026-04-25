@@ -1,0 +1,14 @@
+{
+  "//": "Phase R7 — wrangler-pages-deploy bundles `functions/` with esbuild, which walks up to find the nearest tsconfig. The root tsconfig targets ES2017 (intentional — Next.js + older Safari compatibility) but ES2017 can't transpile async generator functions like `async function* iterateTokens()` in workers-ai.ts. Pages Functions run on Cloudflare Workers (V8 only, modern), so we override target locally to ES2022 for this directory only. Root config is excluded from this path via its own `exclude: [\"functions\"]`, so this file is the sole source of truth for the Pages Functions bundle.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "WebWorker"],
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["**/*.ts"],
+  "exclude": []
+}
