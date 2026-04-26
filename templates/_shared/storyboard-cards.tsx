@@ -74,28 +74,86 @@ export function StoryboardCards({
         ))}
       </ol>
       {diagramHeading && storyboard.mermaid && (
-        <details className="pwb-storyboard-diagram">
-          <summary className="pwb-storyboard-diagram-summary">
+        <>
+        <figure className="pwb-storyboard-diagram">
+          <figcaption className="pwb-storyboard-diagram-summary">
             {diagramHeading}
-          </summary>
-          <pre className="pwb-storyboard-diagram-source">
-            <code>{storyboard.mermaid}</code>
+          </figcaption>
+          {/*
+            Phase E5 — render the mermaid source inline, then enhance
+            client-side. The `<pre class="mermaid">` is the
+            mermaid library's own contract: it walks the DOM looking
+            for elements with that class and replaces their text with
+            an inline SVG. When mermaid.js fails to load (offline,
+            CSP), the source stays visible — that's the visible-
+            without-JS state.
+          */}
+          <pre className="mermaid pwb-storyboard-diagram-source">
+            {storyboard.mermaid}
           </pre>
+          {/*
+            Source-fallback hint sits under the rendered diagram and
+            collapses out of the way once mermaid runs. CSS hides it
+            when the parent figure has the `data-pwb-mermaid-rendered`
+            attribute the bootstrap script sets after a successful
+            render.
+          */}
           <p className="pwb-storyboard-diagram-hint">
-            Paste the source above into{" "}
+            Diagram source rendered with{" "}
             <a
-              href="https://mermaid.live"
+              href="https://mermaid.js.org/"
               target="_blank"
               rel="noopener noreferrer"
             >
-              mermaid.live
-            </a>{" "}
-            to view the rendered diagram.
+              mermaid.js
+            </a>
+            .
           </p>
-        </details>
+        </figure>
+        {/*
+          Phase E5 — bootstrap script. Inline because it's a few-hundred-
+          byte body that only fires on pages with a storyboard diagram.
+          Lazy-imports mermaid.js from a pinned CDN and renders the
+          source `<pre class="mermaid">` to inline SVG.
+        */}
+        <script
+          dangerouslySetInnerHTML={{ __html: buildMermaidBootstrap() }}
+        />
+        </>
       )}
     </section>
   );
+}
+
+/**
+ * Phase E5 — inline bootstrap that lazy-loads mermaid.js the first time
+ * a page that contains a `<pre class="mermaid">` element is rendered.
+ *
+ * Returns the JS body as a string so the renderer can inject it via
+ * `dangerouslySetInnerHTML` in the page footer (same pattern as the
+ * Phase 8.5 chatbot bootstrap). The script:
+ *
+ *   - exits early if the page has no `<pre class="mermaid">` (every
+ *     non-project page, plus older portfolios with no storyboard data)
+ *   - dynamically imports mermaid.js from a pinned CDN URL
+ *   - calls `mermaid.run()` to render every `.mermaid` element to SVG
+ *   - sets `data-pwb-mermaid-rendered` on each container so CSS can
+ *     hide the now-redundant source / hint
+ *   - swallows errors silently — the visible-without-JS source is the
+ *     fallback
+ *
+ * Pinning the version protects the published site from upstream
+ * regressions; bumping the pin is an opt-in republish action.
+ *
+ * Layout.tsx of each template injects the result via
+ * `dangerouslySetInnerHTML` so the script body is never re-evaluated
+ * on navigation between rendered pages.
+ */
+export function buildMermaidBootstrap(): string {
+  // Pinned to the major-stable line. Mermaid is a sizeable dep
+  // (~200KB gzipped) but loads only on pages with diagrams.
+  const cdn = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+  return `(function(){try{if(typeof window==="undefined"||typeof document==="undefined")return;var nodes=document.querySelectorAll("pre.mermaid");if(!nodes||nodes.length===0)return;import(${JSON.stringify(cdn)}).then(function(m){var mermaid=m.default;mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"default"});mermaid.run({nodes:nodes}).then(function(){nodes.forEach(function(n){var p=n.parentElement;if(p)p.setAttribute("data-pwb-mermaid-rendered","true");});}).catch(function(){});}).catch(function(){});}catch(e){}})();`;
 }
 
 /**

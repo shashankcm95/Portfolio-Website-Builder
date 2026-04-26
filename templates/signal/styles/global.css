@@ -802,3 +802,28 @@ a:hover { color: var(--color-accent); }
 }
 /* unverified / pending render with no extra chrome — visitors see the
    sentence as-is, no false negative ("this isn't verified" implication). */
+
+/* ─── Phase E5: Mermaid render swap ─────────────────────────────────── */
+/* Hide the source <pre> and hint once the bootstrap script has finished
+   rendering the SVG. The container's data-pwb-mermaid-rendered attribute
+   is set by the bootstrap on success. Pre-render (or JS-disabled): the
+   source stays visible so visitors still see the structure. */
+.pwb-storyboard-diagram[data-pwb-mermaid-rendered="true"] .pwb-storyboard-diagram-source,
+.pwb-storyboard-diagram[data-pwb-mermaid-rendered="true"] .pwb-storyboard-diagram-hint {
+  display: none;
+}
+.pwb-storyboard-diagram pre.mermaid {
+  background: transparent;
+  white-space: pre;
+  text-align: center;
+  padding: 12px;
+  overflow-x: auto;
+}
+.pwb-storyboard-diagram[data-pwb-mermaid-rendered="true"] pre.mermaid {
+  background: transparent;
+  border: 0;
+}
+.pwb-storyboard-diagram svg {
+  max-width: 100%;
+  height: auto;
+}

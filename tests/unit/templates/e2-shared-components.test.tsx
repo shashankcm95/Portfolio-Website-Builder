@@ -306,13 +306,20 @@ describe("StoryboardCards", () => {
     expect(html).toContain("git clone repo");
   });
 
-  it("renders the mermaid block inside <details>", () => {
+  it("renders the mermaid source inside a <pre class=\"mermaid\"> for client-side render", () => {
+    // Phase E5 — switched from a <details> + mermaid.live link to an
+    // inline <figure> with a `<pre class="mermaid">` source that the
+    // bootstrap script swaps for an SVG. The source stays visible
+    // when JS is disabled so visitors still see the diagram structure.
     const html = renderToStaticMarkup(
       <StoryboardCards storyboard={makePayload()} />
     );
-    expect(html).toContain("<details");
+    expect(html).toContain('<pre class="mermaid');
     expect(html).toContain("graph TD; A--&gt;B");
-    expect(html).toContain("mermaid.live");
+    expect(html).toContain("mermaid.js.org");
+    // Bootstrap script is included so the page renders the SVG when
+    // JS is available.
+    expect(html).toContain("cdn.jsdelivr.net/npm/mermaid");
   });
 
   it("suppresses the diagram when diagramHeading is null", () => {
@@ -322,7 +329,8 @@ describe("StoryboardCards", () => {
         diagramHeading={null}
       />
     );
-    expect(html).not.toContain("<details");
+    expect(html).not.toContain("<figure");
+    expect(html).not.toContain("pre class=\"mermaid");
   });
 });
 

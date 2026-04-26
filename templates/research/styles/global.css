@@ -411,21 +411,39 @@ p { margin: 0 0 1em; }
   text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--text-muted, #555); margin: 0 0 1em;
 }
+/* Phase E5 — research template's storyboard cards now read as visible
+   "cards" (still quiet by default). The original E3 styling stripped
+   all chrome to fit the academic voice, but the result was that visitors
+   couldn't recognise the 6-card grid as discrete cards — they all
+   bled into the surrounding prose. Adding a subtle left rule and a
+   hairline top divider per card preserves the academic feel while
+   making the grid scannable. */
 .pwb-storyboard-grid {
   list-style: none; margin: 0; padding: 0;
-  display: flex; flex-direction: column; gap: 1.4em;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.4em 1.6em;
 }
 .pwb-storyboard-card {
-  display: flex; flex-direction: column; gap: 0.4em;
-  padding: 0; background: transparent; border: 0;
+  display: flex; flex-direction: column; gap: 0.45em;
+  padding: 0.4em 0 0.6em 1em;
+  border-left: 2px solid #e5e1d8;
+  background: transparent;
+  transition: border-color 160ms ease;
 }
+.pwb-storyboard-card:hover { border-left-color: var(--link, #0066cc); }
 .pwb-storyboard-card-head {
-  display: flex; align-items: baseline; gap: 8px;
+  display: flex; align-items: baseline; gap: 10px;
+  border-bottom: 1px dotted #e5e1d8;
+  padding-bottom: 0.35em;
+  margin-bottom: 0.15em;
 }
-.pwb-storyboard-card-icon { font-size: 0.95rem; opacity: 0.7; }
+.pwb-storyboard-card-icon { font-size: 1rem; opacity: 0.85; }
 .pwb-storyboard-card-num {
-  font-family: var(--sans); font-size: 0.78rem;
-  color: var(--text-subtle, #888);
+  font-family: var(--sans); font-size: 0.74rem;
+  color: var(--link, #0066cc);
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 .pwb-storyboard-card-title {
   margin: 0; font-family: var(--sans);
@@ -598,4 +616,29 @@ p { margin: 0 0 1em; }
   vertical-align: super;
   font-weight: 700;
   margin-left: 1px;
+}
+
+/* ─── Phase E5: Mermaid render swap ─────────────────────────────────── */
+/* Hide the source <pre> and hint once the bootstrap script has finished
+   rendering the SVG. The container's data-pwb-mermaid-rendered attribute
+   is set by the bootstrap on success. Pre-render (or JS-disabled): the
+   source stays visible so visitors still see the structure. */
+.pwb-storyboard-diagram[data-pwb-mermaid-rendered="true"] .pwb-storyboard-diagram-source,
+.pwb-storyboard-diagram[data-pwb-mermaid-rendered="true"] .pwb-storyboard-diagram-hint {
+  display: none;
+}
+.pwb-storyboard-diagram pre.mermaid {
+  background: transparent;
+  white-space: pre;
+  text-align: center;
+  padding: 12px;
+  overflow-x: auto;
+}
+.pwb-storyboard-diagram[data-pwb-mermaid-rendered="true"] pre.mermaid {
+  background: transparent;
+  border: 0;
+}
+.pwb-storyboard-diagram svg {
+  max-width: 100%;
+  height: auto;
 }
