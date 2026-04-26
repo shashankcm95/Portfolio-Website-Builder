@@ -64,7 +64,7 @@ jest.mock("drizzle-orm", () => {
 // verify batching, partial failure, and dedupe — not to re-prove the
 // single-repo insert.
 const mockImportSingleRepo = jest.fn();
-jest.mock("@/app/api/portfolios/[portfolioId]/projects/route", () => ({
+jest.mock("@/lib/projects/import-single-repo", () => ({
   importSingleRepo: (...a: unknown[]) => mockImportSingleRepo(...a),
 }));
 

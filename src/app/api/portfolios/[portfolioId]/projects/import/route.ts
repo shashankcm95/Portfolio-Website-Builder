@@ -5,7 +5,7 @@ import { portfolios, projects } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { logger } from "@/lib/log";
 import { pLimit } from "@/lib/github/concurrency";
-import { importSingleRepo } from "@/app/api/portfolios/[portfolioId]/projects/route";
+import { importSingleRepo } from "@/lib/projects/import-single-repo";
 
 // Prevents static prerender during `next build` — this route queries
 // Postgres at request time, so there is nothing meaningful to bake.
