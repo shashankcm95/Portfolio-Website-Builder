@@ -6,6 +6,15 @@
  * Templates receive this as their sole data input.
  */
 
+// Phase E1 — re-export the rich payload types templates need so every
+// template can import them from one place (`@/templates/_shared/types`)
+// rather than reaching into pipeline internals.
+import type { StoryboardPayload } from "@/lib/ai/schemas/storyboard";
+import type { ProjectDemo } from "@/lib/demos/types";
+import type { RepoCategory } from "@/lib/credibility/types";
+
+export type { StoryboardPayload, ProjectDemo, RepoCategory };
+
 export interface ProfileData {
   meta: {
     generatedAt: string;
@@ -196,12 +205,106 @@ export interface Project {
    * "Decoupling guarantee" section for the invariant this field upholds.
    */
   characterization?: string;
+
+  /**
+   * Phase E1 — the 6-card guided tour (what / how / interesting file /
+   * tested / deploys / try it) the storyboard pipeline produces. Every
+   * card carries 0–3 verified claims with attached evidence specs and an
+   * optional `extra` payload (file snippet or demo URL). Loaded from the
+   * `generated_sections` row with sectionType="storyboard". Absent ⇒ the
+   * pipeline never produced one (or storage is malformed); templates
+   * skip the storyboard block.
+   */
+  storyboard?: StoryboardPayload;
+
+  /**
+   * Phase E1 — user-supplied demo URLs (Loom / YouTube / Vimeo / direct
+   * video / image / GIF). Already enriched with oEmbed thumbnails and
+   * titles where available. Templates render these via the shared
+   * `<ProjectDemoCarousel>` component (Phase E2). Empty ⇒ the project
+   * has no demos and templates skip the block.
+   *
+   * Order is the user-curated `display order` from `project_demos.order`.
+   */
+  demos?: ProjectDemo[];
+
+  /**
+   * Phase E1 — distilled credibility view derived from
+   * `projects.credibility_signals` (Phase 1 fetcher) and
+   * `projects.project_category` (Phase 8 classifier). Templates that
+   * opt in render this as a small badge row ("★ 2.3k · 8 contributors ·
+   * OSS author"). Absent fields are gracefully omitted from the badge
+   * row; absent block entirely ⇒ template renders no credibility line.
+   *
+   * Kept separate from `metadata` (raw GitHub repo facts) so templates
+   * can choose between rendering one, both, or neither.
+   */
+  credibility?: ProjectCredibility;
 }
 
 export interface ProjectFact {
   claim: string;
   category: string;
   evidenceRef?: string;
+  /**
+   * Phase E1 — the kind of evidence that backs this claim. Templates use it
+   * to render an icon or label next to a citation ("from package.json",
+   * "from README.md", "inferred"). Values come straight from the pipeline's
+   * `facts.evidence_type` column. Optional so existing portfolios that don't
+   * carry evidence rows render without a citation row.
+   */
+  evidenceType?:
+    | "repo_file"
+    | "readme"
+    | "dependency"
+    | "resume"
+    | "inferred"
+    | string;
+  /**
+   * Phase E1 — the verbatim source text the LLM extracted the claim from
+   * (a README sentence, a snippet of code, etc.). Templates can render this
+   * as a tooltip / pull-quote next to the claim to prove it isn't fabricated.
+   */
+  evidenceText?: string;
+  /**
+   * Phase E1 — confidence score from the fact-extract step (0–1). Templates
+   * may dim or hide claims below a threshold; default behavior is to render
+   * everything.
+   */
+  confidence?: number;
+  /**
+   * Phase E1 — true when the claim has been independently verified by a
+   * follow-up step (claim-verify, dep-check, etc). Templates can render a
+   * subtle ✓ marker. Defaults false / undefined when the verifier hasn't
+   * run yet.
+   */
+  isVerified?: boolean;
+}
+
+/**
+ * Phase E1 — distilled credibility view templates can render alongside or
+ * instead of `metadata`. Only fields with high signal-to-noise are surfaced;
+ * raw signal payloads stay in the DB.
+ */
+export interface ProjectCredibility {
+  /** Phase 8 classification: oss_author / personal_tool / etc. */
+  category?: RepoCategory;
+  /** Whether the authorship signal scored cleanly. */
+  authorshipStatus?: "ok" | "missing";
+  /** Total contributors on the repo (from credibility.contributors). */
+  contributorCount?: number;
+  /** Repo has a CI workflow (from credibility.workflows). */
+  hasCi?: boolean;
+  /** Repo publishes releases (from credibility.releases). */
+  hasReleases?: boolean;
+  /** Repo has a published test framework (from credibility.testFramework). */
+  hasTests?: boolean;
+  /**
+   * Public deploy URL when the repo declares a `homepage` or is hosted on
+   * a known deploy platform (vercel.app, netlify.app, pages.dev, github.io,
+   * fly.dev). Lets templates render a "Live →" link next to the repo link.
+   */
+  externalUrl?: string | null;
 }
 
 export interface Experience {

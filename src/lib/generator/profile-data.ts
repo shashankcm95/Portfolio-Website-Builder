@@ -11,6 +11,8 @@ import {
 import type {
   ProfileData,
   Project,
+  ProjectCredibility,
+  ProjectDemo,
   Skill,
   SocialProfile,
   ProjectFact,
@@ -20,6 +22,11 @@ import type {
   Testimonial,
 } from "@/templates/_shared/types";
 import { getAppUrl } from "@/lib/env/app-url";
+import {
+  storyboardPayloadSchema,
+  type StoryboardPayload,
+} from "@/lib/ai/schemas/storyboard";
+import { isRepoCategory, type RepoCategory } from "@/lib/credibility/types";
 
 /**
  * Assemble a complete ProfileData object from the database.
@@ -43,6 +50,10 @@ export async function assembleProfileData(
   const user = portfolio.user;
 
   // ── Fetch visible projects ordered by displayOrder ──────────────────────
+  // Phase E1 — pull `demos` alongside facts + sections so the published
+  // site can render the user-curated demo list. The relation is bounded
+  // (MAX_DEMOS_PER_PROJECT = 8 in src/lib/demos/types.ts), so loading
+  // them inline doesn't blow up the query.
   const projectRows = await db.query.projects.findMany({
     where: and(
       eq(projects.portfolioId, portfolioId),
@@ -52,6 +63,9 @@ export async function assembleProfileData(
     with: {
       facts: true,
       generatedSections: true,
+      demos: {
+        orderBy: (d, { asc }) => [asc(d.order)],
+      },
     },
   });
 
@@ -555,12 +569,19 @@ function buildProject(proj: {
   // the template can render it as a muted byline. Omitting = no byline.
   credibilitySignals?: unknown;
   showCharacterizationOnPortfolio?: boolean | null;
+  // Phase 8 — repo classification (oss_author / personal_tool / etc.).
+  projectCategory?: string | null;
   // Phase A — user-editable outcomes seeded from Phase B's fact-extract.
   outcomes?: unknown;
   facts: Array<{
     claim: string;
     category: string;
     evidenceRef: string | null;
+    // Phase E1 — additional evidence fields the published site can surface.
+    evidenceType?: string | null;
+    evidenceText?: string | null;
+    confidence?: number | null;
+    isVerified?: boolean | null;
   }>;
   generatedSections: Array<{
     sectionType: string;
@@ -570,6 +591,18 @@ function buildProject(proj: {
     userContent: string | null;
     version: number;
   }>;
+  // Phase E1 — demo rows pulled via the new `demos` relation. Already
+  // ordered by `order` ascending.
+  demos?: Array<{
+    id: string;
+    url: string;
+    type: string;
+    title: string | null;
+    order: number;
+    thumbnailUrl?: string | null;
+    oembedTitle?: string | null;
+    oembedFetchedAt?: Date | null;
+  }>;
 }): Project {
   const metadata = proj.repoMetadata as Record<string, unknown> | null;
   const isManual = proj.sourceType === "manual";
@@ -578,11 +611,47 @@ function buildProject(proj: {
   const sections = buildSections(proj.generatedSections);
 
   // Build facts list
+  // Phase E1 — preserve the full evidence trail (`evidenceType`,
+  // `evidenceText`, `confidence`, `isVerified`) so templates can render
+  // citations, source quotes, and verification ticks. Pre-E1 templates
+  // ignore the new fields and continue rendering just the claim text.
   const projectFacts: ProjectFact[] = proj.facts.map((f) => ({
     claim: f.claim,
     category: f.category,
     evidenceRef: f.evidenceRef || undefined,
+    evidenceType:
+      typeof f.evidenceType === "string" && f.evidenceType.length > 0
+        ? f.evidenceType
+        : undefined,
+    evidenceText:
+      typeof f.evidenceText === "string" && f.evidenceText.length > 0
+        ? f.evidenceText
+        : undefined,
+    confidence:
+      typeof f.confidence === "number" && Number.isFinite(f.confidence)
+        ? f.confidence
+        : undefined,
+    isVerified:
+      typeof f.isVerified === "boolean" ? f.isVerified : undefined,
   }));
+
+  // Phase E1 — load the verified storyboard payload (6-card guided tour)
+  // when the storyboard step has produced one. User-edited content wins
+  // over LLM-emitted content; malformed JSON fails closed (undefined).
+  const storyboard = readStoryboardFromSections(proj.generatedSections);
+
+  // Phase E1 — distil the credibility signals + repo category into a
+  // template-friendly shape. Every field is optional; the block is
+  // omitted entirely when nothing useful was distilled.
+  const credibility = readCredibility(
+    proj.credibilitySignals,
+    proj.projectCategory ?? null
+  );
+
+  // Phase E1 — pass user-curated demos through. We intentionally don't
+  // resolve them to embed URLs here — that's a render-time concern that
+  // belongs in the shared `<ProjectDemoCarousel>` component (Phase E2).
+  const demos = readDemos(proj.demos);
 
   // For manual projects: user-supplied description replaces AI-generated
   // sections; tech stack comes from the user's techStack JSON column, not
@@ -636,6 +705,12 @@ function buildProject(proj: {
     // block (graceful degradation for existing projects that predate the
     // fact-extraction update).
     outcomes: readOutcomes(proj.outcomes),
+    // Phase E1 — guided-tour payload, distilled credibility, and user
+    // demos. All optional; templates that haven't been wired to them
+    // ignore the fields and render exactly as before.
+    storyboard,
+    demos,
+    credibility,
   };
 }
 
@@ -816,6 +891,209 @@ function readOutcomes(raw: unknown): ProjectOutcome[] | undefined {
     });
   }
   return list.length > 0 ? list : undefined;
+}
+
+/**
+ * Phase E1 — pull the 6-card storyboard payload out of the
+ * `generated_sections` rows already loaded for this project.
+ *
+ * The pipeline persists each generated storyboard with
+ * `sectionType="storyboard"` and `variant="default"`, JSON-stringified into
+ * `content`. We pick the highest-version row, prefer user-edited content
+ * when present, and parse via the canonical zod schema. Any failure (no
+ * row, malformed JSON, schema drift) returns undefined so the published
+ * site simply skips the storyboard block — never crashes the publish.
+ */
+export function readStoryboardFromSections(
+  sections: Array<{
+    sectionType: string;
+    variant: string;
+    content: string;
+    isUserEdited: boolean | null;
+    userContent: string | null;
+    version: number;
+  }>
+): StoryboardPayload | undefined {
+  let best:
+    | {
+        content: string;
+        userContent: string | null;
+        isUserEdited: boolean | null;
+        version: number;
+      }
+    | undefined;
+  for (const s of sections) {
+    if (s.sectionType !== "storyboard") continue;
+    if (s.variant !== "default") continue;
+    if (!best || s.version > best.version) {
+      best = s;
+    }
+  }
+  if (!best) return undefined;
+
+  const raw = best.isUserEdited && best.userContent ? best.userContent : best.content;
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+  const result = storyboardPayloadSchema.safeParse(parsedJson);
+  return result.success ? result.data : undefined;
+}
+
+/**
+ * Phase E1 — convert the loaded `project_demos` rows into the
+ * publish-time `ProjectDemo[]` shape templates consume.
+ *
+ * - Empty / missing input returns `undefined` so templates can branch on
+ *   presence without checking for empty arrays.
+ * - `oembedFetchedAt` is a `Date` in DB-land but `string | null` on the
+ *   wire; we serialize to ISO so the published site (static HTML, no DB)
+ *   sees a stable shape. The current renderer doesn't read this field
+ *   visibly but downstream features (cache-busting, freshness badges)
+ *   will, and shipping the conversion now avoids a future migration.
+ * - `type` is text in the DB; we cast through `string` here. The render
+ *   layer is what enforces "is this an embeddable kind?" via
+ *   `src/lib/demos/render-mode.ts`.
+ */
+export function readDemos(
+  rows:
+    | Array<{
+        id: string;
+        url: string;
+        type: string;
+        title: string | null;
+        order: number;
+        thumbnailUrl?: string | null;
+        oembedTitle?: string | null;
+        oembedFetchedAt?: Date | null;
+      }>
+    | undefined
+): ProjectDemo[] | undefined {
+  if (!rows || rows.length === 0) return undefined;
+  return rows.map((r) => ({
+    id: r.id,
+    url: r.url,
+    type: r.type as ProjectDemo["type"],
+    title: r.title,
+    order: r.order,
+    thumbnailUrl: r.thumbnailUrl ?? null,
+    oembedTitle: r.oembedTitle ?? null,
+    oembedFetchedAt: r.oembedFetchedAt ? r.oembedFetchedAt.toISOString() : null,
+  }));
+}
+
+/**
+ * Phase E1 — distil the rich `credibility_signals` jsonb into the small
+ * template-facing shape (`ProjectCredibility`).
+ *
+ * The full bundle (Phase 1 / Phase 8) is huge — workflows, contributor
+ * lists, language histograms, commit activity windows — and templates
+ * should not be reaching into untyped jsonb. This function picks the
+ * three or four signals worth surfacing publicly and ignores the rest.
+ *
+ * Returns `undefined` when there's nothing meaningful to render so
+ * templates can omit the entire credibility block.
+ */
+export function readCredibility(
+  signals: unknown,
+  projectCategoryRaw: string | null
+): ProjectCredibility | undefined {
+  const out: ProjectCredibility = {};
+
+  // 1. Repo category (Phase 8) — comes from a separate column, not the
+  //    signals jsonb. Validate against the enum so a malformed string
+  //    can't land in the published HTML.
+  if (projectCategoryRaw && isRepoCategory(projectCategoryRaw)) {
+    out.category = projectCategoryRaw as RepoCategory;
+  }
+
+  if (signals && typeof signals === "object") {
+    const root = signals as Record<string, unknown>;
+
+    // 2. Authorship status — boolean-ish summary of "did the scorer
+    //    succeed?". Doesn't carry the verdict, just whether we can
+    //    trust the rest of the signals.
+    const authorship = root.authorshipSignal as
+      | { status?: unknown }
+      | undefined;
+    if (authorship && typeof authorship === "object") {
+      if (authorship.status === "ok") out.authorshipStatus = "ok";
+      else if (authorship.status === "missing") out.authorshipStatus = "missing";
+    }
+
+    // 3. Contributor count — Phase 1 fetcher writes this as
+    //    `contributors.count`. The full contributor array is not surfaced.
+    const contributors = root.contributors as
+      | { count?: unknown; status?: unknown }
+      | undefined;
+    if (
+      contributors &&
+      typeof contributors === "object" &&
+      contributors.status === "ok" &&
+      typeof contributors.count === "number" &&
+      contributors.count >= 0
+    ) {
+      out.contributorCount = contributors.count;
+    }
+
+    // 4. Booleans for the "does it ship like a real project?" badge row.
+    out.hasCi = pickHasFlag(root.workflows);
+    out.hasReleases = pickHasFlag(root.releases);
+    out.hasTests = pickHasFlag(root.testFramework);
+
+    // 5. Public deploy URL — null/undefined when the repo has neither a
+    //    `homepage` nor a known deploy host. Surfaces as a "Live →" link.
+    if (typeof root.externalUrl === "string" && root.externalUrl.length > 0) {
+      out.externalUrl = root.externalUrl;
+    } else if (root.externalUrl === null) {
+      out.externalUrl = null;
+    }
+  }
+
+  // Drop the block entirely when no field carried information. Templates
+  // gate the credibility row on `credibility !== undefined` and skip
+  // cleanly when nothing was distilled.
+  const meaningful =
+    out.category !== undefined ||
+    out.authorshipStatus !== undefined ||
+    out.contributorCount !== undefined ||
+    out.hasCi === true ||
+    out.hasReleases === true ||
+    out.hasTests === true ||
+    (typeof out.externalUrl === "string" && out.externalUrl.length > 0);
+  return meaningful ? out : undefined;
+}
+
+/**
+ * Helper for `readCredibility` — credibility signal shapes vary by
+ * category but most carry a `status: "ok" | "error" | "missing"` field
+ * plus a populated array (workflows[], releases[], etc.). Returning
+ * `true` when the signal scored cleanly AND has at least one entry
+ * keeps the badge row honest — we don't claim "has CI" for repos
+ * whose workflow scan failed.
+ */
+function pickHasFlag(signal: unknown): boolean | undefined {
+  if (!signal || typeof signal !== "object") return undefined;
+  const s = signal as Record<string, unknown>;
+  if (s.status !== "ok") return undefined;
+  // Common shape: an array of items lives next to status.
+  for (const key of [
+    "workflows",
+    "releases",
+    "frameworks",
+    "items",
+    "categories",
+  ]) {
+    const arr = s[key];
+    if (Array.isArray(arr)) return arr.length > 0;
+  }
+  // Fallback: numeric `count` field used by some sub-signals.
+  if (typeof s.count === "number") return s.count > 0;
+  // Status was OK but the shape doesn't match anything we know — be
+  // conservative and stay silent.
+  return undefined;
 }
 
 /**

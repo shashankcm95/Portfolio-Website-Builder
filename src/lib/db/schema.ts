@@ -757,6 +757,16 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   derivedFacts: many(derivedFacts),
   generatedSections: many(generatedSections),
   embeddings: many(embeddings),
+  // Phase E1 — load demos alongside the project so profile-data can bake
+  // the user-curated demo list into ProfileData without a second query.
+  demos: many(projectDemos),
+}));
+
+export const projectDemosRelations = relations(projectDemos, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectDemos.projectId],
+    references: [projects.id],
+  }),
 }));
 
 export const repoSourcesRelations = relations(repoSources, ({ one }) => ({
