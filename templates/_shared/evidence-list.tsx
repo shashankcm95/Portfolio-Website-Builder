@@ -6,8 +6,10 @@ interface EvidenceListProps {
   /**
    * Heading copy. Defaults to "Key facts" — templates with a more
    * formal voice can override ("Project facts", "Verified facts", etc.).
+   * Pass `null` to suppress the heading entirely (terminal template
+   * already prints its own `grep` prompt above the list).
    */
-  heading?: string;
+  heading?: string | null;
   /**
    * Render only this many facts. Defaults to 8 — enough to cover the
    * meaningful signal without becoming a wall. Pass Infinity to disable.
@@ -62,8 +64,11 @@ export function EvidenceList({
   const truncated = sorted.slice(0, Number.isFinite(limit) ? limit : sorted.length);
 
   return (
-    <section className="pwb-evidence-list" aria-label={heading}>
-      <h3 className="pwb-evidence-heading">{heading}</h3>
+    <section
+      className="pwb-evidence-list"
+      aria-label={heading ?? "Verified facts"}
+    >
+      {heading && <h3 className="pwb-evidence-heading">{heading}</h3>}
       <ul className="pwb-evidence-items">
         {truncated.map((f, i) => (
           <li key={`${f.claim}-${i}`} className="pwb-evidence-item">

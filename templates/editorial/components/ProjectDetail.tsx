@@ -1,5 +1,9 @@
 import React from "react";
 import type { Project } from "@/templates/_shared/types";
+import { CredibilityByline } from "@/templates/_shared/credibility-byline";
+import { ProjectDemos } from "@/templates/_shared/project-demos";
+import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
+import { EvidenceList } from "@/templates/_shared/evidence-list";
 
 interface ProjectDetailProps {
   project: Project;
@@ -42,6 +46,10 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
       </section>
 
       <div className="container-narrow">
+        <CredibilityByline credibility={project.credibility} />
+
+        <ProjectDemos demos={project.demos} />
+
         {project.techStack.length > 0 && (
           <div className="project-section">
             <h3>Stack</h3>
@@ -93,16 +101,9 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
           </div>
         )}
 
-        {project.facts.length > 0 && (
-          <div className="project-section">
-            <h3>Verified facts</h3>
-            <ul className="facts-list">
-              {project.facts.map((f, i) => (
-                <li key={i}>{f.claim}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <StoryboardCards storyboard={project.storyboard} />
+
+        <EvidenceList facts={project.facts} heading="Verified facts" />
 
         <p style={{ marginTop: "3em" }}>
           <a href="/projects/">← All work</a>

@@ -1,5 +1,9 @@
 import React from "react";
 import type { Project } from "@/templates/_shared/types";
+import { CredibilityByline } from "@/templates/_shared/credibility-byline";
+import { ProjectDemos } from "@/templates/_shared/project-demos";
+import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
+import { EvidenceList } from "@/templates/_shared/evidence-list";
 
 interface ProjectDetailPageProps {
   project: Project;
@@ -16,6 +20,8 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
           {project.characterization && <p>{project.characterization}</p>}
         </div>
 
+        <CredibilityByline credibility={project.credibility} />
+
         {project.outcomes && project.outcomes.length > 0 && (
           <ul className="outcome-row" style={{ marginBottom: "32px" }}>
             {project.outcomes.map((o, i) => (
@@ -26,6 +32,8 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
             ))}
           </ul>
         )}
+
+        <ProjectDemos demos={project.demos} />
 
         <div className="prose">
           {sections.summary && <p>{sections.summary}</p>}
@@ -49,6 +57,8 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
           )}
         </div>
 
+        <StoryboardCards storyboard={project.storyboard} />
+
         {project.techStack.length > 0 && (
           <>
             <div className="section-header" style={{ marginTop: "48px" }}>
@@ -61,6 +71,8 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
             </ul>
           </>
         )}
+
+        <EvidenceList facts={project.facts} heading="Verified facts" />
 
         {project.repoUrl && (
           <p style={{ marginTop: "32px" }}>

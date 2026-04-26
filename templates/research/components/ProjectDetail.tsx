@@ -1,5 +1,9 @@
 import React from "react";
 import type { Project } from "@/templates/_shared/types";
+import { CredibilityByline } from "@/templates/_shared/credibility-byline";
+import { ProjectDemos } from "@/templates/_shared/project-demos";
+import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
+import { EvidenceList } from "@/templates/_shared/evidence-list";
 
 interface ProjectDetailProps {
   project: Project;
@@ -38,6 +42,14 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
           )}
         </p>
       </div>
+
+      {/* Phase E3 — research voice is academic-quiet, so the credibility
+          byline reads as a single inline metadata paragraph rather than
+          a row of decorated chips. The shared CSS keeps it lowercase and
+          comma-feeling. */}
+      <CredibilityByline credibility={project.credibility} />
+
+      <ProjectDemos demos={project.demos} heading="Figure" />
 
       {project.techStack.length > 0 && (
         <div className="project-section">
@@ -83,16 +95,11 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
         </div>
       )}
 
-      {project.facts.length > 0 && (
-        <div className="project-section">
-          <h3>Verified facts</h3>
-          <ul className="facts-list">
-            {project.facts.map((fact, i) => (
-              <li key={i}>{fact.claim}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Phase E3 — guided tour rendered as a numbered list of paragraphs,
+          and a verified-facts block with evidence trail behind <details>. */}
+      <StoryboardCards storyboard={project.storyboard} heading="Tour" diagramHeading="Architecture diagram" />
+
+      <EvidenceList facts={project.facts} heading="Verified facts" />
 
       <p style={{ marginTop: "2.5em" }}>
         <a href="/projects/">← All projects</a>

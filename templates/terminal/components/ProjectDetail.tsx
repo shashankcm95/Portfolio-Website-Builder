@@ -1,5 +1,9 @@
 import React from "react";
 import type { Project } from "@/templates/_shared/types";
+import { CredibilityByline } from "@/templates/_shared/credibility-byline";
+import { ProjectDemos } from "@/templates/_shared/project-demos";
+import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
+import { EvidenceList } from "@/templates/_shared/evidence-list";
 
 interface ProjectDetailProps {
   project: Project;
@@ -25,6 +29,21 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
           git@github.com:{project.repoUrl.replace(/^https?:\/\/github\.com\//, "")}
         </a>
       </p>
+
+      {/* Phase E3 — credibility byline framed as a shell-script run */}
+      {project.credibility && (
+        <div className="project-section">
+          <p className="prompt">./check-credibility.sh</p>
+          <CredibilityByline credibility={project.credibility} />
+        </div>
+      )}
+
+      {project.demos && project.demos.length > 0 && (
+        <div className="project-section">
+          <p className="prompt">open demos/</p>
+          <ProjectDemos demos={project.demos} heading={null} />
+        </div>
+      )}
 
       {project.techStack.length > 0 && (
         <div className="project-section">
@@ -70,14 +89,17 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
         </div>
       )}
 
+      {project.storyboard && (
+        <div className="project-section">
+          <p className="prompt">cat tour.md</p>
+          <StoryboardCards storyboard={project.storyboard} heading={null} />
+        </div>
+      )}
+
       {project.facts.length > 0 && (
         <div className="project-section">
           <p className="prompt">grep -h '^Fact:' notes/</p>
-          <ul className="facts-list">
-            {project.facts.map((f, i) => (
-              <li key={i}>{f.claim}</li>
-            ))}
-          </ul>
+          <EvidenceList facts={project.facts} heading={null} />
         </div>
       )}
 
