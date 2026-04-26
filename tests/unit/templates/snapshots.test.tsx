@@ -115,6 +115,27 @@ const fixtureProject: Project = {
       claim: "Written in TypeScript",
       category: "tech_stack",
       evidenceRef: "package.json",
+      evidenceType: "dependency",
+      evidenceText: '"typescript": "^5.4.0" in package.json',
+      confidence: 0.95,
+      isVerified: true,
+    },
+    {
+      claim: "Uses Drizzle ORM for the Postgres source of truth",
+      category: "architecture",
+      evidenceRef: "src/lib/db/schema.ts",
+      evidenceType: "repo_file",
+      evidenceText:
+        "import { pgTable } from 'drizzle-orm/pg-core'; 12 tables defined in schema.ts.",
+      confidence: 0.9,
+      isVerified: true,
+    },
+    {
+      claim: "Server-side template rendering via renderToStaticMarkup",
+      category: "architecture",
+      evidenceType: "readme",
+      confidence: 0.7,
+      isVerified: false,
     },
   ],
   characterization: "Open-source project · 4.2k stars · 23 contributors",
@@ -131,6 +152,124 @@ const fixtureProject: Project = {
       context: "last 30 days",
     },
   ],
+  // Phase E2 — exercise the new shared components in the snapshot suite.
+  // Without these the credibility byline / demo block / storyboard never
+  // render and the suite would silently regress.
+  credibility: {
+    category: "oss_author",
+    authorshipStatus: "ok",
+    contributorCount: 23,
+    hasCi: true,
+    hasTests: true,
+    hasReleases: true,
+    externalUrl: "https://signal-forge.example.test",
+  },
+  demos: [
+    {
+      id: "demo-1",
+      url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      type: "youtube",
+      title: "Signal Forge in 90 seconds",
+      order: 0,
+      thumbnailUrl: null,
+      oembedTitle: null,
+      oembedFetchedAt: null,
+    },
+  ],
+  storyboard: {
+    schemaVersion: 1,
+    mermaid: "graph TD\n  A[Repo] --> B[Pipeline]\n  B --> C[Static Site]",
+    cards: [
+      {
+        id: "what",
+        icon: "Lightbulb",
+        title: "What it does",
+        description:
+          "Turns a GitHub history into a proof-backed portfolio site.",
+        claims: [
+          {
+            label: "Reads N projects per portfolio",
+            verifier: { kind: "file", glob: "src/lib/db/schema.ts" },
+            status: "verified",
+            evidence: "schema.ts confirms multi-project table",
+          },
+        ],
+        extra: null,
+      },
+      {
+        id: "how",
+        icon: "Cog",
+        title: "How it works",
+        description: "9-step pipeline: fetch → extract → narrate → verify.",
+        claims: [
+          {
+            label: "Uses Drizzle for Postgres",
+            verifier: {
+              kind: "dep",
+              package: "drizzle-orm",
+              ecosystem: "npm",
+            },
+            status: "verified",
+            evidence: "drizzle-orm@^0.30 in package.json",
+          },
+        ],
+        extra: null,
+      },
+      {
+        id: "interesting_file",
+        icon: "FileCode",
+        title: "Worth a look",
+        description: "The pipeline orchestrator: state machine + retries.",
+        claims: [],
+        extra: {
+          kind: "file_snippet",
+          path: "src/lib/pipeline/orchestrator.ts",
+          snippet: "export class PipelineOrchestrator { /* ... */ }",
+          language: "typescript",
+          url: null,
+          cloneCommand: null,
+        },
+      },
+      {
+        id: "tested",
+        icon: "Check",
+        title: "Tested",
+        description: "Jest covers the helpers; integration tests cover the API.",
+        claims: [
+          {
+            label: "1000+ unit tests",
+            verifier: { kind: "workflow", category: "test" },
+            status: "verified",
+            evidence: "ci.yml runs jest",
+          },
+        ],
+        extra: null,
+      },
+      {
+        id: "deploys",
+        icon: "Rocket",
+        title: "Deploys",
+        description: "Cloudflare Pages auto-provisions per portfolio.",
+        claims: [],
+        extra: null,
+      },
+      {
+        id: "try_it",
+        icon: "Play",
+        title: "Try it",
+        description: "Click through to the live site.",
+        claims: [],
+        extra: {
+          kind: "demo",
+          url: "https://signal-forge.example.test",
+          cloneCommand: "git clone https://github.com/acme/signal-forge",
+          path: null,
+          snippet: null,
+          language: null,
+        },
+      },
+    ],
+  },
 };
 
 const fixtureTestimonial: Testimonial = {

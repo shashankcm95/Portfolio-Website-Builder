@@ -1,5 +1,9 @@
 import React from "react";
 import type { Project } from "@/templates/_shared/types";
+import { CredibilityByline } from "@/templates/_shared/credibility-byline";
+import { ProjectDemos } from "@/templates/_shared/project-demos";
+import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
+import { EvidenceList } from "@/templates/_shared/evidence-list";
 
 interface ProjectDetailPageProps {
   project: Project;
@@ -9,6 +13,27 @@ interface ProjectDetailPageProps {
  * Detail view for a single project. Surfaces every narrative section that
  * exists (engineer variant preferred for detail page), plus outcomes +
  * full tech stack. Falls back gracefully when sections are unset.
+ *
+ * Phase E2 — Signal is the lead template for the proof-backed surfacing
+ * upgrade. Visitors now see, in order:
+ *
+ *   1. Title + the (existing) characterization byline
+ *   2. Credibility chips (category, contributors, CI/Tests/Releases ticks,
+ *      live link) — one-line proof of "this is a real project"
+ *   3. Outcome pills (existing)
+ *   4. Project demos — Loom / YouTube / image slideshow rendered inline,
+ *      JS-free
+ *   5. Prose narrative (existing summary / architecture / stack / deep-dive)
+ *   6. Guided tour — the verified 6-card storyboard (what / how / file /
+ *      tested / deploys / try it) with per-claim verifier markers
+ *   7. Tech stack tags (existing)
+ *   8. Verified facts list — every extracted fact with its evidence trail
+ *      behind a `<details>` disclosure
+ *   9. View-repository link (existing)
+ *
+ * Every new block is conditional on its data being present, so projects
+ * predating any of the pipeline steps render cleanly without empty
+ * placeholders.
  */
 export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
   const { sections } = project;
@@ -26,6 +51,8 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
         </p>
       )}
 
+      <CredibilityByline credibility={project.credibility} />
+
       {project.outcomes && project.outcomes.length > 0 && (
         <ul
           className="case-outcomes"
@@ -40,6 +67,8 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
           ))}
         </ul>
       )}
+
+      <ProjectDemos demos={project.demos} />
 
       <div className="prose">
         {sections.summary && <p>{sections.summary}</p>}
@@ -66,6 +95,8 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
         )}
       </div>
 
+      <StoryboardCards storyboard={project.storyboard} />
+
       {project.techStack.length > 0 && (
         <>
           <div className="section-head" style={{ marginTop: "48px" }}>
@@ -80,6 +111,8 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
           </ul>
         </>
       )}
+
+      <EvidenceList facts={project.facts} heading="Verified facts" />
 
       {project.repoUrl && (
         <p style={{ marginTop: "40px" }}>
