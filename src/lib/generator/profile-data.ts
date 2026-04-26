@@ -607,8 +607,11 @@ function buildProject(proj: {
   const metadata = proj.repoMetadata as Record<string, unknown> | null;
   const isManual = proj.sourceType === "manual";
 
-  // Build sections, preferring user-edited content
-  const sections = buildSections(proj.generatedSections);
+  // Build sections, preferring user-edited content. Phase E4 — keep
+  // both `recruiter` and `engineer` variants separately so the templates
+  // can render a view toggle.
+  const { recruiter: sections, engineer: engineerSections } =
+    buildSections(proj.generatedSections);
 
   // Build facts list
   // Phase E1 — preserve the full evidence trail (`evidenceType`,
@@ -678,10 +681,27 @@ function buildProject(proj: {
     sections: {
       summary: sections.summary || fallbackDescription,
       architecture: sections.architecture,
-      techNarrative: sections["tech-narrative"],
-      recruiterPitch: sections["recruiter-pitch"],
-      engineerDeepDive: sections["engineer-deep-dive"],
+      // Phase E4 — fix pre-existing key-style bug. The pipeline persists
+      // these section types in snake_case (`tech_narrative`,
+      // `recruiter_pitch`, `engineer_deep_dive`) per the
+      // `sectionTypeEnum` contract in src/lib/ai/schemas/narrative.ts.
+      // Pre-E4 this code read the dash-cased keys and silently dropped
+      // every techNarrative / recruiterPitch / engineerDeepDive section
+      // from every published portfolio. `buildSections` now normalises
+      // to camelCase keys so all five sections actually render.
+      techNarrative: sections.techNarrative,
+      recruiterPitch: sections.recruiterPitch,
+      engineerDeepDive: sections.engineerDeepDive,
     },
+    engineerSections: hasAnyEngineerSection(engineerSections)
+      ? {
+          summary: engineerSections.summary,
+          architecture: engineerSections.architecture,
+          techNarrative: engineerSections.techNarrative,
+          recruiterPitch: engineerSections.recruiterPitch,
+          engineerDeepDive: engineerSections.engineerDeepDive,
+        }
+      : undefined,
     metadata: {
       stars: (metadata?.stargazers_count as number) ?? undefined,
       forks: (metadata?.forks_count as number) ?? undefined,
@@ -1125,6 +1145,42 @@ function readCharacterization(
     : undefined;
 }
 
+/**
+ * Phase E4 — sectionType key normalization. The pipeline persists section
+ * types in snake_case (`tech_narrative`, `recruiter_pitch`,
+ * `engineer_deep_dive`) per `sectionTypeEnum` in
+ * src/lib/ai/schemas/narrative.ts. The Project type templates consume
+ * uses camelCase. Pre-E4 the publisher used dash-case here, which
+ * silently dropped three of the five sections from every portfolio.
+ *
+ * Storyboard rows also live in `generated_sections` but go through their
+ * own loader (`readStoryboardFromSections`) — we ignore the
+ * `"storyboard"` sectionType here.
+ */
+const SECTION_TYPE_TO_CAMEL: Record<string, string> = {
+  summary: "summary",
+  architecture: "architecture",
+  tech_narrative: "techNarrative",
+  recruiter_pitch: "recruiterPitch",
+  engineer_deep_dive: "engineerDeepDive",
+};
+
+interface BuiltSections {
+  recruiter: Record<string, string | undefined>;
+  engineer: Record<string, string | undefined>;
+}
+
+/**
+ * Build the recruiter + engineer narrative section maps from the
+ * already-loaded `generated_sections` rows for a project.
+ *
+ * Per (sectionType × variant) pair we keep the highest-version row, and
+ * within that row prefer user-edited content. Returns two parallel maps
+ * keyed by camelCased section type. Both maps may have a sparse subset
+ * of keys — early projects only had recruiter variants, and a fresh
+ * pipeline run might fail on a single section without taking the rest
+ * down with it.
+ */
 function buildSections(
   sections: Array<{
     sectionType: string;
@@ -1134,25 +1190,28 @@ function buildSections(
     userContent: string | null;
     version: number;
   }>
-): Record<string, string | undefined> {
-  const result: Record<string, string | undefined> = {};
-
-  // Group by sectionType, take highest version, prefer userContent
-  const grouped = new Map<
-    string,
-    {
-      content: string;
-      userContent: string | null;
-      isUserEdited: boolean | null;
-      version: number;
-    }
-  >();
+): BuiltSections {
+  type Cell = {
+    content: string;
+    userContent: string | null;
+    isUserEdited: boolean | null;
+    version: number;
+  };
+  // Compound key: `${variant}|${sectionType}` so we keep both variants.
+  const grouped = new Map<string, Cell>();
 
   for (const section of sections) {
-    const key = section.sectionType;
-    const existing = grouped.get(key);
+    if (section.sectionType === "storyboard") continue;
+    const camelKey = SECTION_TYPE_TO_CAMEL[section.sectionType];
+    if (!camelKey) continue; // unknown section type — leave for forward-compat
+    // Variants other than "recruiter" / "engineer" are out-of-contract.
+    if (section.variant !== "recruiter" && section.variant !== "engineer") {
+      continue;
+    }
+    const compound = `${section.variant}|${camelKey}`;
+    const existing = grouped.get(compound);
     if (!existing || section.version > existing.version) {
-      grouped.set(key, {
+      grouped.set(compound, {
         content: section.content,
         userContent: section.userContent,
         isUserEdited: section.isUserEdited,
@@ -1161,13 +1220,30 @@ function buildSections(
     }
   }
 
-  for (const [key, val] of grouped) {
-    // Prefer user-edited content over AI-generated content
-    result[key] =
+  const recruiter: Record<string, string | undefined> = {};
+  const engineer: Record<string, string | undefined> = {};
+  for (const [compound, val] of grouped) {
+    const [variant, camelKey] = compound.split("|");
+    const text =
       val.isUserEdited && val.userContent ? val.userContent : val.content;
+    if (variant === "recruiter") recruiter[camelKey] = text;
+    else if (variant === "engineer") engineer[camelKey] = text;
   }
 
-  return result;
+  return { recruiter, engineer };
+}
+
+/**
+ * Returns true when at least one engineer-variant section is populated.
+ * Used to gate `Project.engineerSections` so templates can branch on
+ * presence without checking every key.
+ */
+function hasAnyEngineerSection(
+  engineer: Record<string, string | undefined>
+): boolean {
+  return Object.values(engineer).some(
+    (v) => typeof v === "string" && v.length > 0
+  );
 }
 
 function extractTechStack(

@@ -4,14 +4,13 @@ import { CredibilityByline } from "@/templates/_shared/credibility-byline";
 import { ProjectDemos } from "@/templates/_shared/project-demos";
 import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
 import { EvidenceList } from "@/templates/_shared/evidence-list";
+import { NarrativeViewToggle } from "@/templates/_shared/narrative-view-toggle";
 
 interface ProjectDetailPageProps {
   project: Project;
 }
 
 export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
-  const { sections } = project;
-
   return (
     <article className="section">
       <div className="container">
@@ -35,27 +34,36 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
 
         <ProjectDemos demos={project.demos} />
 
-        <div className="prose">
-          {sections.summary && <p>{sections.summary}</p>}
-          {sections.architecture && (
-            <>
-              <h3>Architecture</h3>
-              <p>{sections.architecture}</p>
-            </>
+        {/* Phase E4 — toggle wrapper around the prose pane. */}
+        <NarrativeViewToggle
+          recruiter={project.sections}
+          engineer={project.engineerSections}
+          scopeId={project.id}
+        >
+          {(sections) => (
+            <div className="prose">
+              {sections.summary && <p>{sections.summary}</p>}
+              {sections.architecture && (
+                <>
+                  <h3>Architecture</h3>
+                  <p>{sections.architecture}</p>
+                </>
+              )}
+              {sections.recruiterPitch && (
+                <>
+                  <h3>In a nutshell</h3>
+                  <p>{sections.recruiterPitch}</p>
+                </>
+              )}
+              {sections.engineerDeepDive && (
+                <>
+                  <h3>Technical detail</h3>
+                  <p>{sections.engineerDeepDive}</p>
+                </>
+              )}
+            </div>
           )}
-          {sections.recruiterPitch && (
-            <>
-              <h3>In a nutshell</h3>
-              <p>{sections.recruiterPitch}</p>
-            </>
-          )}
-          {sections.engineerDeepDive && (
-            <>
-              <h3>Technical detail</h3>
-              <p>{sections.engineerDeepDive}</p>
-            </>
-          )}
-        </div>
+        </NarrativeViewToggle>
 
         <StoryboardCards storyboard={project.storyboard} />
 

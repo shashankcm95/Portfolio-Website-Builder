@@ -170,6 +170,29 @@ export interface Project {
     engineerDeepDive?: string;
   };
 
+  /**
+   * Phase E4 — engineer-variant narratives. The pipeline produces both
+   * a "recruiter" and "engineer" version of every section; pre-E4 the
+   * publisher silently dropped the engineer variant. Surfacing it now
+   * lets templates render a CSS-only "Recruiter view / Engineer view"
+   * toggle so technically-minded visitors can read the deeper version.
+   *
+   * Each field mirrors the corresponding key in `sections`. When a
+   * variant is absent (e.g. an older project that predates the
+   * dual-variant pipeline run), the key is undefined and templates
+   * fall through to the recruiter variant transparently.
+   *
+   * Templates that don't render the toggle ignore this field; existing
+   * `sections.*` reads continue to surface the recruiter variant.
+   */
+  engineerSections?: {
+    summary?: string;
+    architecture?: string;
+    techNarrative?: string;
+    recruiterPitch?: string;
+    engineerDeepDive?: string;
+  };
+
   metadata: {
     stars?: number;
     forks?: number;

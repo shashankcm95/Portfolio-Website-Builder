@@ -722,3 +722,61 @@ a:hover { color: var(--color-accent); }
 /* ─── Focus ring (accessibility) ──────────────────────────────────── */
 
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; border-radius: 3px; }
+
+/* ─── Phase E4: Narrative view toggle (signal theming) ─────────────── */
+
+/* Visually-hidden radios. Pattern from
+   https://www.tpgi.com/the-anatomy-of-visually-hidden/ — keeps them
+   keyboard-accessible while invisible on screen. */
+.pwb-narrative-radio {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* Default visibility: recruiter shown, engineer hidden. The engineer
+   radio's `:checked` state flips both panes. */
+.pwb-narrative-pane-engineer { display: none; }
+.pwb-narrative-radio-engineer:checked ~ .pwb-narrative-pane-engineer { display: block; }
+.pwb-narrative-radio-engineer:checked ~ .pwb-narrative-pane-recruiter { display: none; }
+
+/* Toggle row layout — sits above the prose pane it controls. */
+.pwb-narrative-toggle-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  margin: 16px 0 24px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+.pwb-narrative-toggle-label {
+  color: var(--color-faint);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-right: 4px;
+}
+.pwb-narrative-toggle-option {
+  display: inline-flex; align-items: center; cursor: pointer;
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  user-select: none;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+.pwb-narrative-toggle-option:hover { color: var(--color-text); border-color: var(--color-text); }
+
+/* Active state — driven by the checked radio, both labels live in the
+   same `.pwb-narrative-toggle-row` sibling further down the tree. */
+.pwb-narrative-radio-recruiter:checked ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-recruiter,
+.pwb-narrative-radio-engineer:checked ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-engineer {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border-color: var(--color-accent);
+}
+
+/* Surface keyboard focus on the visually-hidden radio via the matching
+   visible label. Without this, tabbing into the toggle is silent. */
+.pwb-narrative-radio-recruiter:focus-visible ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-recruiter,
+.pwb-narrative-radio-engineer:focus-visible ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-engineer {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

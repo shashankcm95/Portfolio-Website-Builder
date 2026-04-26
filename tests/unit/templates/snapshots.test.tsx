@@ -138,6 +138,18 @@ const fixtureProject: Project = {
       isVerified: false,
     },
   ],
+  // Phase E4 — engineer-variant narratives. Different copy than the
+  // recruiter variant so the snapshot diff makes the toggle visible.
+  engineerSections: {
+    summary:
+      "Phase 8.5 inlines the chatbot bootstrap so the publish target stays standalone.",
+    architecture:
+      "Static-site generator targeting Cloudflare Pages; per-portfolio Pages Function carries the chatbot retrieval corpus.",
+    techNarrative:
+      "Drizzle ORM against Postgres for the source-of-truth, server-side React renderToStaticMarkup for templates, BGE-large embeddings cached in jsonb for chatbot retrieval.",
+    engineerDeepDive:
+      "The fact-extractor uses a two-pass LLM rubric: extraction with structured-output JSON Schema, then deterministic post-filters to drop low-confidence facts and de-duplicate against existing rows.",
+  },
   characterization: "Open-source project · 4.2k stars · 23 contributors",
   outcomes: [
     {

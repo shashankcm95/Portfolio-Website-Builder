@@ -691,3 +691,49 @@ p { margin: 0 0 1.2em; }
   text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.06em;
 }
 .pwb-evidence-ref code { font-family: ui-monospace, monospace; color: var(--ink); }
+
+/* ─── Phase E4: Narrative view toggle (editorial theming) ──────────── */
+
+.pwb-narrative-radio {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.pwb-narrative-pane-engineer { display: none; }
+.pwb-narrative-radio-engineer:checked ~ .pwb-narrative-pane-engineer { display: block; }
+.pwb-narrative-radio-engineer:checked ~ .pwb-narrative-pane-recruiter { display: none; }
+
+.pwb-narrative-toggle-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 0;
+  margin: 1.5em 0 2em;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.pwb-narrative-toggle-label {
+  color: var(--ink-mute);
+  margin-right: 12px;
+}
+.pwb-narrative-toggle-option {
+  display: inline-flex; align-items: center; cursor: pointer;
+  padding: 6px 14px;
+  border: 2px solid var(--border);
+  margin-left: -2px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  user-select: none;
+}
+.pwb-narrative-toggle-option:first-of-type { margin-left: 0; }
+.pwb-narrative-toggle-option:hover { background: var(--accent-bg); color: var(--ink); }
+
+.pwb-narrative-radio-recruiter:checked ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-recruiter,
+.pwb-narrative-radio-engineer:checked ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-engineer {
+  background: var(--ink);
+  color: var(--paper);
+}
+.pwb-narrative-radio-recruiter:focus-visible ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-recruiter,
+.pwb-narrative-radio-engineer:focus-visible ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-engineer {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

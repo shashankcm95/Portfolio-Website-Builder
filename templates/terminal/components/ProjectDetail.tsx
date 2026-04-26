@@ -4,6 +4,7 @@ import { CredibilityByline } from "@/templates/_shared/credibility-byline";
 import { ProjectDemos } from "@/templates/_shared/project-demos";
 import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
 import { EvidenceList } from "@/templates/_shared/evidence-list";
+import { NarrativeViewToggle } from "@/templates/_shared/narrative-view-toggle";
 
 interface ProjectDetailProps {
   project: Project;
@@ -56,38 +57,49 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
         </div>
       )}
 
-      {project.sections.architecture && (
-        <div className="project-section">
-          <p className="prompt">cat architecture.md</p>
-          <div
-            dangerouslySetInnerHTML={{
-              __html: formatSectionContent(project.sections.architecture),
-            }}
-          />
-        </div>
-      )}
-
-      {project.sections.techNarrative && (
-        <div className="project-section">
-          <p className="prompt">cat narrative.md</p>
-          <div
-            dangerouslySetInnerHTML={{
-              __html: formatSectionContent(project.sections.techNarrative),
-            }}
-          />
-        </div>
-      )}
-
-      {project.sections.engineerDeepDive && (
-        <div className="project-section">
-          <p className="prompt">cat deep-dive.md</p>
-          <div
-            dangerouslySetInnerHTML={{
-              __html: formatSectionContent(project.sections.engineerDeepDive),
-            }}
-          />
-        </div>
-      )}
+      {/* Phase E4 — toggle wrapper around the three rendered narratives.
+          The terminal frame each section with its own `cat` prompt. */}
+      <NarrativeViewToggle
+        recruiter={project.sections}
+        engineer={project.engineerSections}
+        scopeId={project.id}
+        label="view"
+      >
+        {(sections) => (
+          <>
+            {sections.architecture && (
+              <div className="project-section">
+                <p className="prompt">cat architecture.md</p>
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: formatSectionContent(sections.architecture),
+                  }}
+                />
+              </div>
+            )}
+            {sections.techNarrative && (
+              <div className="project-section">
+                <p className="prompt">cat narrative.md</p>
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: formatSectionContent(sections.techNarrative),
+                  }}
+                />
+              </div>
+            )}
+            {sections.engineerDeepDive && (
+              <div className="project-section">
+                <p className="prompt">cat deep-dive.md</p>
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: formatSectionContent(sections.engineerDeepDive),
+                  }}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </NarrativeViewToggle>
 
       {project.storyboard && (
         <div className="project-section">

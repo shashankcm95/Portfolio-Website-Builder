@@ -4,6 +4,7 @@ import { CredibilityByline } from "@/templates/_shared/credibility-byline";
 import { ProjectDemos } from "@/templates/_shared/project-demos";
 import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
 import { EvidenceList } from "@/templates/_shared/evidence-list";
+import { NarrativeViewToggle } from "@/templates/_shared/narrative-view-toggle";
 
 interface ProjectDetailPageProps {
   project: Project;
@@ -36,8 +37,6 @@ interface ProjectDetailPageProps {
  * placeholders.
  */
 export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
-  const { sections } = project;
-
   return (
     <article>
       <div className="section-head">
@@ -70,30 +69,42 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
 
       <ProjectDemos demos={project.demos} />
 
-      <div className="prose">
-        {sections.summary && <p>{sections.summary}</p>}
+      {/* Phase E4 — NarrativeViewToggle wraps the prose. When the project
+          carries an engineer variant, visitors get a CSS-only toggle to
+          swap between recruiter and engineer copy. When it doesn't, the
+          component renders only the recruiter prose without any toggle UI. */}
+      <NarrativeViewToggle
+        recruiter={project.sections}
+        engineer={project.engineerSections}
+        scopeId={project.id}
+      >
+        {(sections) => (
+          <div className="prose">
+            {sections.summary && <p>{sections.summary}</p>}
 
-        {sections.architecture && (
-          <>
-            <h3>Architecture</h3>
-            <p>{sections.architecture}</p>
-          </>
-        )}
+            {sections.architecture && (
+              <>
+                <h3>Architecture</h3>
+                <p>{sections.architecture}</p>
+              </>
+            )}
 
-        {sections.techNarrative && (
-          <>
-            <h3>Stack</h3>
-            <p>{sections.techNarrative}</p>
-          </>
-        )}
+            {sections.techNarrative && (
+              <>
+                <h3>Stack</h3>
+                <p>{sections.techNarrative}</p>
+              </>
+            )}
 
-        {sections.engineerDeepDive && (
-          <>
-            <h3>Deep dive</h3>
-            <p>{sections.engineerDeepDive}</p>
-          </>
+            {sections.engineerDeepDive && (
+              <>
+                <h3>Deep dive</h3>
+                <p>{sections.engineerDeepDive}</p>
+              </>
+            )}
+          </div>
         )}
-      </div>
+      </NarrativeViewToggle>
 
       <StoryboardCards storyboard={project.storyboard} />
 

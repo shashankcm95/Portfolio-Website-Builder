@@ -513,3 +513,52 @@ p { margin: 0 0 1em; }
   font-size: 0.78rem; letter-spacing: 0;
 }
 .pwb-evidence-ref code { color: var(--text); }
+
+/* ─── Phase E4: Narrative view toggle (terminal theming) ───────────── */
+
+.pwb-narrative-radio {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.pwb-narrative-pane-engineer { display: none; }
+.pwb-narrative-radio-engineer:checked ~ .pwb-narrative-pane-engineer { display: block; }
+.pwb-narrative-radio-engineer:checked ~ .pwb-narrative-pane-recruiter { display: none; }
+
+.pwb-narrative-toggle-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  margin: 1em 0 1.4em;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+.pwb-narrative-toggle-label {
+  color: var(--text-dim, #c0c0c0);
+}
+.pwb-narrative-toggle-label::before { content: "$ "; color: var(--green, #a6e22e); }
+.pwb-narrative-toggle-option {
+  display: inline-flex; align-items: center; cursor: pointer;
+  padding: 0;
+  background: transparent;
+  color: var(--text-dim, #c0c0c0);
+  user-select: none;
+  border: 0;
+}
+.pwb-narrative-toggle-option::before { content: "[ "; color: var(--text-dim, #c0c0c0); }
+.pwb-narrative-toggle-option::after { content: " ]"; color: var(--text-dim, #c0c0c0); }
+.pwb-narrative-toggle-option:hover { color: var(--green, #a6e22e); }
+
+.pwb-narrative-radio-recruiter:checked ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-recruiter,
+.pwb-narrative-radio-engineer:checked ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-engineer {
+  color: var(--yellow, #e6db74);
+  font-weight: 700;
+}
+.pwb-narrative-radio-recruiter:checked ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-recruiter::before,
+.pwb-narrative-radio-engineer:checked ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-engineer::before {
+  content: "[× ";
+  color: var(--green, #a6e22e);
+}
+.pwb-narrative-radio-recruiter:focus-visible ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-recruiter,
+.pwb-narrative-radio-engineer:focus-visible ~ .pwb-narrative-toggle-row .pwb-narrative-toggle-option-engineer {
+  outline: 1px dashed var(--green, #a6e22e);
+  outline-offset: 2px;
+}

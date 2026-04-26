@@ -4,6 +4,7 @@ import { CredibilityByline } from "@/templates/_shared/credibility-byline";
 import { ProjectDemos } from "@/templates/_shared/project-demos";
 import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
 import { EvidenceList } from "@/templates/_shared/evidence-list";
+import { NarrativeViewToggle } from "@/templates/_shared/narrative-view-toggle";
 
 interface ProjectDetailProps {
   project: Project;
@@ -62,38 +63,47 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
         </div>
       )}
 
-      {project.sections.architecture && (
-        <div className="project-section">
-          <h3>Architecture</h3>
-          <div
-            dangerouslySetInnerHTML={{
-              __html: formatSectionContent(project.sections.architecture),
-            }}
-          />
-        </div>
-      )}
-
-      {project.sections.techNarrative && (
-        <div className="project-section">
-          <h3>Technical narrative</h3>
-          <div
-            dangerouslySetInnerHTML={{
-              __html: formatSectionContent(project.sections.techNarrative),
-            }}
-          />
-        </div>
-      )}
-
-      {project.sections.engineerDeepDive && (
-        <div className="project-section">
-          <h3>Deep dive</h3>
-          <div
-            dangerouslySetInnerHTML={{
-              __html: formatSectionContent(project.sections.engineerDeepDive),
-            }}
-          />
-        </div>
-      )}
+      {/* Phase E4 — toggle wrapper, academic-quiet styling. */}
+      <NarrativeViewToggle
+        recruiter={project.sections}
+        engineer={project.engineerSections}
+        scopeId={project.id}
+      >
+        {(sections) => (
+          <>
+            {sections.architecture && (
+              <div className="project-section">
+                <h3>Architecture</h3>
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: formatSectionContent(sections.architecture),
+                  }}
+                />
+              </div>
+            )}
+            {sections.techNarrative && (
+              <div className="project-section">
+                <h3>Technical narrative</h3>
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: formatSectionContent(sections.techNarrative),
+                  }}
+                />
+              </div>
+            )}
+            {sections.engineerDeepDive && (
+              <div className="project-section">
+                <h3>Deep dive</h3>
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: formatSectionContent(sections.engineerDeepDive),
+                  }}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </NarrativeViewToggle>
 
       {/* Phase E3 — guided tour rendered as a numbered list of paragraphs,
           and a verified-facts block with evidence trail behind <details>. */}
