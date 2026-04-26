@@ -386,20 +386,47 @@ function buildOgImageUrl(
 
 /**
  * Phase 6 — Analytics beacon endpoint + portfolio id. Both null when
- * NEXT_PUBLIC_APP_URL isn't set (template omits the script).
+ * NEXT_PUBLIC_APP_URL isn't set OR is a private/localhost host (the
+ * generated site can't reach it from a visitor's browser).
  */
 function buildAnalyticsConfig(portfolioId: string): {
   analyticsEndpoint: string | null;
   analyticsPortfolioId: string | null;
 } {
   const appUrl = getAppUrl();
-  if (!appUrl) {
+  if (!appUrl || isPrivateOrigin(appUrl)) {
     return { analyticsEndpoint: null, analyticsPortfolioId: null };
   }
   return {
     analyticsEndpoint: `${appUrl}/api/events/track`,
     analyticsPortfolioId: portfolioId,
   };
+}
+
+/**
+ * Phase R7 — Detect URLs that aren't reachable from a deployed visitor.
+ * Returns true for localhost, loopback IPs, private RFC1918 ranges, and
+ * `*.local` mDNS hosts. Used as a publish-time guard so we don't bake
+ * a dev value into a live site. Tolerant of malformed input (returns
+ * false rather than throwing) — caller already handles the empty case.
+ */
+function isPrivateOrigin(rawUrl: string): boolean {
+  let host: string;
+  try {
+    host = new URL(rawUrl).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  if (host === "localhost" || host === "0.0.0.0") return true;
+  if (host.endsWith(".local") || host.endsWith(".localhost")) return true;
+  // IPv4 ranges
+  if (/^127\./.test(host)) return true;
+  if (/^10\./.test(host)) return true;
+  if (/^192\.168\./.test(host)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return true;
+  // IPv6 loopback
+  if (host === "::1" || host === "[::1]") return true;
+  return false;
 }
 
 /**
@@ -433,6 +460,23 @@ async function buildChatbotEmbed(
   // site doesn't need to know the builder's URL. Cross-origin path
   // keeps the gate.
   if (!selfHosted && !appUrl) return null;
+
+  // Phase R7 — refuse to bake a non-public appOrigin into the published
+  // HTML. When NEXT_PUBLIC_APP_URL is set to localhost / 127.0.0.1 / a
+  // private LAN address (the dev default), the iframe load fails for
+  // every visitor of the live site because the URL only resolves on
+  // the operator's laptop. Drop the chatbot block in this case so the
+  // template renders without a broken iframe rather than producing a
+  // dead one. Self-hosted deploys are unaffected (they use /chat.html
+  // on the same origin and never see appOrigin).
+  if (!selfHosted && appUrl && isPrivateOrigin(appUrl)) {
+    console.warn(
+      `[profile-data] Skipping chatbot embed for portfolio ${portfolioId}: ` +
+        `NEXT_PUBLIC_APP_URL is "${appUrl}", which isn't reachable from a ` +
+        "deployed site. Either set a public URL or enable selfHostedChatbot."
+    );
+    return null;
+  }
 
   // Probe for at least one embedding row. The retrieval corpus lives on
   // the `embeddings` table joined to projects by projectId.
@@ -852,35 +896,50 @@ function extractTechStack(
   factRows: Array<{ claim: string; category: string }>,
   metadata: Record<string, unknown> | null
 ): string[] {
-  const techSet = new Set<string>();
+  // Phase R7 — case-insensitive dedupe. Set<string> alone treats
+  // "TypeScript" (from metadata.language) and "typescript" (from
+  // metadata.topics) as different entries, so the rendered project
+  // card shows duplicates like "TypeScript · TypeScript". We collect
+  // candidates into a Map keyed by lowercased value, preferring the
+  // first capitalization we see (which is metadata.language for
+  // GitHub repos — already in the canonical form).
+  const seen = new Map<string, string>();
+  const add = (value: unknown) => {
+    if (typeof value !== "string") return;
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase();
+    if (!seen.has(key)) seen.set(key, trimmed);
+  };
+
+  // From metadata language first — GitHub returns canonical
+  // capitalization ("TypeScript", "Python") which we want to win.
+  if (metadata?.language) add(metadata.language);
 
   // From facts
   for (const fact of factRows) {
     const cat = fact.category.toLowerCase();
     if (
       cat === "tech-stack" ||
+      cat === "tech_stack" ||
       cat === "technology" ||
       cat === "language" ||
       cat === "framework" ||
       cat === "library"
     ) {
-      techSet.add(fact.claim);
+      add(fact.claim);
     }
   }
 
-  // From metadata language
-  if (metadata?.language) {
-    techSet.add(metadata.language as string);
-  }
-
-  // From metadata topics (limited selection)
+  // From metadata topics (lowercase by GitHub convention; lose the
+  // race to language above so capitalization is preserved).
   if (metadata?.topics && Array.isArray(metadata.topics)) {
-    for (const topic of metadata.topics as string[]) {
-      techSet.add(topic);
+    for (const topic of metadata.topics as unknown[]) {
+      add(topic);
     }
   }
 
-  return Array.from(techSet);
+  return Array.from(seen.values());
 }
 
 function extractLicense(
@@ -896,6 +955,24 @@ function extractLicense(
     return (metadata.license as Record<string, string>).spdx_id;
   }
   return undefined;
+}
+
+/**
+ * Phase R7 — Resume URLs are user-typed and routinely missing a
+ * protocol (e.g. `linkedin.com/in/jane`, `github.com/jane`,
+ * `www.example.com`). Without a leading scheme, browsers treat the
+ * value as a relative path inside the rendered page, sending visitors
+ * to `https://jane.dev/linkedin.com/in/jane` (a 404). Normalize to
+ * `https://` whenever the input is missing a scheme; preserve `mailto:`
+ * and explicit `http://` (so locally-hosted dev links don't get
+ * upgraded silently).
+ */
+function normalizeProfileUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+  // Already has a scheme — leave it as-is.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
+  return `https://${trimmed.replace(/^\/+/, "")}`;
 }
 
 function buildSocialProfiles(user: {
@@ -922,7 +999,7 @@ function buildSocialProfiles(user: {
           profiles.push({
             network: p.network,
             username: p.username || "",
-            url: p.url,
+            url: normalizeProfileUrl(p.url),
           });
         }
       }
@@ -937,7 +1014,7 @@ function buildSocialProfiles(user: {
           profiles.push({
             network: "LinkedIn",
             username: "",
-            url,
+            url: normalizeProfileUrl(url),
           });
         }
       }

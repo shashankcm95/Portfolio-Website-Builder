@@ -83,7 +83,20 @@ export function Hero({ basics }: HeroProps) {
   );
 }
 
+/**
+ * Phase R7 — word-boundary truncation. Cutting at the raw byte limit
+ * produces ugly mid-word stops like "Over…". We trim back to the last
+ * whitespace inside the limit; if there's no whitespace within reach
+ * (a single very long word) we fall back to the byte cut so we don't
+ * return an empty string.
+ */
 function truncate(s: string, max: number): string {
   if (s.length <= max) return s;
-  return s.slice(0, max - 1).trimEnd() + "…";
+  // Look for a sensible boundary in the last ~40 chars of the budget.
+  const slice = s.slice(0, max - 1);
+  const cut = slice.search(/\s\S*$/);
+  if (cut > max - 80) {
+    return slice.slice(0, cut).trimEnd() + "…";
+  }
+  return slice.trimEnd() + "…";
 }
