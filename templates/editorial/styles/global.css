@@ -737,3 +737,24 @@ p { margin: 0 0 1.2em; }
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* ─── Phase E4b: Verified-claim sentence markers (editorial) ───────── */
+.pwb-sentence-verified::after {
+  content: " ✓";
+  color: var(--accent);
+  font-size: 0.72em;
+  font-weight: 700;
+  opacity: 0.8;
+  margin-left: 1px;
+}
+.pwb-sentence-flagged {
+  background: rgba(255, 60, 0, 0.08);
+  padding: 0 2px;
+}
+.pwb-sentence-flagged::after {
+  content: " ⚠";
+  color: var(--accent);
+  font-size: 0.85em;
+  font-weight: 700;
+  margin-left: 2px;
+}

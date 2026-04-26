@@ -562,3 +562,20 @@ p { margin: 0 0 1em; }
   outline: 1px dashed var(--green, #a6e22e);
   outline-offset: 2px;
 }
+
+/* ─── Phase E4b: Verified-claim sentence markers (terminal) ────────── */
+/* Bracket-suffix decoration to fit the CLI aesthetic. */
+.pwb-sentence-verified::after {
+  content: " [✓]";
+  color: var(--green, #a6e22e);
+  font-size: 0.72em;
+  font-weight: 700;
+  margin-left: 1px;
+}
+.pwb-sentence-flagged::after {
+  content: " [!]";
+  color: var(--pink, #f92672);
+  font-size: 0.78em;
+  font-weight: 700;
+  margin-left: 2px;
+}

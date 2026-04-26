@@ -150,6 +150,31 @@ const fixtureProject: Project = {
     engineerDeepDive:
       "The fact-extractor uses a two-pass LLM rubric: extraction with structured-output JSON Schema, then deterministic post-filters to drop low-confidence facts and de-duplicate against existing rows.",
   },
+  // Phase E4b — sentence-level verification mirroring the rendered
+  // narratives. The fixture intentionally exercises every status so
+  // each template's marker CSS gets a snapshot.
+  verifiedSentences: {
+    recruiter: {
+      architecture: [
+        {
+          text: "Edge-deployed static generator with a Postgres source of truth.",
+          status: "verified",
+        },
+      ],
+      techNarrative: [
+        {
+          text: "TypeScript end-to-end; React 18 + renderToStaticMarkup for templates.",
+          status: "verified",
+        },
+      ],
+      engineerDeepDive: [
+        {
+          text: "The fact-extractor uses a two-pass LLM rubric with deterministic post-filters.",
+          status: "flagged",
+        },
+      ],
+    },
+  },
   characterization: "Open-source project · 4.2k stars · 23 contributors",
   outcomes: [
     {

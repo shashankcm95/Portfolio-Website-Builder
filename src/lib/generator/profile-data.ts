@@ -20,6 +20,8 @@ import type {
   Experience,
   Education,
   Testimonial,
+  SectionVerifications,
+  SentenceVerification,
 } from "@/templates/_shared/types";
 import { getAppUrl } from "@/lib/env/app-url";
 import {
@@ -62,7 +64,14 @@ export async function assembleProfileData(
     orderBy: [projects.displayOrder],
     with: {
       facts: true,
-      generatedSections: true,
+      // Phase E4b — load claim_map rows alongside each section so we
+      // can surface sentence-level verification status on the
+      // published site without a second round-trip per project.
+      generatedSections: {
+        with: {
+          claimMaps: true,
+        },
+      },
       demos: {
         orderBy: (d, { asc }) => [asc(d.order)],
       },
@@ -584,12 +593,21 @@ function buildProject(proj: {
     isVerified?: boolean | null;
   }>;
   generatedSections: Array<{
+    id: string;
     sectionType: string;
     variant: string;
     content: string;
     isUserEdited: boolean | null;
     userContent: string | null;
     version: number;
+    // Phase E4b — claim_map rows loaded via the nested relation. Used
+    // to attach sentence-level verification to each rendered section.
+    claimMaps?: Array<{
+      sentenceIndex: number;
+      sentenceText: string;
+      verification: string;
+      confidence: number | null;
+    }>;
   }>;
   // Phase E1 — demo rows pulled via the new `demos` relation. Already
   // ordered by `order` ascending.
@@ -609,9 +627,13 @@ function buildProject(proj: {
 
   // Build sections, preferring user-edited content. Phase E4 — keep
   // both `recruiter` and `engineer` variants separately so the templates
-  // can render a view toggle.
-  const { recruiter: sections, engineer: engineerSections } =
-    buildSections(proj.generatedSections);
+  // can render a view toggle. Phase E4b — also surface sentence-level
+  // verification mapped from claim_map rows.
+  const {
+    recruiter: sections,
+    engineer: engineerSections,
+    verifiedSentences,
+  } = buildSections(proj.generatedSections);
 
   // Build facts list
   // Phase E1 — preserve the full evidence trail (`evidenceType`,
@@ -701,6 +723,9 @@ function buildProject(proj: {
           recruiterPitch: engineerSections.recruiterPitch,
           engineerDeepDive: engineerSections.engineerDeepDive,
         }
+      : undefined,
+    verifiedSentences: hasAnyVerifiedSentences(verifiedSentences)
+      ? verifiedSentences
       : undefined,
     metadata: {
       stars: (metadata?.stargazers_count as number) ?? undefined,
@@ -1168,6 +1193,15 @@ const SECTION_TYPE_TO_CAMEL: Record<string, string> = {
 interface BuiltSections {
   recruiter: Record<string, string | undefined>;
   engineer: Record<string, string | undefined>;
+  /**
+   * Phase E4b — sentence-level verification per section, keyed by variant.
+   * Mirrors the section keys in `recruiter` / `engineer`. Empty when no
+   * claim_map rows exist for the project.
+   */
+  verifiedSentences: {
+    recruiter: SectionVerifications;
+    engineer: SectionVerifications;
+  };
 }
 
 /**
@@ -1180,22 +1214,42 @@ interface BuiltSections {
  * of keys — early projects only had recruiter variants, and a fresh
  * pipeline run might fail on a single section without taking the rest
  * down with it.
+ *
+ * Phase E4b — also returns `verifiedSentences` keyed by variant ×
+ * camel-cased section, where each entry is the section split into
+ * sentences with the same algorithm the pipeline used at extraction
+ * time, decorated with the per-sentence verification status from the
+ * `claim_map` rows.
  */
 function buildSections(
   sections: Array<{
+    id: string;
     sectionType: string;
     variant: string;
     content: string;
     isUserEdited: boolean | null;
     userContent: string | null;
     version: number;
+    claimMaps?: Array<{
+      sentenceIndex: number;
+      sentenceText: string;
+      verification: string;
+      confidence: number | null;
+    }>;
   }>
 ): BuiltSections {
   type Cell = {
+    sectionId: string;
     content: string;
     userContent: string | null;
     isUserEdited: boolean | null;
     version: number;
+    claimMaps?: Array<{
+      sentenceIndex: number;
+      sentenceText: string;
+      verification: string;
+      confidence: number | null;
+    }>;
   };
   // Compound key: `${variant}|${sectionType}` so we keep both variants.
   const grouped = new Map<string, Cell>();
@@ -1212,25 +1266,134 @@ function buildSections(
     const existing = grouped.get(compound);
     if (!existing || section.version > existing.version) {
       grouped.set(compound, {
+        sectionId: section.id,
         content: section.content,
         userContent: section.userContent,
         isUserEdited: section.isUserEdited,
         version: section.version,
+        claimMaps: section.claimMaps,
       });
     }
   }
 
   const recruiter: Record<string, string | undefined> = {};
   const engineer: Record<string, string | undefined> = {};
+  const recruiterVerified: SectionVerifications = {};
+  const engineerVerified: SectionVerifications = {};
   for (const [compound, val] of grouped) {
     const [variant, camelKey] = compound.split("|");
-    const text =
-      val.isUserEdited && val.userContent ? val.userContent : val.content;
+    const userEdited = val.isUserEdited && val.userContent;
+    const text = userEdited ? (val.userContent as string) : val.content;
     if (variant === "recruiter") recruiter[camelKey] = text;
     else if (variant === "engineer") engineer[camelKey] = text;
+
+    // Phase E4b — sentence-level verifications. We only attach them to
+    // the LLM-emitted content; if the user has edited the section the
+    // claim_map rows are stale (they reference the pre-edit sentences),
+    // so we drop the verification rather than show misleading ticks.
+    if (!userEdited && val.claimMaps && val.claimMaps.length > 0) {
+      const verifications = buildSentenceVerifications(val.content, val.claimMaps);
+      if (verifications.length > 0) {
+        const target = variant === "recruiter" ? recruiterVerified : engineerVerified;
+        // SectionVerifications keys are exactly the camelCase keys we
+        // emit above, so `camelKey as keyof SectionVerifications` is safe.
+        (target as Record<string, SentenceVerification[]>)[camelKey] = verifications;
+      }
+    }
   }
 
-  return { recruiter, engineer };
+  return {
+    recruiter,
+    engineer,
+    verifiedSentences: {
+      recruiter: recruiterVerified,
+      engineer: engineerVerified,
+    },
+  };
+}
+
+/**
+ * Phase E4b — same sentence splitter the pipeline uses (kept inline
+ * here to avoid a cross-module dependency on the verifier's internal
+ * module). The split is regex-based on punctuation followed by
+ * whitespace; it's intentionally unchanged from the version that
+ * produced the `claim_map.sentence_text` rows we look up against.
+ */
+function splitIntoSentences(text: string): string[] {
+  return text
+    .replace(/\n+/g, " ")
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+/**
+ * Phase E4b — emit one `SentenceVerification` per sentence in the
+ * rendered narrative. The pipeline keys claim_map rows by
+ * `sentenceIndex` against the same splitter; we look up by index
+ * first, falling back to a text match for tolerance against trailing-
+ * whitespace and minor regex drift.
+ */
+function buildSentenceVerifications(
+  content: string,
+  claimMaps: Array<{
+    sentenceIndex: number;
+    sentenceText: string;
+    verification: string;
+    confidence: number | null;
+  }>
+): SentenceVerification[] {
+  const sentences = splitIntoSentences(content);
+  if (sentences.length === 0) return [];
+
+  // Index by sentenceIndex first (the cheap lookup path).
+  const byIndex = new Map<number, (typeof claimMaps)[number]>();
+  // Fallback: index by trimmed text to recover from drift.
+  const byText = new Map<string, (typeof claimMaps)[number]>();
+  for (const cm of claimMaps) {
+    byIndex.set(cm.sentenceIndex, cm);
+    byText.set(cm.sentenceText.trim(), cm);
+  }
+
+  return sentences.map((text, i) => {
+    const cm = byIndex.get(i) ?? byText.get(text.trim());
+    const status = normalizeVerificationStatus(cm?.verification);
+    return {
+      text,
+      status,
+      confidence:
+        typeof cm?.confidence === "number" && Number.isFinite(cm.confidence)
+          ? cm.confidence
+          : undefined,
+    };
+  });
+}
+
+/** Coerce the DB string to the union the templates expect. */
+function normalizeVerificationStatus(
+  raw: string | undefined
+): SentenceVerification["status"] {
+  if (raw === "verified" || raw === "flagged" || raw === "unverified") {
+    return raw;
+  }
+  return "pending";
+}
+
+/**
+ * Returns true when at least one section in either variant has at
+ * least one sentence-level verification. Used to drop the field
+ * entirely when nothing meaningful was found.
+ */
+function hasAnyVerifiedSentences(v: {
+  recruiter: SectionVerifications;
+  engineer: SectionVerifications;
+}): boolean {
+  for (const variant of [v.recruiter, v.engineer] as const) {
+    for (const arr of Object.values(variant)) {
+      if (Array.isArray(arr) && arr.length > 0) return true;
+    }
+  }
+  return false;
 }
 
 /**

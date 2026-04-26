@@ -579,3 +579,23 @@ p { margin: 0 0 1em; }
   outline: 2px solid var(--link, #0066cc);
   outline-offset: 2px;
 }
+
+/* ─── Phase E4b: Verified-claim sentence markers (research) ────────── */
+/* Quietest possible — superscript dagger marker in the link color, */
+/* keeps academic pace without eyeball clutter. */
+.pwb-sentence-verified::after {
+  content: "†";
+  color: var(--link, #0066cc);
+  font-size: 0.72em;
+  vertical-align: super;
+  margin-left: 1px;
+  opacity: 0.65;
+}
+.pwb-sentence-flagged::after {
+  content: "‡";
+  color: #b8860b;
+  font-size: 0.78em;
+  vertical-align: super;
+  font-weight: 700;
+  margin-left: 1px;
+}

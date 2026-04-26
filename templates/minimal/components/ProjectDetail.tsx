@@ -5,6 +5,7 @@ import { ProjectDemos } from "@/templates/_shared/project-demos";
 import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
 import { EvidenceList } from "@/templates/_shared/evidence-list";
 import { NarrativeViewToggle } from "@/templates/_shared/narrative-view-toggle";
+import { VerifiedNarrative } from "@/templates/_shared/verified-narrative";
 
 interface ProjectDetailProps {
   project: Project;
@@ -71,56 +72,55 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
         </div>
       )}
 
-      {/* Phase E4 — toggle wrapper around all four narrative sections. */}
+      {/* Phase E4 — toggle + sentence-level ticks. */}
       <NarrativeViewToggle
         recruiter={project.sections}
         engineer={project.engineerSections}
         scopeId={project.id}
       >
-        {(sections) => (
-          <>
-            {sections.architecture && (
-              <div className="project-section">
-                <h3>Architecture</h3>
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: formatSectionContent(sections.architecture),
-                  }}
-                />
-              </div>
-            )}
-            {sections.techNarrative && (
-              <div className="project-section">
-                <h3>Technical Narrative</h3>
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: formatSectionContent(sections.techNarrative),
-                  }}
-                />
-              </div>
-            )}
-            {sections.recruiterPitch && (
-              <div className="project-section">
-                <h3>Why This Project Matters</h3>
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: formatSectionContent(sections.recruiterPitch),
-                  }}
-                />
-              </div>
-            )}
-            {sections.engineerDeepDive && (
-              <div className="project-section">
-                <h3>Deep Dive</h3>
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: formatSectionContent(sections.engineerDeepDive),
-                  }}
-                />
-              </div>
-            )}
-          </>
-        )}
+        {(sections, variant) => {
+          const verif = project.verifiedSentences?.[variant];
+          return (
+            <>
+              {sections.architecture && (
+                <div className="project-section">
+                  <h3>Architecture</h3>
+                  <VerifiedNarrative
+                    text={sections.architecture}
+                    verifications={verif?.architecture}
+                  />
+                </div>
+              )}
+              {sections.techNarrative && (
+                <div className="project-section">
+                  <h3>Technical Narrative</h3>
+                  <VerifiedNarrative
+                    text={sections.techNarrative}
+                    verifications={verif?.techNarrative}
+                  />
+                </div>
+              )}
+              {sections.recruiterPitch && (
+                <div className="project-section">
+                  <h3>Why This Project Matters</h3>
+                  <VerifiedNarrative
+                    text={sections.recruiterPitch}
+                    verifications={verif?.recruiterPitch}
+                  />
+                </div>
+              )}
+              {sections.engineerDeepDive && (
+                <div className="project-section">
+                  <h3>Deep Dive</h3>
+                  <VerifiedNarrative
+                    text={sections.engineerDeepDive}
+                    verifications={verif?.engineerDeepDive}
+                  />
+                </div>
+              )}
+            </>
+          );
+        }}
       </NarrativeViewToggle>
 
       {/* Phase E3 — guided tour + evidence-rich facts */}

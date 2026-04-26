@@ -1050,3 +1050,20 @@ code {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
+
+/* ─── Phase E4b: Verified-claim sentence markers (minimal) ─────────── */
+.pwb-sentence-verified::after {
+  content: " ✓";
+  color: var(--color-primary);
+  font-size: 0.7em;
+  font-weight: 700;
+  opacity: 0.7;
+  margin-left: 1px;
+}
+.pwb-sentence-flagged::after {
+  content: " ⚠";
+  color: #d97706;
+  font-size: 0.82em;
+  font-weight: 700;
+  margin-left: 2px;
+}

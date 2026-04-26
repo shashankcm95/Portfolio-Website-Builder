@@ -193,6 +193,27 @@ export interface Project {
     engineerDeepDive?: string;
   };
 
+  /**
+   * Phase E4 — sentence-level verification per section, keyed by
+   * variant. Each entry mirrors the section keys in `sections` and
+   * carries the sentences split by the same algorithm
+   * (`splitIntoSentences`) the pipeline used at extraction time. Each
+   * sentence carries a `status` from the deterministic claim verifier:
+   *   - "verified"   → matched at least one extracted fact
+   *   - "flagged"    → contradicting evidence found
+   *   - "unverified" → no matching fact (best-effort sentence)
+   *   - "pending"    → no claim_map row found (sentence wasn't checked)
+   *
+   * Templates that opt in render sentences as `<span>`s with status
+   * classes so a `✓` / `!` marker can be applied via CSS. Pre-E4
+   * templates ignore this field and continue rendering whole sections
+   * as a single string.
+   */
+  verifiedSentences?: {
+    recruiter?: SectionVerifications;
+    engineer?: SectionVerifications;
+  };
+
   metadata: {
     stars?: number;
     forks?: number;
@@ -353,6 +374,29 @@ export interface ProjectOutcome {
   value: string;
   context?: string;
   evidenceRef?: string;
+}
+
+/**
+ * Phase E4 — single-sentence verification record. Templates render the
+ * `text` and decorate it via the `status` class.
+ */
+export interface SentenceVerification {
+  text: string;
+  status: "verified" | "flagged" | "unverified" | "pending";
+  /** Confidence score from the verifier (0–1). Optional. */
+  confidence?: number;
+}
+
+/**
+ * Phase E4 — sentence verification arrays keyed by section. Keys mirror
+ * the camelCase section names on `Project.sections`.
+ */
+export interface SectionVerifications {
+  summary?: SentenceVerification[];
+  architecture?: SentenceVerification[];
+  techNarrative?: SentenceVerification[];
+  recruiterPitch?: SentenceVerification[];
+  engineerDeepDive?: SentenceVerification[];
 }
 
 export interface Education {

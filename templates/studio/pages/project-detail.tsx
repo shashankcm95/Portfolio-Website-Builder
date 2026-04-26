@@ -5,6 +5,7 @@ import { ProjectDemos } from "@/templates/_shared/project-demos";
 import { StoryboardCards } from "@/templates/_shared/storyboard-cards";
 import { EvidenceList } from "@/templates/_shared/evidence-list";
 import { NarrativeViewToggle } from "@/templates/_shared/narrative-view-toggle";
+import { VerifiedNarrative } from "@/templates/_shared/verified-narrative";
 
 interface ProjectDetailPageProps {
   project: Project;
@@ -40,29 +41,32 @@ export function ProjectDetailPage({ project }: ProjectDetailPageProps) {
           engineer={project.engineerSections}
           scopeId={project.id}
         >
-          {(sections) => (
-            <div className="prose">
-              {sections.summary && <p>{sections.summary}</p>}
-              {sections.architecture && (
-                <>
-                  <h3>Architecture</h3>
-                  <p>{sections.architecture}</p>
-                </>
-              )}
-              {sections.recruiterPitch && (
-                <>
-                  <h3>In a nutshell</h3>
-                  <p>{sections.recruiterPitch}</p>
-                </>
-              )}
-              {sections.engineerDeepDive && (
-                <>
-                  <h3>Technical detail</h3>
-                  <p>{sections.engineerDeepDive}</p>
-                </>
-              )}
-            </div>
-          )}
+          {(sections, variant) => {
+            const verif = project.verifiedSentences?.[variant];
+            return (
+              <div className="prose">
+                <VerifiedNarrative
+                  text={sections.summary}
+                  verifications={verif?.summary}
+                />
+                {sections.architecture && <h3>Architecture</h3>}
+                <VerifiedNarrative
+                  text={sections.architecture}
+                  verifications={verif?.architecture}
+                />
+                {sections.recruiterPitch && <h3>In a nutshell</h3>}
+                <VerifiedNarrative
+                  text={sections.recruiterPitch}
+                  verifications={verif?.recruiterPitch}
+                />
+                {sections.engineerDeepDive && <h3>Technical detail</h3>}
+                <VerifiedNarrative
+                  text={sections.engineerDeepDive}
+                  verifications={verif?.engineerDeepDive}
+                />
+              </div>
+            );
+          }}
         </NarrativeViewToggle>
 
         <StoryboardCards storyboard={project.storyboard} />

@@ -1174,3 +1174,21 @@ code {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
+
+/* ─── Phase E4b: Verified-claim sentence markers (classic) ─────────── */
+.pwb-sentence-verified::after {
+  content: " ✓";
+  color: var(--color-primary);
+  font-size: 0.7em;
+  font-weight: 700;
+  opacity: 0.65;
+  margin-left: 1px;
+  font-family: var(--font-body);
+}
+.pwb-sentence-flagged::after {
+  content: " ⚠";
+  color: var(--color-warning);
+  font-size: 0.82em;
+  font-weight: 700;
+  margin-left: 2px;
+}
