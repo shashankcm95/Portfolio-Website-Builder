@@ -42,6 +42,8 @@ import {
   POSITIONING_MAX,
   POSITIONING_MIN,
 } from "@/lib/identity/validation";
+import { SuggestPanel } from "@/components/portfolio/suggest-panel";
+import type { AnchorStatSuggestion } from "@/lib/identity/suggest/types";
 
 interface AnchorStat {
   value: string;
@@ -300,6 +302,7 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
           <>
             {/* ── Positioning ───────────────────────────────────────────── */}
             <PositioningField
+              portfolioId={portfolioId}
               value={state.positioning ?? ""}
               onChange={(v) => setState((s) => ({ ...s, positioning: v }))}
               length={positioningLength}
@@ -308,6 +311,7 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
 
             {/* ── Named employers ──────────────────────────────────────── */}
             <EmployersField
+              portfolioId={portfolioId}
               items={state.namedEmployers}
               onAdd={addEmployer}
               onRemove={removeEmployer}
@@ -366,6 +370,21 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
                     <p className="text-xs text-muted-foreground">
                       Leave blank to use the template's default wording.
                     </p>
+                    {/* Phase E7 — Suggest CTA copy. Hidden once the
+                        owner has typed something so it doesn't tempt
+                        them to overwrite a deliberate label. */}
+                    {(state.hireCtaText ?? "").trim().length === 0 && (
+                      <SuggestPanel<string>
+                        portfolioId={portfolioId}
+                        field="ctaText"
+                        renderSuggestion={(s) => <span>{s}</span>}
+                        onUse={(s) =>
+                          setState((st) => ({ ...st, hireCtaText: s }))
+                        }
+                        triggerLabel="Suggest CTA copy"
+                        hint="Generate punchy hire CTAs from your hiring status"
+                      />
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="cta-href">CTA link</Label>
@@ -382,7 +401,22 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
                     />
                     <p className="text-xs text-muted-foreground">
                       Mailto, https URL, or a relative path like /contact.
+                      Defaults to /contact when blank.
                     </p>
+                    {(state.hireCtaHref ?? "").trim().length === 0 && (
+                      <SuggestPanel<string>
+                        portfolioId={portfolioId}
+                        field="ctaHref"
+                        renderSuggestion={(s) => (
+                          <code className="font-mono text-xs">{s}</code>
+                        )}
+                        onUse={(s) =>
+                          setState((st) => ({ ...st, hireCtaHref: s }))
+                        }
+                        triggerLabel="Suggest links"
+                        hint="Common destinations for the hire CTA"
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -392,6 +426,7 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
 
             {/* ── Anchor stat override ─────────────────────────────────── */}
             <AnchorOverrideField
+              portfolioId={portfolioId}
               override={state.anchorStatOverride}
               onChange={(next) =>
                 setState((s) => ({ ...s, anchorStatOverride: next }))
@@ -443,11 +478,13 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
 // ─── Sub-fields ──────────────────────────────────────────────────────────────
 
 function PositioningField({
+  portfolioId,
   value,
   onChange,
   length,
   valid,
 }: {
+  portfolioId: string;
   value: string;
   onChange: (v: string) => void;
   length: number;
@@ -483,15 +520,31 @@ function PositioningField({
           </span>
         )}
       </p>
+      {/* Phase E7 — AI suggester. Only show the trigger when the field
+          is empty, since most owners don't want to overwrite a deliberate
+          positioning line. The Regenerate button inside the panel keeps
+          working once opened. */}
+      {value.trim().length === 0 && (
+        <SuggestPanel<string>
+          portfolioId={portfolioId}
+          field="positioning"
+          renderSuggestion={(s) => <span>{s}</span>}
+          onUse={(s) => onChange(s)}
+          triggerLabel="Suggest positioning"
+          hint="Generate a few one-liners from your projects + resume"
+        />
+      )}
     </div>
   );
 }
 
 function EmployersField({
+  portfolioId,
   items,
   onAdd,
   onRemove,
 }: {
+  portfolioId: string;
   items: string[];
   onAdd: (raw: string) => void;
   onRemove: (idx: number) => void;
@@ -558,14 +611,37 @@ function EmployersField({
         Press Enter or comma to add. Up to {EMPLOYER_LIST_MAX} entries.
         Templates render these as a "Previously at" line in the hero.
       </p>
+      {/* Phase E7 — Suggest from resume.work[]. Each suggestion is a
+          single employer the owner can add with one click. We don't
+          replace the existing list — adds only. */}
+      {!full && (
+        <SuggestPanel<string>
+          portfolioId={portfolioId}
+          field="namedEmployers"
+          renderSuggestion={(s) => <span>{s}</span>}
+          onUse={(s) => {
+            // Skip dupes on add — onAdd accepts raw text and the parent
+            // already enforces the max length.
+            if (!items.some((it) => it.toLowerCase() === s.toLowerCase())) {
+              onAdd(s);
+            }
+          }}
+          triggerLabel={
+            items.length === 0 ? "Suggest employers" : "Suggest more"
+          }
+          hint="Pull recent employers from your resume work history"
+        />
+      )}
     </div>
   );
 }
 
 function AnchorOverrideField({
+  portfolioId,
   override,
   onChange,
 }: {
+  portfolioId: string;
   override: AnchorStat | null;
   onChange: (next: AnchorStat | null) => void;
 }) {
@@ -585,6 +661,36 @@ function AnchorOverrideField({
     [draft]
   );
 
+  // Phase E7 — surface the pipeline's auto-pick so the owner knows
+  // what the hero will say if they leave the override blank. Lazy-
+  // loaded — we don't want to call the suggest endpoint on every
+  // editor open if the owner never looks at this section.
+  const [autoPick, setAutoPick] = useState<AnchorStatSuggestion | null>(null);
+  const [autoPickLoading, setAutoPickLoading] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    setAutoPickLoading(true);
+    fetch(`/api/portfolios/${portfolioId}/suggest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ field: "anchorStat", count: 1 }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body: { suggestions?: AnchorStatSuggestion[] } | null) => {
+        if (cancelled) return;
+        const first = body?.suggestions?.[0] ?? null;
+        setAutoPick(first);
+        setAutoPickLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setAutoPickLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [portfolioId]);
+
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
@@ -595,6 +701,52 @@ function AnchorOverrideField({
             to let the pipeline pick the best candidate (stars, outcomes,
             named employers).
           </p>
+          {/* Phase E7 — currently auto-picked hint. Tells the owner
+              what the hero will say so they know whether they need
+              to override at all. */}
+          {!enabled && (
+            <div className="mt-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-xs">
+              {autoPickLoading ? (
+                <span className="text-muted-foreground">Loading current pick…</span>
+              ) : autoPick ? (
+                <>
+                  <span className="text-muted-foreground">
+                    Currently auto-picked:{" "}
+                  </span>
+                  <span className="font-medium">{autoPick.value}</span>{" "}
+                  <span className="text-muted-foreground">
+                    {autoPick.unit}
+                  </span>
+                  {autoPick.context && (
+                    <span className="text-muted-foreground">
+                      {" "}
+                      — {autoPick.context}
+                    </span>
+                  )}
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="ml-1 h-auto p-0 text-xs"
+                    onClick={() =>
+                      onChange({
+                        value: autoPick.value,
+                        unit: autoPick.unit,
+                        context: autoPick.context,
+                      })
+                    }
+                  >
+                    Use as override
+                  </Button>
+                </>
+              ) : (
+                <span className="text-muted-foreground">
+                  No anchor candidates found yet — add a project outcome or
+                  named employers to seed one.
+                </span>
+              )}
+            </div>
+          )}
         </div>
         {enabled && (
           <Button
@@ -650,6 +802,43 @@ function AnchorOverrideField({
           }}
         />
       </div>
+      {/* Phase E7 — Suggest from ranked outcome / employer candidates.
+          The auto-pick hint above shows the top candidate; this panel
+          surfaces the next 2-3 so owners can pick a different angle. */}
+      {!enabled && (
+        <SuggestPanel<AnchorStatSuggestion>
+          portfolioId={portfolioId}
+          field="anchorStat"
+          renderSuggestion={(s) => (
+            <div className="space-y-0.5">
+              <div>
+                <span className="font-medium">{s.value}</span>{" "}
+                <span className="text-muted-foreground">{s.unit}</span>
+                {s.context && (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    — {s.context}
+                  </span>
+                )}
+              </div>
+              {s.rationale && (
+                <div className="text-xs text-muted-foreground">
+                  {s.rationale}
+                </div>
+              )}
+            </div>
+          )}
+          onUse={(s) =>
+            onChange({
+              value: s.value,
+              unit: s.unit,
+              context: s.context,
+            })
+          }
+          triggerLabel="Suggest anchor stats"
+          hint="Show ranked candidates from your outcomes and resume"
+        />
+      )}
     </div>
   );
 }
