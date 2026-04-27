@@ -15,6 +15,8 @@ import {
   RefreshCw,
   AlertCircle,
   Sparkles,
+  Loader2,
+  Wand2,
 } from "lucide-react";
 import { CoachingModal } from "@/components/portfolio/coaching-modal";
 import { aggregateSuggestions } from "@/lib/credibility/suggestions";
@@ -152,6 +154,23 @@ export function RepoList({ portfolioId }: RepoListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [coachingOpen, setCoachingOpen] = useState(false);
+  // Phase E8c — "Analyze all" batch state. Tracks (started, total,
+  // failed) so the button label reflects progress and the operator
+  // sees per-batch outcomes inline. `running` flips the button into
+  // a disabled spinner while requests are in flight.
+  const [analyzeAll, setAnalyzeAll] = useState<{
+    running: boolean;
+    started: number;
+    total: number;
+    failed: number;
+    message: string | null;
+  }>({
+    running: false,
+    started: 0,
+    total: 0,
+    failed: 0,
+    message: null,
+  });
 
   const fetchProjects = useCallback(async () => {
     setIsLoading(true);
@@ -238,6 +257,93 @@ export function RepoList({ portfolioId }: RepoListProps) {
     [projects, portfolioId, fetchProjects]
   );
 
+  /**
+   * Phase E8c — Fan out `/analyze` POSTs across every GitHub-sourced
+   * project that isn't already running. Manual (non-GitHub) projects
+   * have nothing to analyze; we filter them out so the button label
+   * reflects the actionable count.
+   *
+   * Concurrency cap of 4 prevents a 30-project portfolio from
+   * hammering the LLM provider in one burst (and blowing through
+   * BYOK rate limits). The pipeline endpoint itself is idempotent —
+   * re-clicking while batches are in flight just no-ops the in-flight
+   * ones since the button disables.
+   */
+  const handleAnalyzeAll = useCallback(async () => {
+    const targets = projects.filter(
+      (p) =>
+        p.sourceType !== "manual" &&
+        p.pipelineStatus !== "running"
+    );
+    if (targets.length === 0) {
+      setAnalyzeAll((s) => ({
+        ...s,
+        message: "No projects to analyze right now.",
+      }));
+      return;
+    }
+
+    setAnalyzeAll({
+      running: true,
+      started: 0,
+      total: targets.length,
+      failed: 0,
+      message: null,
+    });
+
+    const CONCURRENCY = 4;
+    let cursor = 0;
+    let started = 0;
+    let failed = 0;
+
+    async function worker() {
+      while (true) {
+        const idx = cursor++;
+        if (idx >= targets.length) return;
+        const project = targets[idx];
+        try {
+          const res = await fetch(
+            `/api/portfolios/${portfolioId}/projects/${project.id}/analyze`,
+            { method: "POST" }
+          );
+          if (!res.ok) {
+            failed += 1;
+          } else {
+            started += 1;
+          }
+        } catch {
+          failed += 1;
+        }
+        // Update progress so the user sees movement during long batches.
+        setAnalyzeAll((s) => ({
+          ...s,
+          started,
+          failed,
+        }));
+      }
+    }
+
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, targets.length) }, worker)
+    );
+
+    setAnalyzeAll({
+      running: false,
+      started,
+      total: targets.length,
+      failed,
+      message:
+        failed === 0
+          ? `Started analysis on ${started} ${started === 1 ? "project" : "projects"}. Refresh in a moment to see updated statuses.`
+          : `Started ${started} of ${targets.length} (${failed} failed to start). The failures are usually rate-limit or BYOK-key issues.`,
+    });
+
+    // Refresh once everyone has been kicked off so the cards
+    // immediately flip into the "running" state without waiting for
+    // the operator's manual click.
+    fetchProjects();
+  }, [portfolioId, projects, fetchProjects]);
+
   // ─── Render ─────────────────────────────────────────────────────────────
 
   if (isLoading) {
@@ -251,6 +357,14 @@ export function RepoList({ portfolioId }: RepoListProps) {
   if (projects.length === 0) {
     return <EmptyState />;
   }
+
+  // Phase E8c — how many projects can be analyzed right now. Manual
+  // (non-GitHub) projects have no pipeline, and projects already running
+  // would only get a no-op response. The button hides when the count
+  // is zero so we don't tempt the operator with a dead action.
+  const analyzeableCount = projects.filter(
+    (p) => p.sourceType !== "manual" && p.pipelineStatus !== "running"
+  ).length;
 
   // Phase 8 — aggregate count of open strengthening suggestions across all
   // projects, used to label the "View all suggestions" button. Projects
@@ -285,6 +399,33 @@ export function RepoList({ portfolioId }: RepoListProps) {
           {projects.length} {projects.length === 1 ? "project" : "projects"}
         </p>
         <div className="flex items-center gap-2">
+          {/* Phase E8c — batch analyze. Visible whenever there's at
+              least one GitHub-sourced project not currently running.
+              Disabled while a batch is in flight; label flips to
+              "Analyzing X / Y" with a spinner. */}
+          {analyzeableCount > 0 && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleAnalyzeAll}
+              disabled={analyzeAll.running}
+              className="gap-1.5"
+              data-testid="analyze-all-button"
+              title={`Run the analysis pipeline on all ${analyzeableCount} GitHub-sourced ${analyzeableCount === 1 ? "project" : "projects"} that aren't already running.`}
+            >
+              {analyzeAll.running ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Analyzing {analyzeAll.started} / {analyzeAll.total}
+                </>
+              ) : (
+                <>
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Analyze all ({analyzeableCount})
+                </>
+              )}
+            </Button>
+          )}
           {openSuggestionCount > 0 ? (
             <Button
               variant="outline"
@@ -308,6 +449,21 @@ export function RepoList({ portfolioId }: RepoListProps) {
           </Button>
         </div>
       </div>
+
+      {/* Phase E8c — batch result message. Shown after a run completes
+          so the operator sees the outcome without checking dev tools. */}
+      {analyzeAll.message && (
+        <p
+          className={`text-xs ${
+            analyzeAll.failed > 0
+              ? "text-amber-700 dark:text-amber-400"
+              : "text-emerald-700 dark:text-emerald-400"
+          }`}
+          role="status"
+        >
+          {analyzeAll.message}
+        </p>
+      )}
 
       <CoachingModal
         portfolioId={portfolioId}
