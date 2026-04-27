@@ -57,14 +57,11 @@ export function Hero({ basics }: HeroProps) {
               {basics.hiring.status === "available" ? "available" : "open"}
               &quot;
             </span>
-            {basics.hiring.ctaHref && (
-              <>
-                {"  "}
-                <a href={basics.hiring.ctaHref}>
-                  → {basics.hiring.ctaText || "contact"}
-                </a>
-              </>
-            )}
+            {/* Phase E6 — default to /contact/ when no explicit ctaHref. */}
+            {"  "}
+            <a href={basics.hiring.ctaHref || "/contact/"}>
+              → {basics.hiring.ctaText || "contact"}
+            </a>
           </p>
         )}
 

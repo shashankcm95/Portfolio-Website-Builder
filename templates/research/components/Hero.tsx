@@ -55,11 +55,13 @@ export function Hero({ basics }: HeroProps) {
               {basics.hiring.status === "available"
                 ? "Available for new work."
                 : "Open to conversations."}{" "}
-              {basics.hiring.ctaHref && (
-                <a href={basics.hiring.ctaHref}>
-                  {basics.hiring.ctaText || "Get in touch"}
-                </a>
-              )}
+              {/* Phase E6 — always show the CTA when hiring is set; default
+                  to /contact/ when no explicit ctaHref. Pre-E6 this required
+                  the owner to set ctaHref or the link would be missing,
+                  leaving recruiters with nothing to click. */}
+              <a href={basics.hiring.ctaHref || "/contact/"}>
+                {basics.hiring.ctaText || "Get in touch"}
+              </a>
             </p>
           )}
           <p className="hero-links">

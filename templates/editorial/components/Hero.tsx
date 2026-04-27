@@ -52,14 +52,11 @@ export function Hero({ basics }: HeroProps) {
                 ? "Available for new work."
                 : "Open to conversations."}
             </em>
-            {basics.hiring!.ctaHref && (
-              <>
-                {" "}
-                <a href={basics.hiring!.ctaHref}>
-                  {basics.hiring!.ctaText || "Get in touch"} →
-                </a>
-              </>
-            )}
+            {/* Phase E6 — default to /contact/ when no explicit ctaHref. */}
+            {" "}
+            <a href={basics.hiring!.ctaHref || "/contact/"}>
+              {basics.hiring!.ctaText || "Get in touch"} →
+            </a>
           </p>
         )}
 

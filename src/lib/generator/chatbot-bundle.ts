@@ -62,17 +62,39 @@ export interface ChatbotBundleFiles {
 export async function buildSelfHostedChatbotFiles(
   input: ChatbotBundleInput
 ): Promise<ChatbotBundleFiles> {
-  const [embeddedCorpus, chatHtmlTemplate, chatJsSrc, chatCssSrc] =
-    await Promise.all([
-      embedCorpusForPortfolio(input.portfolioId),
-      readPublicFile("chat-embed/chat.html"),
-      readPublicFile("chat-embed/chat.js"),
-      readPublicFile("chat-embed/chat.css"),
-    ]);
+  const [
+    embeddedCorpus,
+    chatHtmlTemplate,
+    chatJsSrc,
+    chatCssSrc,
+    repoFunctions,
+  ] = await Promise.all([
+    embedCorpusForPortfolio(input.portfolioId),
+    readPublicFile("chat-embed/chat.html"),
+    readPublicFile("chat-embed/chat.js"),
+    readPublicFile("chat-embed/chat.css"),
+    // Phase E6 — read the repo's functions/ tree so the deploy
+    // outputDir contains the full Pages Functions source. Without this
+    // step, `wrangler pages deploy <outputDir>` looked in the cwd
+    // (the source repo) for functions, which meant it deployed the
+    // STUB `embeddings.ts` (PORTFOLIO_ID = "") and the baked one in
+    // outputDir was ignored. The chatbot then rejected every request
+    // with "Portfolio mismatch" because portfolioId !== "".
+    readRepoFunctions(),
+  ]);
 
   const files = new Map<string, string>();
 
-  // 1. Baked embeddings module — overrides the repo stub in the deploy.
+  // 1. Repo functions tree — copy verbatim so wrangler picks up the
+  //    full Pages Functions source from outputDir, not from the
+  //    builder's cwd.
+  for (const [relPath, content] of repoFunctions) {
+    files.set(relPath, content);
+  }
+
+  // 2. Baked embeddings module — overrides the repo stub in the deploy.
+  //    MUST come after the bulk copy above so the stub is replaced
+  //    by the baked version.
   files.set(
     "functions/_shared/embeddings.ts",
     renderEmbeddingsModule({
@@ -197,6 +219,53 @@ export const GENERATED_AT: string = ${generatedAt};
 async function readPublicFile(relative: string): Promise<string> {
   const full = path.join(process.cwd(), "public", relative);
   return readFile(full, "utf-8");
+}
+
+/**
+ * Phase E6 — Read every `.ts` file under the repo's `functions/`
+ * directory and return a `relativePath → content` map suitable for
+ * merging into the renderer's deploy `files` map. Wrangler picks up
+ * `outputDir/functions/**` as Pages Functions; without this step
+ * `wrangler pages deploy outputDir` was silently using the cwd's
+ * (source repo) functions/, so the baked embeddings.ts placed in
+ * outputDir was ignored and visitors hit the stub's
+ * `PORTFOLIO_ID = ""` resulting in "Portfolio mismatch" for every
+ * message.
+ *
+ * We deliberately read only .ts files; `.template.ts` is included
+ * (it's a developer reference and harmless to ship), and any
+ * generated artifacts in functions/ would be too. Anything outside
+ * `functions/` is out of scope.
+ */
+async function readRepoFunctions(): Promise<Map<string, string>> {
+  const root = path.join(process.cwd(), "functions");
+  const out = new Map<string, string>();
+  const { readdir, stat } = await import("node:fs/promises");
+
+  async function walk(dir: string, relPrefix: string): Promise<void> {
+    let entries: string[];
+    try {
+      entries = await readdir(dir);
+    } catch {
+      return; // missing functions/ — nothing to copy, caller still
+              // emits the baked embeddings.ts which is enough for
+              // older deploys.
+    }
+    for (const name of entries) {
+      const full = path.join(dir, name);
+      const rel = relPrefix ? `${relPrefix}/${name}` : name;
+      const s = await stat(full);
+      if (s.isDirectory()) {
+        await walk(full, rel);
+      } else if (name.endsWith(".ts")) {
+        const content = await readFile(full, "utf-8");
+        out.set(`functions/${rel}`, content);
+      }
+    }
+  }
+
+  await walk(root, "");
+  return out;
 }
 
 /** Escape `<`, `>`, `&`, `"` for safe HTML attribute + text content. */

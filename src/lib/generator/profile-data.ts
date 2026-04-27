@@ -539,6 +539,13 @@ async function buildChatbotEmbed(
 function mapFactCategoryToSkillCategory(
   factCategory: string
 ): Skill["category"] | null {
+  // Phase E6 — only map fact categories that produce SHORT, NOUN-PHRASE
+  // skill names (e.g. "TypeScript", "AWS Lambda", "PostgreSQL"). The
+  // `concept` / `pattern` / `architecture` categories produce
+  // full-sentence fact claims like "The architecture pattern is
+  // layered" which were leaking into the skills chip row as garbage.
+  // Those facts are still rendered in the project-detail Verified
+  // facts list — just not promoted to user-facing "skills".
   const mapping: Record<string, Skill["category"]> = {
     "tech-stack": "framework",
     technology: "framework",
@@ -546,9 +553,6 @@ function mapFactCategoryToSkillCategory(
     framework: "framework",
     tool: "tool",
     library: "framework",
-    concept: "concept",
-    pattern: "concept",
-    architecture: "concept",
     database: "tool",
     infrastructure: "tool",
     testing: "tool",
@@ -897,15 +901,67 @@ export function extractEmployerNames(
  * `evidence[]` when a skill is extracted from a project fact or topic;
  * this just drops entries that slipped through with an empty list and
  * orders the survivors.
+ *
+ * Phase E6 — also drop sentence-shaped names that snuck in from a fact
+ * claim. Real skill names are short noun phrases ("TypeScript", "AWS
+ * Lambda", "PostgreSQL"); sentence-shaped fact claims like "The
+ * architecture pattern is layered" are noise here.
  */
 export function filterEvidencedSkills(skills: Skill[]): Skill[] {
   return skills
     .filter((s) => Array.isArray(s.evidence) && s.evidence.length > 0)
+    .filter((s) => looksLikeSkillName(s.name))
     .sort(
       (a, b) =>
         (b.evidence?.length ?? 0) - (a.evidence?.length ?? 0) ||
         a.name.localeCompare(b.name)
     );
+}
+
+/**
+ * Phase E6 — heuristic to reject sentence-shaped fact claims that
+ * shouldn't appear as skill chips. Real skill names are short
+ * noun phrases; rejected names are full sentences like "The
+ * architecture pattern is layered".
+ *
+ * Rules (any one match → reject):
+ *   - longer than 32 chars (real skills almost never are)
+ *   - starts with a determiner / pronoun (`The `, `It `, `This `, `A `, `An `)
+ *   - ends with a sentence-ending punctuation mark
+ *   - contains a verb-shaped word ("is", "has", "uses", "supports",
+ *     "contains", "follows") — facts categorized as architecture /
+ *     concept tend to use these
+ *
+ * Exported for unit testing.
+ */
+export function looksLikeSkillName(raw: string): boolean {
+  const name = raw.trim();
+  if (name.length === 0) return false;
+  if (name.length > 32) return false;
+  if (/[.!?]$/.test(name)) return false;
+  if (/^(The|It|This|These|Those|A|An)\s/i.test(name)) return false;
+  // Tokenize on whitespace and bail if any token is a sentence verb.
+  // We deliberately check for whole-word matches via splits — substrings
+  // like "Express" must not trip the "is" check.
+  const tokens = name.toLowerCase().split(/\s+/);
+  const sentenceVerbs = new Set([
+    "is",
+    "are",
+    "was",
+    "were",
+    "has",
+    "have",
+    "uses",
+    "supports",
+    "contains",
+    "follows",
+    "implements",
+    "exposes",
+  ]);
+  for (const t of tokens) {
+    if (sentenceVerbs.has(t)) return false;
+  }
+  return true;
 }
 
 /**

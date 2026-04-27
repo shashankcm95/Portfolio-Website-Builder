@@ -783,3 +783,12 @@ p { margin: 0 0 1.2em; }
   max-width: 100%;
   height: auto;
 }
+
+/* ─── Phase E6: Viewport overflow guard ────────────────────────────── */
+/* Defense in depth — when something inside the page accidentally
+   exceeds the viewport width (a long fact promoted to a skill chip,
+   a runaway pre-formatted code block, etc.), don't let it surface
+   as a body-level horizontal scrollbar. The element itself can
+   still scroll horizontally inside its container if needed. */
+html, body { overflow-x: hidden; max-width: 100vw; }
+img, svg, video, iframe, pre { max-width: 100%; }

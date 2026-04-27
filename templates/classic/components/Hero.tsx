@@ -17,9 +17,11 @@ export function Hero({ basics }: HeroProps) {
   const tagline = basics.positioning || basics.label;
   const showHireCta =
     basics.hiring && basics.hiring.status !== "not-looking";
-  const hireHref =
-    basics.hiring?.ctaHref ||
-    (basics.email ? `mailto:${basics.email}` : "/contact/");
+  // Phase E6 — default to /contact/ rather than a mailto: fallback.
+  // Mailto opens an email client / Chrome popup that feels broken to
+  // most recruiters. Owners can still set `ctaHref` to mailto /
+  // Calendly / form explicitly via the editor.
+  const hireHref = basics.hiring?.ctaHref || "/contact/";
   const hireLabel =
     basics.hiring?.ctaText ||
     (basics.hiring?.status === "available"
