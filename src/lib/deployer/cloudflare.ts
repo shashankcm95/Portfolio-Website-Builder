@@ -1,8 +1,24 @@
 import { execFile } from "child_process";
+import path from "node:path";
 import { promisify } from "util";
 import { logger } from "@/lib/log";
 
 const exec = promisify(execFile);
+
+/**
+ * Phase E8 — resolve the wrangler binary directly out of the dev
+ * server's `node_modules/.bin/`. Using `npx wrangler` would walk up
+ * from cwd to find wrangler, but our `cwd: outputDir` change means
+ * cwd is a tmpdir that has no node_modules; npx would fall back to
+ * fetching wrangler from the npm registry per deploy, which is
+ * 10–30s of latency and a network-failure surface we don't need.
+ *
+ * Resolving to the absolute path lets us run wrangler from any cwd
+ * (including outputDir) without losing the project-pinned version.
+ */
+function wranglerBin(): string {
+  return path.join(process.cwd(), "node_modules", ".bin", "wrangler");
+}
 
 export interface DeployResult {
   success: boolean;
@@ -29,9 +45,8 @@ async function ensureProjectExists(projectName: string): Promise<{
 }> {
   try {
     await exec(
-      "npx",
+      wranglerBin(),
       [
-        "wrangler",
         "pages",
         "project",
         "create",
@@ -91,12 +106,22 @@ export async function deployToCloudflare(
 
   try {
     const { stdout, stderr: _stderr } = await exec(
-      "npx",
+      wranglerBin(),
       [
-        "wrangler",
         "pages",
         "deploy",
-        outputDir,
+        // Phase E8 — relative `.` instead of an absolute outputDir
+        // path. We also pass `cwd: outputDir` to exec so wrangler
+        // resolves all `functions/` and `wrangler.toml` lookups from
+        // outputDir, NOT from the dev-server's cwd. Pre-fix, when
+        // the chatbot bundle was skipped (selfHostedChatbot=false),
+        // wrangler could pick up the source repo's `functions/`
+        // tree via the cwd-relative path lookup and silently ship
+        // the stub `embeddings.ts` (PORTFOLIO_ID = ""), causing
+        // every visitor chat message to land on a "Portfolio
+        // mismatch" 404. With cwd=outputDir, the only `functions/`
+        // wrangler can see is the one our renderer wrote.
+        ".",
         "--project-name",
         projectName,
         // Phase R7 — pin the deploy to the production branch so
@@ -107,6 +132,7 @@ export async function deployToCloudflare(
         "main",
       ],
       {
+        cwd: outputDir,
         env: {
           ...process.env,
           CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID,

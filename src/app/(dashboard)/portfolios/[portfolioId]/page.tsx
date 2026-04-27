@@ -38,6 +38,15 @@ interface Portfolio {
   chatbotEnabled?: boolean;
   chatbotGreeting?: string | null;
   chatbotStarters?: string[];
+  /**
+   * Phase E8 — was missing pre-fix; that's why the "Host chatbot on
+   * the published site" toggle would revert to off after navigating
+   * between tabs. The DB column was being saved correctly via PATCH;
+   * this interface omission meant the parent never re-passed the
+   * loaded value to <ChatbotSettings>, which always rendered with
+   * its default `initialSelfHosted = false`.
+   */
+  selfHostedChatbot?: boolean;
 }
 
 const TAB_VALUES = [
@@ -270,6 +279,7 @@ export default function PortfolioDetailPage() {
             chatbotEnabled={portfolio.chatbotEnabled ?? true}
             chatbotGreeting={portfolio.chatbotGreeting ?? null}
             chatbotStarters={portfolio.chatbotStarters ?? []}
+            selfHostedChatbot={portfolio.selfHostedChatbot ?? false}
             onEnabledChange={(enabled) =>
               setPortfolio((prev) => (prev ? { ...prev, chatbotEnabled: enabled } : prev))
             }
@@ -282,6 +292,11 @@ export default function PortfolioDetailPage() {
                       chatbotStarters: next.starters,
                     }
                   : prev
+              )
+            }
+            onSelfHostedChange={(selfHosted) =>
+              setPortfolio((prev) =>
+                prev ? { ...prev, selfHostedChatbot: selfHosted } : prev
               )
             }
           />

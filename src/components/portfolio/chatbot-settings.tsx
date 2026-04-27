@@ -121,6 +121,16 @@ export function ChatbotSettings({
     setEnabled(initialEnabled);
   }, [initialEnabled]);
 
+  // Phase E8 — same pattern for the self-hosted toggle. Pre-fix this
+  // was missing; the parent's <ChatbotSettings> mount used the
+  // initial prop value and ignored later updates from a portfolio
+  // refetch (e.g. when the user navigated away to another tab and
+  // back). Result: toggle visually reverted to off even though the
+  // DB had the correct value.
+  useEffect(() => {
+    setSelfHosted(initialSelfHosted);
+  }, [initialSelfHosted]);
+
   const loadSessions = useCallback(async () => {
     setLoadingSessions(true);
     try {
