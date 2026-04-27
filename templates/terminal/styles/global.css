@@ -613,3 +613,23 @@ p { margin: 0 0 1em; }
    still scroll horizontally inside its container if needed. */
 html, body { overflow-x: hidden; max-width: 100vw; }
 img, svg, video, iframe, pre { max-width: 100%; }
+
+/* ─── Phase E8b: Universal hero signals ─────────────────────────────── */
+.pwb-hero-signals {
+  margin: 1em 0;
+  display: flex; flex-direction: column; gap: 4px;
+  font-family: var(--mono);
+  font-size: 0.85rem; color: var(--text-dim, #c0c0c0);
+}
+.pwb-hero-signal { margin: 0; line-height: 1.55; }
+.pwb-hero-signal::before { content: "$ "; color: var(--green, #a6e22e); }
+.pwb-hero-signal-label::before { content: "# "; color: var(--text-dim, #c0c0c0); }
+.pwb-hero-signal-label { color: var(--text-dim, #c0c0c0); }
+.pwb-hero-signal-value { color: var(--text); }
+.pwb-hero-signal-current .pwb-hero-signal-value { color: var(--yellow, #e6db74); }
+.pwb-hero-signal-availability {
+  color: var(--green, #a6e22e);
+  font-weight: 600;
+}
+.pwb-hero-signal-availability::before { content: "[ok] "; color: var(--green, #a6e22e); }
+.pwb-hero-signal-sep { color: var(--text-dim, #6a6f78); }

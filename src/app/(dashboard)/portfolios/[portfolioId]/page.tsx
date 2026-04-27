@@ -26,6 +26,7 @@ import { ShareLinksCard } from "@/components/portfolio/share-links-card";
 import { PortfolioAnalytics } from "@/components/portfolio/portfolio-analytics";
 import { LayoutReviewPanel } from "@/components/portfolio/layout-review-panel";
 import { IdentityPitchCard } from "@/components/portfolio/identity-pitch-card";
+import { AvailabilityCard } from "@/components/portfolio/availability-card";
 import { TestimonialsCard } from "@/components/portfolio/testimonials-card";
 
 interface Portfolio {
@@ -233,6 +234,7 @@ export default function PortfolioDetailPage() {
             content that doesn't go through the proof-backed pipeline. */}
         <TabsContent value="identity" className="space-y-6">
           <IdentityPitchCard portfolioId={params.portfolioId} />
+          <AvailabilityCard portfolioId={params.portfolioId} />
           <TestimonialsCard portfolioId={params.portfolioId} />
         </TabsContent>
 

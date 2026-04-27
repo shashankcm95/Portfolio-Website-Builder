@@ -247,10 +247,20 @@ export async function assembleProfileData(
       summary,
       avatar: user.avatarUrl || undefined,
       profiles,
+      // Phase E8b — location override falls through to the resume's
+      // `basics.location` when null. Read here so templates have a
+      // single shape to consume.
+      location: readLocation(portfolio.locationOverride, resumeJson),
       positioning: portfolio.positioning ?? undefined,
       namedEmployers: namedEmployers.length > 0 ? namedEmployers : undefined,
       hiring,
       anchorStat,
+      // Phase E8b — universal Tier-1 recruiter signals.
+      currentRole: portfolio.currentRole ?? undefined,
+      currentCompany: portfolio.currentCompany ?? undefined,
+      availability: readAvailability(portfolio.availability),
+      roleTypes: readRoleTypes(portfolio.roleTypes),
+      workEligibility: readWorkEligibility(portfolio.workEligibility),
     },
     skills: evidencedSkills,
     projects: projectList,
@@ -262,6 +272,121 @@ export async function assembleProfileData(
   };
 
   return profileData;
+}
+
+/**
+ * Phase E8b — read the `availability` jsonb. Returns undefined for
+ * null / malformed input / `not_looking` so templates uniformly skip
+ * the chip when there's nothing to render.
+ */
+function readAvailability(
+  raw: unknown
+): ProfileData["basics"]["availability"] {
+  if (!raw || typeof raw !== "object") return undefined;
+  const o = raw as Record<string, unknown>;
+  const kind = o.kind;
+  if (
+    kind !== "available_now" &&
+    kind !== "available_after" &&
+    kind !== "open_to_chat"
+  ) {
+    // not_looking and unknown values both suppress the chip — there's
+    // nothing positive to surface.
+    return undefined;
+  }
+  const startDate =
+    typeof o.startDate === "string" && o.startDate.trim().length > 0
+      ? o.startDate.trim()
+      : undefined;
+  return { kind, startDate };
+}
+
+/**
+ * Phase E8b — read the `role_types` jsonb. Drops the field entirely
+ * if no flag is set so templates can branch on undefined rather than
+ * an "all-false" object.
+ */
+function readRoleTypes(
+  raw: unknown
+): ProfileData["basics"]["roleTypes"] {
+  if (!raw || typeof raw !== "object") return undefined;
+  const o = raw as Record<string, unknown>;
+  const out: NonNullable<ProfileData["basics"]["roleTypes"]> = {};
+  let any = false;
+  for (const key of [
+    "ic",
+    "manager",
+    "fullTime",
+    "contract",
+    "remote",
+    "hybrid",
+    "onsite",
+  ] as const) {
+    if (o[key] === true) {
+      out[key] = true;
+      any = true;
+    }
+  }
+  return any ? out : undefined;
+}
+
+/**
+ * Phase E8b — read the `work_eligibility` jsonb (string array).
+ * Trims, drops empties, dedupes case-insensitively while preserving
+ * the user's original casing for the surviving entries.
+ */
+function readWorkEligibility(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const x of raw) {
+    if (typeof x !== "string") continue;
+    const trimmed = x.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+  return out.length > 0 ? out : undefined;
+}
+
+/**
+ * Phase E8b — owner-supplied location override > resume location.
+ * Returns undefined when neither carries any city/region/country/
+ * timezone signal. The owner can also clear an override by setting
+ * the column back to null, which falls through to the resume.
+ */
+function readLocation(
+  override: unknown,
+  resumeJson: Record<string, unknown> | null
+): ProfileData["basics"]["location"] {
+  // 1. Override jsonb.
+  if (override && typeof override === "object") {
+    const o = override as Record<string, unknown>;
+    const loc: NonNullable<ProfileData["basics"]["location"]> = {};
+    if (typeof o.city === "string" && o.city.trim()) loc.city = o.city.trim();
+    if (typeof o.region === "string" && o.region.trim()) loc.region = o.region.trim();
+    if (typeof o.country === "string" && o.country.trim()) loc.country = o.country.trim();
+    if (Object.keys(loc).length > 0) return loc;
+  }
+  // 2. Resume location.
+  if (resumeJson && typeof resumeJson.basics === "object") {
+    const basics = resumeJson.basics as Record<string, unknown>;
+    if (basics.location && typeof basics.location === "object") {
+      const l = basics.location as Record<string, unknown>;
+      const loc: NonNullable<ProfileData["basics"]["location"]> = {};
+      if (typeof l.city === "string" && l.city.trim()) loc.city = l.city.trim();
+      if (typeof l.region === "string" && l.region.trim()) loc.region = l.region.trim();
+      if (typeof l.countryCode === "string" && l.countryCode.trim()) {
+        loc.country = l.countryCode.trim();
+      } else if (typeof l.country === "string" && l.country.trim()) {
+        loc.country = l.country.trim();
+      }
+      if (Object.keys(loc).length > 0) return loc;
+    }
+  }
+  return undefined;
 }
 
 /**

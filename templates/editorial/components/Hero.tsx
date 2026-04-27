@@ -1,5 +1,6 @@
 import React from "react";
 import type { ProfileData } from "@/templates/_shared/types";
+import { HeroSignals } from "@/templates/_shared/hero-signals";
 
 interface HeroProps {
   basics: ProfileData["basics"];
@@ -36,6 +37,9 @@ export function Hero({ basics }: HeroProps) {
             )}
           </p>
         )}
+
+        {/* Phase E8b — Tier-1 universal recruiter signals. */}
+        <HeroSignals basics={basics} />
 
         {basics.namedEmployers && basics.namedEmployers.length > 0 && (
           <p className="hero-employers">

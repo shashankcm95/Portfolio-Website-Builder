@@ -96,6 +96,62 @@ export const identityPatchSchema = z
       })
       .nullable()
       .optional(),
+    // Phase E8b — universal Tier-1 recruiter signals.
+    currentRole: z
+      .string()
+      .trim()
+      .max(80, "Current role must be at most 80 characters")
+      .nullable()
+      .optional(),
+    currentCompany: z
+      .string()
+      .trim()
+      .max(80, "Current company must be at most 80 characters")
+      .nullable()
+      .optional(),
+    availability: z
+      .object({
+        kind: z.enum([
+          "available_now",
+          "available_after",
+          "open_to_chat",
+          "not_looking",
+        ]),
+        startDate: z.string().trim().max(40).optional(),
+      })
+      .nullable()
+      .optional(),
+    roleTypes: z
+      .object({
+        ic: z.boolean().optional(),
+        manager: z.boolean().optional(),
+        fullTime: z.boolean().optional(),
+        contract: z.boolean().optional(),
+        remote: z.boolean().optional(),
+        hybrid: z.boolean().optional(),
+        onsite: z.boolean().optional(),
+      })
+      .nullable()
+      .optional(),
+    workEligibility: z
+      .array(
+        z
+          .string()
+          .trim()
+          .min(1, "Region is required")
+          .max(40, "Region must be at most 40 characters")
+      )
+      .max(10, "Keep the list to 10 or fewer regions")
+      .nullable()
+      .optional(),
+    locationOverride: z
+      .object({
+        city: z.string().trim().max(80).optional(),
+        region: z.string().trim().max(80).optional(),
+        country: z.string().trim().max(80).optional(),
+      })
+      .nullable()
+      .optional(),
   })
   .strict();
 

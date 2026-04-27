@@ -40,6 +40,13 @@ export async function GET(
       hireCtaText: portfolios.hireCtaText,
       hireCtaHref: portfolios.hireCtaHref,
       anchorStatOverride: portfolios.anchorStatOverride,
+      // Phase E8b — universal Tier-1 recruiter signals.
+      currentRole: portfolios.currentRole,
+      currentCompany: portfolios.currentCompany,
+      availability: portfolios.availability,
+      roleTypes: portfolios.roleTypes,
+      workEligibility: portfolios.workEligibility,
+      locationOverride: portfolios.locationOverride,
     })
     .from(portfolios)
     .where(eq(portfolios.id, params.portfolioId))
@@ -121,6 +128,31 @@ export async function PATCH(
   if (body.anchorStatOverride !== undefined) {
     set.anchorStatOverride = body.anchorStatOverride;
   }
+  // Phase E8b — universal Tier-1 recruiter signals.
+  if (body.currentRole !== undefined) {
+    set.currentRole =
+      body.currentRole === null || body.currentRole.trim() === ""
+        ? null
+        : body.currentRole;
+  }
+  if (body.currentCompany !== undefined) {
+    set.currentCompany =
+      body.currentCompany === null || body.currentCompany.trim() === ""
+        ? null
+        : body.currentCompany;
+  }
+  if (body.availability !== undefined) {
+    set.availability = body.availability;
+  }
+  if (body.roleTypes !== undefined) {
+    set.roleTypes = body.roleTypes;
+  }
+  if (body.workEligibility !== undefined) {
+    set.workEligibility = body.workEligibility;
+  }
+  if (body.locationOverride !== undefined) {
+    set.locationOverride = body.locationOverride;
+  }
 
   // Nothing to change ⇒ idempotent no-op. Still return the current state so
   // the editor refreshes from the source of truth.
@@ -151,6 +183,13 @@ export async function PATCH(
       hireCtaText: portfolios.hireCtaText,
       hireCtaHref: portfolios.hireCtaHref,
       anchorStatOverride: portfolios.anchorStatOverride,
+      // Phase E8b — universal Tier-1 recruiter signals.
+      currentRole: portfolios.currentRole,
+      currentCompany: portfolios.currentCompany,
+      availability: portfolios.availability,
+      roleTypes: portfolios.roleTypes,
+      workEligibility: portfolios.workEligibility,
+      locationOverride: portfolios.locationOverride,
     });
 
   return NextResponse.json({ identity: updated });

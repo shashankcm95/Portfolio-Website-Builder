@@ -15,6 +15,10 @@ export const suggestFieldEnum = z.enum([
   "ctaText",
   "ctaHref",
   "anchorStat",
+  // Phase E8b — universal Tier-1 recruiter signals.
+  "currentRole",
+  "currentCompany",
+  "workEligibility",
 ]);
 
 export type SuggestField = z.infer<typeof suggestFieldEnum>;
@@ -38,7 +42,10 @@ export type SuggestResponse =
   | { field: "ctaText"; suggestions: string[] }
   | { field: "ctaHref"; suggestions: string[] }
   | { field: "namedEmployers"; suggestions: string[] }
-  | { field: "anchorStat"; suggestions: AnchorStatSuggestion[] };
+  | { field: "anchorStat"; suggestions: AnchorStatSuggestion[] }
+  | { field: "currentRole"; suggestions: string[] }
+  | { field: "currentCompany"; suggestions: string[] }
+  | { field: "workEligibility"; suggestions: string[] };
 
 /**
  * Request body shape — caller picks one field at a time and optionally

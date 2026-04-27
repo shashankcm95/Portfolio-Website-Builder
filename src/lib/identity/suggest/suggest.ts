@@ -70,6 +70,31 @@ export async function suggestField(args: SuggestArgs): Promise<SuggestResult> {
       // if we want true status-awareness — for now this is "the AI
       // suggester assumes you'd say yes to work".
       return suggestCtaText(userId, ctx, "available", count, args.seed);
+    // Phase E8b — Tier-1 universal recruiter signals.
+    case "currentRole":
+      return {
+        ok: true,
+        response: {
+          field: "currentRole",
+          suggestions: suggestCurrentRole(ctx, count),
+        },
+      };
+    case "currentCompany":
+      return {
+        ok: true,
+        response: {
+          field: "currentCompany",
+          suggestions: suggestCurrentCompany(ctx, count),
+        },
+      };
+    case "workEligibility":
+      return {
+        ok: true,
+        response: {
+          field: "workEligibility",
+          suggestions: suggestWorkEligibility(),
+        },
+      };
   }
 }
 
@@ -170,6 +195,49 @@ function parseMagnitude(raw: string): number {
     default:
       return n;
   }
+}
+
+/**
+ * Phase E8b — current-role suggester. Pulls from resume.basics.label
+ * (the headline-style title — "Senior Backend Engineer") plus the
+ * most recent work entry's `position`. Deterministic; no LLM needed
+ * because the resume already has a curated answer.
+ */
+function suggestCurrentRole(
+  ctx: PortfolioContext,
+  count: number
+): string[] {
+  const out: string[] = [];
+  if (ctx.resumeLabel && ctx.resumeLabel.trim()) {
+    out.push(ctx.resumeLabel.trim());
+  }
+  // Resume work[0].position isn't surfaced through PortfolioContext
+  // today — when we add it, it'd come second. For now the label
+  // covers the common case; users can hand-edit if they need to.
+  return dedupeStrings(out).slice(0, count);
+}
+
+/**
+ * Phase E8b — current-company suggester. The first employer in the
+ * resume work history is the most recent.
+ */
+function suggestCurrentCompany(
+  ctx: PortfolioContext,
+  count: number
+): string[] {
+  return ctx.recentEmployers.slice(0, count);
+}
+
+/**
+ * Phase E8b — work-eligibility suggester. Returns the most common
+ * shapes recruiters expect, ordered by global frequency. Owners
+ * pick one or more; the editor's "Add" UI accepts multi-select.
+ */
+function suggestWorkEligibility(): string[] {
+  // The most common values across tech recruiting contexts.
+  // Owners with niche cases (TN visa, sponsor required, Gulf states,
+  // etc.) can hand-type — these chips are the 80% case.
+  return ["US", "UK", "EU", "Canada", "Remote-anywhere"];
 }
 
 // ─── LLM field suggesters ───────────────────────────────────────────────────

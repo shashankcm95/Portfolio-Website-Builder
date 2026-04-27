@@ -100,6 +100,42 @@ export const portfolios = pgTable(
     // candidates (Tier 3 — choose, not type-freely). Shape:
     //   { value: "4k+", unit: "GitHub stars", context?: string, sourceRef?: string }
     anchorStatOverride: jsonb("anchor_stat_override"),
+    // Phase E8b — universal "yes/no" signals every recruiter looks for.
+    // These are the binary filters that decide whether a Sarah-class
+    // 30-second scanner stays or bounces. All optional; null = no signal
+    // rendered (templates fall through gracefully).
+    //
+    // currentRole + currentCompany combine into one hero line:
+    // "Currently: Senior Backend Engineer @ Abbott". Editor's AI-suggest
+    // path pulls these from resume.work[0] when blank.
+    currentRole: text("current_role"),
+    currentCompany: text("current_company"),
+    // Availability block. `kind` is one of:
+    //   "available_now"      → "Available now"
+    //   "available_after"    → "Available <startDate>" (uses startDate)
+    //   "open_to_chat"       → "Open to conversations"
+    //   "not_looking"        → no signal rendered
+    //   null / unset         → no signal rendered (default for old rows)
+    // startDate is freeform text ("May 2026", "Q3 2026") so users aren't
+    // forced into a calendar widget for a soft commitment.
+    availability: jsonb("availability"),
+    // roleTypes — multi-select. Templates render as a small comma-list
+    // ("IC · Full-time · Remote / Hybrid"). All-false / unset → no chip
+    // line. Shape: { ic, manager, fullTime, contract, remote, hybrid, onsite }.
+    // Stored as jsonb so adding a new flag in a future phase is additive.
+    roleTypes: jsonb("role_types"),
+    // workEligibility — array of region codes the owner is authorized to
+    // work in ("US", "UK", "EU", "CA", "Remote-anywhere"). Null / empty
+    // = no chip rendered. Free-form strings, not enum, so users can add
+    // niche cases.
+    workEligibility: jsonb("work_eligibility"),
+    // Owner-supplied location override. The resume already carries one,
+    // but the portfolio-level value lets the owner present a different
+    // city to recruiters than what's on their resume (common when
+    // someone is relocating but the resume hasn't been updated yet).
+    // Shape: { city?, region?, country?, timezone? }. Null = fall through
+    // to resume.basics.location.
+    locationOverride: jsonb("location_override"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },

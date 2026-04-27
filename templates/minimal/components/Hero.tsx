@@ -1,5 +1,6 @@
 import React from "react";
 import type { ProfileData } from "@/templates/_shared/types";
+import { HeroSignals } from "@/templates/_shared/hero-signals";
 
 interface HeroProps {
   basics: ProfileData["basics"];
@@ -62,6 +63,11 @@ export function Hero({ basics }: HeroProps) {
             Previously at <span>{basics.namedEmployers.join(" · ")}</span>
           </p>
         )}
+
+        {/* Phase E8b — universal Tier-1 recruiter signals. Renders nothing
+            when none of the new fields are populated, so older portfolios
+            look exactly as they did before E8b. */}
+        <HeroSignals basics={basics} />
 
         <p className="hero-summary">{basics.summary}</p>
 

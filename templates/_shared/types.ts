@@ -92,6 +92,53 @@ export interface ProfileData {
       context?: string;
       sourceRef?: string;
     };
+
+    /**
+     * Phase E8b — current role line ("Senior Backend Engineer @ Abbott").
+     * Templates render as a single string in the hero subtitle.
+     * `currentRole` and `currentCompany` are independent — a freelancer
+     * may set role only, a between-roles candidate may set neither.
+     */
+    currentRole?: string;
+    currentCompany?: string;
+
+    /**
+     * Phase E8b — availability signal. Distinct from `hiring.status`
+     * because this captures *when* the owner is available, not just
+     * whether. Templates render as a small chip beside the
+     * positioning line: "Available now" / "Available May 2026" /
+     * "Open to chat". `not_looking` and `null` both suppress the chip.
+     */
+    availability?: {
+      kind: "available_now" | "available_after" | "open_to_chat" | "not_looking";
+      /** Free-form date for the `available_after` kind: "May 2026", "Q3 2026". */
+      startDate?: string;
+    };
+
+    /**
+     * Phase E8b — role-type filters. Templates render as a small
+     * comma-list ("IC · Full-time · Remote / Hybrid") so recruiters
+     * filtering for IC vs management or remote vs onsite can see the
+     * answer in 5 seconds. Every flag defaults false; null means
+     * unset and the line is omitted entirely.
+     */
+    roleTypes?: {
+      ic?: boolean;
+      manager?: boolean;
+      fullTime?: boolean;
+      contract?: boolean;
+      remote?: boolean;
+      hybrid?: boolean;
+      onsite?: boolean;
+    };
+
+    /**
+     * Phase E8b — work eligibility regions ("US", "UK", "EU", "Canada",
+     * "Remote-anywhere"). Free-form strings, not enum, so users can
+     * add niche cases (TN visa, sponsor required, etc.). Empty / unset
+     * = no chip rendered.
+     */
+    workEligibility?: string[];
   };
 
   skills: Skill[];
