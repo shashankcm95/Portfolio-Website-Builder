@@ -21,6 +21,18 @@
 
   var VISITOR_STORAGE_KEY = "portfolio-chatbot-visitor-id";
   var MAX_CHARS = 500;
+  // Phase E8g — session continuity. Track recent turns in-memory and
+  // replay the last MAX_HISTORY_TURNS user/assistant pairs with each
+  // new request so the model can resolve "his" / "those projects".
+  // Server caps this at MAX_HISTORY_MESSAGES (6 entries = 3 turns); we
+  // mirror it client-side to avoid sending oversize bodies that get
+  // truncated. The history dies when the page reloads — there's no
+  // localStorage persistence by design (visitor's chat is ephemeral).
+  var MAX_HISTORY_TURNS = 3;
+  var MAX_HISTORY_MESSAGE_CHARS = 800;
+  // sessionHistory is an array of { role: "user" | "assistant", content }
+  // ordered oldest → newest. Pushed to whenever a turn completes.
+  var sessionHistory = [];
 
   // ── Config + DOM handles ────────────────────────────────────────────
   var config = readConfig();
@@ -192,6 +204,31 @@
     sendToServer(message);
   }
 
+  /**
+   * Phase E8g — build the history payload from the last
+   * MAX_HISTORY_TURNS user/assistant pairs, capped at the
+   * server-imposed length per entry. Always returns an array (empty
+   * for the very first message of a session).
+   */
+  function buildHistoryPayload() {
+    if (sessionHistory.length === 0) return [];
+    var maxEntries = MAX_HISTORY_TURNS * 2;
+    var slice =
+      sessionHistory.length > maxEntries
+        ? sessionHistory.slice(-maxEntries)
+        : sessionHistory.slice();
+    var out = [];
+    for (var i = 0; i < slice.length; i++) {
+      var entry = slice[i];
+      var content =
+        entry.content.length > MAX_HISTORY_MESSAGE_CHARS
+          ? entry.content.slice(0, MAX_HISTORY_MESSAGE_CHARS)
+          : entry.content;
+      out.push({ role: entry.role, content: content });
+    }
+    return out;
+  }
+
   function sendToServer(message) {
     streaming = true;
     sendBtn.disabled = true;
@@ -200,6 +237,12 @@
     var assistantEl = appendAssistantMessage("", { final: false });
     var buffered = "";
 
+    // Phase E8g — capture the history payload BEFORE pushing the new
+    // user message to it. The server replays history then appends the
+    // current message; if we pushed first, the model would see the
+    // user turn twice.
+    var historyPayload = buildHistoryPayload();
+
     fetch("/api/chat/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
@@ -207,6 +250,7 @@
         portfolioId: config.portfolioId,
         visitorId: visitorId,
         message: message,
+        history: historyPayload,
       }),
     })
       .then(function (res) {
@@ -227,6 +271,19 @@
           },
           onDone: function () {
             assistantEl.classList.remove("streaming");
+            // Phase E8g — push BOTH the user turn and the completed
+            // assistant turn to the session history so the next
+            // request replays them. Trim if we've exceeded the
+            // server-side cap so the next buildHistoryPayload doesn't
+            // truncate-and-lose anything important.
+            sessionHistory.push({ role: "user", content: message });
+            if (buffered) {
+              sessionHistory.push({ role: "assistant", content: buffered });
+            }
+            var maxEntries = MAX_HISTORY_TURNS * 2;
+            if (sessionHistory.length > maxEntries) {
+              sessionHistory = sessionHistory.slice(-maxEntries);
+            }
           },
           onError: function (code, msg) {
             assistantEl.remove();

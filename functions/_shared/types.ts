@@ -92,6 +92,21 @@ export type SseFrame =
 export const MAX_VISITOR_MESSAGE_CHARS = 500;
 export const MAX_CONTEXT_CHUNKS = 8;
 
+/**
+ * Phase E8g — session continuity. The client tracks recent messages
+ * in-memory and replays them with each new request so the model
+ * remembers the prior turn ("his" / "those projects" / etc.).
+ *
+ * `MAX_HISTORY_MESSAGES` caps the size we accept from the client to
+ * keep the input token budget predictable: 6 entries = 3 user
+ * turns + 3 assistant turns. With each entry capped at 800 chars
+ * (~200 tokens), the worst-case history adds ~1200 tokens to the
+ * prompt — well within the model window even with the full 8-chunk
+ * retrieval context.
+ */
+export const MAX_HISTORY_MESSAGES = 6;
+export const MAX_HISTORY_MESSAGE_CHARS = 800;
+
 /** BGE-base dimensionality. Distinct from the builder's 1536. */
 export const EMBEDDING_DIM_BGE = 768;
 

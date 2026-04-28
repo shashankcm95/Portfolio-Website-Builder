@@ -25,6 +25,8 @@ import {
   type Env,
 } from "../../_shared/workers-ai";
 import {
+  MAX_HISTORY_MESSAGES,
+  MAX_HISTORY_MESSAGE_CHARS,
   MAX_VISITOR_MESSAGE_CHARS,
   type ChatMessageErrorBody,
   type ChatMessageResponse,
@@ -40,6 +42,40 @@ function json<T>(status: number, body: T): Response {
     status,
     headers: { "Content-Type": "application/json; charset=utf-8" },
   });
+}
+
+/**
+ * Phase E8g — same parser as `stream.ts :: parseHistory`. Inlined
+ * here rather than imported because the CF Functions module graph
+ * gets bundled per-route and a shared helper file keeps both routes'
+ * bundles smaller.
+ */
+interface HistoryMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+function parseHistory(raw: unknown): HistoryMessage[] {
+  if (!Array.isArray(raw)) return [];
+  const out: HistoryMessage[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const e = entry as Record<string, unknown>;
+    const role = e.role;
+    if (role !== "user" && role !== "assistant") continue;
+    const content = typeof e.content === "string" ? e.content.trim() : "";
+    if (!content) continue;
+    out.push({
+      role,
+      content:
+        content.length > MAX_HISTORY_MESSAGE_CHARS
+          ? content.slice(0, MAX_HISTORY_MESSAGE_CHARS)
+          : content,
+    });
+  }
+  if (out.length > MAX_HISTORY_MESSAGES) {
+    return out.slice(-MAX_HISTORY_MESSAGES);
+  }
+  return out;
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -84,6 +120,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     });
   }
 
+  // Phase E8g — optional history for session continuity. Same shape +
+  // limits as /api/chat/stream so the two endpoints behave identically
+  // for a client that falls back from SSE to JSON mid-session.
+  const history = parseHistory(body.history);
+
   // Retrieval + generation — serial, buffered.
   let queryVec: number[];
   try {
@@ -104,6 +145,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
     const stream = await runGeneration(env, [
       { role: "system", content: systemPrompt },
+      ...history.map((h) => ({ role: h.role, content: h.content })),
       { role: "user", content: userPrompt },
     ]);
     for await (const token of iterateTokens(stream)) {

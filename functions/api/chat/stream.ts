@@ -44,6 +44,8 @@ import {
   type Env,
 } from "../../_shared/workers-ai";
 import {
+  MAX_HISTORY_MESSAGES,
+  MAX_HISTORY_MESSAGE_CHARS,
   MAX_VISITOR_MESSAGE_CHARS,
   type ChatMessageErrorBody,
 } from "../../_shared/types";
@@ -53,10 +55,21 @@ import {
   PORTFOLIO_ID,
 } from "../../_shared/embeddings";
 
+interface HistoryMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 interface ParsedBody {
   portfolioId: string;
   visitorId: string;
   message: string;
+  /**
+   * Phase E8g — prior conversation turns the client is replaying for
+   * session continuity. Empty / absent for the first message of a
+   * session. Capped at MAX_HISTORY_MESSAGES entries server-side.
+   */
+  history: HistoryMessage[];
 }
 
 function errorJson(
@@ -96,7 +109,42 @@ function validateBody(raw: unknown): ParsedBody | ChatMessageErrorBody {
   if (portfolioId !== PORTFOLIO_ID) {
     return { error: "Portfolio mismatch", code: "not_found" };
   }
-  return { portfolioId, visitorId, message };
+  // Phase E8g — optional history for session continuity. We validate
+  // shape + cap the size server-side so a misbehaving client can't
+  // blow the model's input budget.
+  const history = parseHistory(body.history);
+  return { portfolioId, visitorId, message, history };
+}
+
+/**
+ * Phase E8g — coerce the `history` field into a clean array of
+ * `{role, content}`. Drops any entry that doesn't match the contract;
+ * truncates oversize content; caps total length to
+ * `MAX_HISTORY_MESSAGES`. Always returns an array (empty when input is
+ * missing or all-malformed) so the caller doesn't have to branch.
+ */
+function parseHistory(raw: unknown): HistoryMessage[] {
+  if (!Array.isArray(raw)) return [];
+  const out: HistoryMessage[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const e = entry as Record<string, unknown>;
+    const role = e.role;
+    if (role !== "user" && role !== "assistant") continue;
+    const content = typeof e.content === "string" ? e.content.trim() : "";
+    if (!content) continue;
+    const trimmed =
+      content.length > MAX_HISTORY_MESSAGE_CHARS
+        ? content.slice(0, MAX_HISTORY_MESSAGE_CHARS)
+        : content;
+    out.push({ role, content: trimmed });
+  }
+  // Keep the most recent N — older turns matter less and we don't want
+  // a misbehaving client to stuff the budget.
+  if (out.length > MAX_HISTORY_MESSAGES) {
+    return out.slice(-MAX_HISTORY_MESSAGES);
+  }
+  return out;
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
@@ -114,7 +162,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     const status = validated.code === "not_found" ? 404 : 400;
     return errorJson(status, validated);
   }
-  const { message } = validated;
+  const { message, history } = validated;
 
   // Embed the visitor message + rank the baked corpus. Done before we
   // open the stream so a Workers-AI misconfig returns a clean JSON 503.
@@ -140,8 +188,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   async function* frames(): AsyncGenerator<string, void, unknown> {
     try {
+      // Phase E8g — replay session history before the current turn so
+      // the model can resolve "his" / "those projects" / etc. The
+      // <context> block is attached only to the current user turn:
+      // the model uses retrieval against THIS message, but uses prior
+      // turns purely for conversational reference. Re-attaching
+      // <context> on every prior user turn would explode the input
+      // budget without improving answer quality.
       const stream = await runGeneration(env, [
         { role: "system", content: systemPrompt },
+        ...history.map((h) => ({ role: h.role, content: h.content })),
         { role: "user", content: userPrompt },
       ]);
       for await (const token of iterateTokens(stream)) {
