@@ -44,6 +44,14 @@ export async function GET(
     // Phase 7 — preview-only override of the stored template. Lets the
     // template picker show "Preview this template" without a save round-trip.
     // Always falls back to the stored templateId.
+    //
+    // Phase R5/R6 — list MUST stay in sync with renderer.ts's
+    // validateTemplateId switch and scripts/seed-db.ts. New templates that
+    // aren't listed here silently fall back to the saved templateId, so the
+    // preview shows the wrong template (terminal/whatever was saved).
+    // Past bug: signal/studio/kinetic were added to the renderer + seed
+    // but missed here, so "Preview this template" on the picker fell back
+    // to the user's saved template for all three.
     const { searchParams } = new URL(req.url);
     const templateOverride = searchParams.get("templateId");
     const ALLOWED_TEMPLATES = new Set([
@@ -52,6 +60,9 @@ export async function GET(
       "research",
       "terminal",
       "editorial",
+      "signal",
+      "studio",
+      "kinetic",
     ]);
     const templateId =
       templateOverride && ALLOWED_TEMPLATES.has(templateOverride)
