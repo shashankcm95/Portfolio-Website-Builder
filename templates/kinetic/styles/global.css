@@ -110,11 +110,14 @@ a:hover { color: var(--color-accent); }
       rgba(120, 80, 200, 0.18) 0%,
       transparent 65%),
     var(--color-bg);
-  animation: heroBreathe 30s ease-in-out infinite alternate;
+  animation: heroBreathe 18s ease-in-out infinite alternate;
 }
 @keyframes heroBreathe {
+  /* R7 — bumped from 30s/8%/2deg/15deg-hue to 18s/22%/8deg/45deg-hue
+     so the cinematic backdrop actually reads as moving. The previous
+     values were so subtle the ambience didn't register. */
   from { transform: scale(1) rotate(0deg); filter: hue-rotate(0deg); }
-  to   { transform: scale(1.08) rotate(2deg); filter: hue-rotate(15deg); }
+  to   { transform: scale(1.22) rotate(8deg); filter: hue-rotate(45deg); }
 }
 :root[data-theme="light"] .hero-backdrop {
   background:

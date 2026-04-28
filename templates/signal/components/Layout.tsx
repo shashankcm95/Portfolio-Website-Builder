@@ -148,7 +148,17 @@ export function Layout({
           />
         )}
 
-        {/* §2.9 magnetic hover + scroll-driven active nav (Fix 3 + Fix 4) */}
+        {/* R7 — §2.5 HLS bootstrap. Only load hls.js (vendored UMD) when
+            basics.heroVideoUrl points at an .m3u8 stream; Safari plays
+            HLS natively and the .mp4 path doesn't need it. Skipping the
+            script keeps signal's per-page JS payload near zero when no
+            video is configured. */}
+        {basics.heroVideoUrl && /\.m3u8(\?.*)?$/i.test(basics.heroVideoUrl) && (
+          <script src="/scripts/hls.min.js" defer />
+        )}
+
+        {/* enhance.js — §2.9 magnetic hover + scroll-driven active nav +
+            §2.4/§2.5 video fade & HLS (when heroVideoUrl set). */}
         {enhanceScript && (
           <script dangerouslySetInnerHTML={{ __html: enhanceScript }} />
         )}

@@ -19,11 +19,38 @@ interface HeroProps {
  *   4. Hiring CTA — button only when `hiring.status === "available"`, or
  *      a muted variant when "open".
  */
+function isHls(url: string): boolean {
+  return /\.m3u8(\?.*)?$/i.test(url);
+}
+
 export function Hero({ basics }: HeroProps) {
-  const { anchorStat, namedEmployers, summary, hiring } = basics;
+  const { anchorStat, namedEmployers, summary, hiring, heroVideoUrl } = basics;
+  const hasVideo = Boolean(heroVideoUrl);
+  const videoIsHls = hasVideo && isHls(heroVideoUrl!);
 
   return (
-    <section className="hero" aria-label="Introduction">
+    <section
+      className={`hero${hasVideo ? " hero--video" : ""}`}
+      aria-label="Introduction"
+    >
+      {/* R7 — when basics.heroVideoUrl is set, the animated CSS backdrop
+          is replaced by a real <video data-video="hero">. enhance.js wires
+          §2.4 rAF fade + §2.5 HLS bootstrap; Layout conditionally loads
+          /scripts/hls.min.js for .m3u8 sources. When unset, the
+          .hero::before CSS gradient renders unchanged. */}
+      {hasVideo && (
+        <video
+          className="hero__video"
+          data-video="hero"
+          aria-hidden="true"
+          muted
+          playsInline
+          {...(videoIsHls ? { "data-hls-src": heroVideoUrl } : {})}
+        >
+          {!videoIsHls && <source src={heroVideoUrl} type="video/mp4" />}
+        </video>
+      )}
+
       {/* §2.1 liquid-glass + §2.2 blurFadeUp — first element, no delay */}
       {anchorStat && (
         <div

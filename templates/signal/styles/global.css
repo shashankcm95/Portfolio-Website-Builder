@@ -118,7 +118,80 @@ a:hover { color: var(--color-accent); }
 /* ─── Hero block (inside the rail on desktop, standalone on mobile) ───── */
 
 .hero {
+  position: relative;
   display: flex; flex-direction: column; gap: 16px;
+  /* R7 — give the hero some breathing room above the content so the
+     animated backdrop has visible canvas to fill. */
+  padding: 32px 0 24px;
+  isolation: isolate; /* contain the ::before backdrop at z-index < 1 */
+}
+
+/* R7 — subtle animated backdrop. Cool sky-toned radial pulses behind
+   the hero content; matches the signal palette without competing with
+   the rail. Slower + softer than kinetic's heroBreathe so it reads as
+   ambient rather than cinematic — signal is design-engineer, not
+   premium-cinematic. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -10% -5%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 50% 60% at 20% 30%,
+      hsl(199 89% 48% / 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 50% at 85% 80%,
+      hsl(280 85% 60% / 0.08) 0%, transparent 65%);
+  animation: signalDrift 24s ease-in-out infinite alternate;
+}
+@keyframes signalDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(2%, -1%) scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero::before { animation: none; }
+}
+
+/* R7 — §2.4 / §2.5 Hero video variant for signal. Active only when
+   basics.heroVideoUrl is set. Replaces the CSS gradient backdrop with
+   a real <video data-video="hero">. enhance.js owns autoplay + the
+   rAF fade; CSS just positions the element + dark overlay so text
+   stays AA-readable over arbitrary video content. */
+.hero--video::before {
+  /* Hide the gradient backdrop when the video is present. */
+  display: none;
+}
+.hero__video {
+  position: absolute;
+  inset: -10% -5%;
+  z-index: -2;
+  width: auto;
+  height: auto;
+  min-width: 110%;
+  min-height: 120%;
+  object-fit: cover;
+  pointer-events: none;
+  /* enhance.js manages opacity via the §2.4 fade loop. Initial 1 keeps
+     the still frame visible if JS is disabled. */
+  opacity: 1;
+}
+/* Dark veil — same idea as kinetic / studio. White text on the rail
+   is already 18:1 vs --color-bg; the veil keeps it readable when the
+   video frame is bright. */
+.hero--video::after {
+  content: "";
+  position: absolute;
+  inset: -10% -5%;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero__video { opacity: 1 !important; }
 }
 
 .hero-anchor {

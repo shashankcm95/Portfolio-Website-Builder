@@ -89,19 +89,17 @@ body {
   display: none;
 }
 
-/* Panel — visible when the panel is open. */
+/* Panel — visible when the panel is open.
+   Phase R6.1 — restructured as a floating-card layer. The iframe is
+   now sized 460×680 (was 400×600) and positioned 24px from the
+   viewport edges (was 16px). The panel fills the iframe with 16px
+   internal margin so it reads as a floating window with visible
+   space all around — not a thing pinned to the viewport corner.
+   On mobile (<480px) the iframe goes full-screen and the panel
+   fills it edge-to-edge (the @media block below handles this). */
 .chat-panel {
   position: absolute;
-  bottom: 8px;
-  /* Phase R6 — bumped from 8px to 12px so the panel has consistent
-     visual breathing room from the iframe right edge across templates.
-     Some host pages (notably terminal with its centered .term-frame)
-     made the previous 8px feel cropped. */
-  right: 12px;
-  width: 380px;
-  max-width: calc(100vw - 24px);
-  height: 540px;
-  max-height: calc(100vh - 16px);
+  inset: 16px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -276,12 +274,9 @@ body {
  * full-bleed below 480px; make the panel itself fill. */
 @media (max-width: 480px) {
   .chat-panel {
-    bottom: 0;
-    right: 0;
-    width: 100vw;
-    max-width: 100vw;
-    height: 100vh;
-    max-height: 100vh;
+    /* Override the desktop floating-card inset:16 so the panel goes
+       edge-to-edge on mobile (where the iframe is already 100vw/100vh). */
+    inset: 0;
     border-radius: 0;
     border: 0;
   }

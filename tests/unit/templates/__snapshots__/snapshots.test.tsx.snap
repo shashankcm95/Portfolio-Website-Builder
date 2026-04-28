@@ -1203,18 +1203,22 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: si
 <html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/" class="active">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section aria-label="About"><div class="section-head"><span class="section-eyebrow">About</span><h2>Jane Doe</h2></div><div class="prose"><p><strong style="color:var(--color-text)">I build accessible, pixel-perfect experiences for the web.</strong></p><p>Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><p>Previously at <strong>Apple</strong>, <strong>Klaviyo</strong>.</p></div></section><section aria-label="Experience"><div class="section-head"><span class="section-eyebrow">Path</span><h2>Experience</h2></div><ul class="xp-list"><li class="xp-item scroll-reveal"><div class="xp-when">2022 — 2025</div><div class="xp-what"><h4>Senior Software Engineer</h4><p class="role-co">Apple</p><p>Led the design-system team.</p></div></li></ul></section><section aria-label="Education"><div class="section-head"><span class="section-eyebrow">Study</span><h2>Education</h2></div><ul class="xp-list"><li class="xp-item scroll-reveal"><div class="xp-when">2019 — 2021</div><div class="xp-what"><h4>M.S., Computer Science</h4><p class="role-co">Cornell Tech</p></div></li></ul></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script><script>/**
  * Signal template — progressive enhancement bootstrap.
  *
- * §2.9  Magnetic hover on [data-magnet] project cards.
- * §nav  Scroll-driven active nav: IntersectionObserver watches each
- *       <section id="…"> and toggles .is-active on the matching
- *       [href="#id"] rail nav link.
+ * Each block is a self-contained IIFE so a missing element / unsupported
+ * API silently no-ops without short-circuiting the rest of the bundle.
+ *
+ *   §2.9   Magnetic hover on [data-magnet] project cards.
+ *   §nav   Scroll-driven active nav (IntersectionObserver toggles
+ *          .is-active on matching .rail-nav anchors).
+ *   §2.4   rAF video fade loop (only when basics.heroVideoUrl set).
+ *   §2.5   HLS bootstrap (Safari-native first, then hls.js UMD fallback).
  *
  * Constraints:
  *   - IIFE, no dependencies, ≤5 KB minified.
- *   - Fully honours prefers-reduced-motion (magnetic skipped; IO still runs
- *     because toggling a class is not an animation).
+ *   - Fully honours prefers-reduced-motion.
  *   - Does not touch currentPage-based .active class — coexists.
  */
 (function () {
+  "use strict";
   var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.9 Magnetic hover ──────────────────────────────────────── */
@@ -1234,57 +1238,112 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: si
   }
 
   /* ── Scroll-driven active nav ─────────────────────────────────── */
-  if (!("IntersectionObserver" in window)) return;
-
-  // Collect all <section id="…"> elements in the main content column.
-  var sections = Array.prototype.slice.call(
-    document.querySelectorAll("main section[id]")
-  );
-  if (sections.length === 0) return;
-
-  // Build a map: sectionId → nav anchor element.
-  // Nav links are [href="#id"] inside .rail-nav. We also accept
-  // plain href="/path/#id" patterns so the home anchor stat pill
-  // doesn't break anything.
-  var navLinks = document.querySelectorAll(".rail-nav a[href]");
-  var linkMap = {};
-  navLinks.forEach(function (a) {
-    var href = a.getAttribute("href") || "";
-    // Match both "#work" and "/#work" shapes.
-    var match = href.match(/#([^/]+)$/);
-    if (match) {
-      linkMap[match[1]] = a;
-    }
-  });
-
-  var activeId = null;
-
-  var observer = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        var id = entry.target.id;
-        if (entry.isIntersecting) {
-          // Section entered viewport — mark it active.
-          if (activeId && linkMap[activeId]) {
-            linkMap[activeId].classList.remove("is-active");
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var sections = Array.prototype.slice.call(
+      document.querySelectorAll("main section[id]")
+    );
+    if (sections.length === 0) return;
+    var navLinks = document.querySelectorAll(".rail-nav a[href]");
+    var linkMap = {};
+    navLinks.forEach(function (a) {
+      var href = a.getAttribute("href") || "";
+      var match = href.match(/#([^/]+)$/);
+      if (match) linkMap[match[1]] = a;
+    });
+    var activeId = null;
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          var id = entry.target.id;
+          if (entry.isIntersecting) {
+            if (activeId && linkMap[activeId]) {
+              linkMap[activeId].classList.remove("is-active");
+            }
+            activeId = id;
+            if (linkMap[id]) linkMap[id].classList.add("is-active");
           }
-          activeId = id;
-          if (linkMap[id]) {
-            linkMap[id].classList.add("is-active");
-          }
-        }
-      });
-    },
-    {
-      // Trigger when section crosses the middle third of the viewport.
-      rootMargin: "-30% 0px -60% 0px",
-      threshold: 0,
-    }
-  );
+        });
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+    );
+    sections.forEach(function (section) {
+      observer.observe(section);
+    });
+  })();
 
-  sections.forEach(function (section) {
-    observer.observe(section);
-  });
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ─────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
+
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+    }
+
+    /* prefers-reduced-motion: still first frame, no autoplay loop */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08;
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) raf = requestAnimationFrame(tick);
+      })();
+    }
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
 </script></body></html>"
 `;
@@ -1294,18 +1353,22 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: si
 <html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/" class="active">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section aria-label="Contact"><div class="section-head"><span class="section-eyebrow">Contact</span><h2>Reach out</h2></div><div class="contact-block"><p style="margin:0;color:var(--color-muted)">Currently available for new work.</p><div class="prose" style="margin:0"><p style="margin:0">I build accessible, pixel-perfect experiences for the web.</p></div><p style="margin:0"><a class="hero-cta" href="mailto:jane@example.test">Let&#x27;s work together</a></p><div style="display:flex;flex-wrap:wrap;gap:16px"><a class="contact-link" href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a class="contact-link" href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a></div></div></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script><script>/**
  * Signal template — progressive enhancement bootstrap.
  *
- * §2.9  Magnetic hover on [data-magnet] project cards.
- * §nav  Scroll-driven active nav: IntersectionObserver watches each
- *       <section id="…"> and toggles .is-active on the matching
- *       [href="#id"] rail nav link.
+ * Each block is a self-contained IIFE so a missing element / unsupported
+ * API silently no-ops without short-circuiting the rest of the bundle.
+ *
+ *   §2.9   Magnetic hover on [data-magnet] project cards.
+ *   §nav   Scroll-driven active nav (IntersectionObserver toggles
+ *          .is-active on matching .rail-nav anchors).
+ *   §2.4   rAF video fade loop (only when basics.heroVideoUrl set).
+ *   §2.5   HLS bootstrap (Safari-native first, then hls.js UMD fallback).
  *
  * Constraints:
  *   - IIFE, no dependencies, ≤5 KB minified.
- *   - Fully honours prefers-reduced-motion (magnetic skipped; IO still runs
- *     because toggling a class is not an animation).
+ *   - Fully honours prefers-reduced-motion.
  *   - Does not touch currentPage-based .active class — coexists.
  */
 (function () {
+  "use strict";
   var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.9 Magnetic hover ──────────────────────────────────────── */
@@ -1325,57 +1388,112 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: si
   }
 
   /* ── Scroll-driven active nav ─────────────────────────────────── */
-  if (!("IntersectionObserver" in window)) return;
-
-  // Collect all <section id="…"> elements in the main content column.
-  var sections = Array.prototype.slice.call(
-    document.querySelectorAll("main section[id]")
-  );
-  if (sections.length === 0) return;
-
-  // Build a map: sectionId → nav anchor element.
-  // Nav links are [href="#id"] inside .rail-nav. We also accept
-  // plain href="/path/#id" patterns so the home anchor stat pill
-  // doesn't break anything.
-  var navLinks = document.querySelectorAll(".rail-nav a[href]");
-  var linkMap = {};
-  navLinks.forEach(function (a) {
-    var href = a.getAttribute("href") || "";
-    // Match both "#work" and "/#work" shapes.
-    var match = href.match(/#([^/]+)$/);
-    if (match) {
-      linkMap[match[1]] = a;
-    }
-  });
-
-  var activeId = null;
-
-  var observer = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        var id = entry.target.id;
-        if (entry.isIntersecting) {
-          // Section entered viewport — mark it active.
-          if (activeId && linkMap[activeId]) {
-            linkMap[activeId].classList.remove("is-active");
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var sections = Array.prototype.slice.call(
+      document.querySelectorAll("main section[id]")
+    );
+    if (sections.length === 0) return;
+    var navLinks = document.querySelectorAll(".rail-nav a[href]");
+    var linkMap = {};
+    navLinks.forEach(function (a) {
+      var href = a.getAttribute("href") || "";
+      var match = href.match(/#([^/]+)$/);
+      if (match) linkMap[match[1]] = a;
+    });
+    var activeId = null;
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          var id = entry.target.id;
+          if (entry.isIntersecting) {
+            if (activeId && linkMap[activeId]) {
+              linkMap[activeId].classList.remove("is-active");
+            }
+            activeId = id;
+            if (linkMap[id]) linkMap[id].classList.add("is-active");
           }
-          activeId = id;
-          if (linkMap[id]) {
-            linkMap[id].classList.add("is-active");
-          }
-        }
-      });
-    },
-    {
-      // Trigger when section crosses the middle third of the viewport.
-      rootMargin: "-30% 0px -60% 0px",
-      threshold: 0,
-    }
-  );
+        });
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+    );
+    sections.forEach(function (section) {
+      observer.observe(section);
+    });
+  })();
 
-  sections.forEach(function (section) {
-    observer.observe(section);
-  });
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ─────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
+
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+    }
+
+    /* prefers-reduced-motion: still first frame, no autoplay loop */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08;
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) raf = requestAnimationFrame(tick);
+      })();
+    }
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
 </script></body></html>"
 `;
@@ -1385,18 +1503,22 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: si
 <html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/" class="active">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section class="hero" aria-label="Introduction"><div class="hero-anchor liquid-glass animate-blur-fade-up" style="--d:0ms"><span class="hero-anchor-star" aria-hidden="true">✦</span><strong>4.2k+</strong><span>GitHub stars</span><em>— on Signal Forge</em></div><p class="hero-employers animate-blur-fade-up" style="--d:120ms">Previously at <span>Apple · Klaviyo</span></p><div class="pwb-hero-signals" aria-label="Availability and preferences"><p class="pwb-hero-signal pwb-hero-signal-place"><span class="pwb-hero-signal-value">London, UK</span></p></div><p class="hero-summary animate-blur-fade-up" style="--d:240ms">Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><a class="hero-cta animate-blur-fade-up " href="mailto:jane@example.test" style="--d:360ms">Let&#x27;s work together</a></section><section id="work" aria-label="Selected work"><div class="section-head animate-blur-fade-up" style="--d:480ms"><span class="section-eyebrow">Selected work</span><h2>Recent projects</h2></div><ol class="case-list"><li class="case-card" data-magnet="true"><div class="case-num">01</div><div class="case-body"><h3 class="case-title"><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="case-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="case-desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="case-outcomes" aria-label="Project outcomes"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul></div></li><figure class="quote-block"><blockquote class="quote-text">“Working with her changed how we ship — the kind of engineer whose taste you feel in the product.”</blockquote><figcaption class="quote-attr"><strong><a href="https://example.test/alex" target="_blank" rel="noopener noreferrer">Alex Example</a></strong><span>VP Engineering · Acme</span></figcaption></figure></ol></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script><script>/**
  * Signal template — progressive enhancement bootstrap.
  *
- * §2.9  Magnetic hover on [data-magnet] project cards.
- * §nav  Scroll-driven active nav: IntersectionObserver watches each
- *       <section id="…"> and toggles .is-active on the matching
- *       [href="#id"] rail nav link.
+ * Each block is a self-contained IIFE so a missing element / unsupported
+ * API silently no-ops without short-circuiting the rest of the bundle.
+ *
+ *   §2.9   Magnetic hover on [data-magnet] project cards.
+ *   §nav   Scroll-driven active nav (IntersectionObserver toggles
+ *          .is-active on matching .rail-nav anchors).
+ *   §2.4   rAF video fade loop (only when basics.heroVideoUrl set).
+ *   §2.5   HLS bootstrap (Safari-native first, then hls.js UMD fallback).
  *
  * Constraints:
  *   - IIFE, no dependencies, ≤5 KB minified.
- *   - Fully honours prefers-reduced-motion (magnetic skipped; IO still runs
- *     because toggling a class is not an animation).
+ *   - Fully honours prefers-reduced-motion.
  *   - Does not touch currentPage-based .active class — coexists.
  */
 (function () {
+  "use strict";
   var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.9 Magnetic hover ──────────────────────────────────────── */
@@ -1416,57 +1538,112 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: si
   }
 
   /* ── Scroll-driven active nav ─────────────────────────────────── */
-  if (!("IntersectionObserver" in window)) return;
-
-  // Collect all <section id="…"> elements in the main content column.
-  var sections = Array.prototype.slice.call(
-    document.querySelectorAll("main section[id]")
-  );
-  if (sections.length === 0) return;
-
-  // Build a map: sectionId → nav anchor element.
-  // Nav links are [href="#id"] inside .rail-nav. We also accept
-  // plain href="/path/#id" patterns so the home anchor stat pill
-  // doesn't break anything.
-  var navLinks = document.querySelectorAll(".rail-nav a[href]");
-  var linkMap = {};
-  navLinks.forEach(function (a) {
-    var href = a.getAttribute("href") || "";
-    // Match both "#work" and "/#work" shapes.
-    var match = href.match(/#([^/]+)$/);
-    if (match) {
-      linkMap[match[1]] = a;
-    }
-  });
-
-  var activeId = null;
-
-  var observer = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        var id = entry.target.id;
-        if (entry.isIntersecting) {
-          // Section entered viewport — mark it active.
-          if (activeId && linkMap[activeId]) {
-            linkMap[activeId].classList.remove("is-active");
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var sections = Array.prototype.slice.call(
+      document.querySelectorAll("main section[id]")
+    );
+    if (sections.length === 0) return;
+    var navLinks = document.querySelectorAll(".rail-nav a[href]");
+    var linkMap = {};
+    navLinks.forEach(function (a) {
+      var href = a.getAttribute("href") || "";
+      var match = href.match(/#([^/]+)$/);
+      if (match) linkMap[match[1]] = a;
+    });
+    var activeId = null;
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          var id = entry.target.id;
+          if (entry.isIntersecting) {
+            if (activeId && linkMap[activeId]) {
+              linkMap[activeId].classList.remove("is-active");
+            }
+            activeId = id;
+            if (linkMap[id]) linkMap[id].classList.add("is-active");
           }
-          activeId = id;
-          if (linkMap[id]) {
-            linkMap[id].classList.add("is-active");
-          }
-        }
-      });
-    },
-    {
-      // Trigger when section crosses the middle third of the viewport.
-      rootMargin: "-30% 0px -60% 0px",
-      threshold: 0,
-    }
-  );
+        });
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+    );
+    sections.forEach(function (section) {
+      observer.observe(section);
+    });
+  })();
 
-  sections.forEach(function (section) {
-    observer.observe(section);
-  });
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ─────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
+
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+    }
+
+    /* prefers-reduced-motion: still first frame, no autoplay loop */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08;
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) raf = requestAnimationFrame(tick);
+      })();
+    }
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
 </script></body></html>"
 `;
@@ -1478,18 +1655,22 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: si
   B --&gt; C[Static Site]</pre><p class="pwb-storyboard-diagram-hint">Diagram source rendered with <a href="https://mermaid.js.org/" target="_blank" rel="noopener noreferrer">mermaid.js</a>.</p></figure><script>(function(){try{if(typeof window==="undefined"||typeof document==="undefined")return;var nodes=document.querySelectorAll("pre.mermaid");if(!nodes||nodes.length===0)return;import("https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs").then(function(m){var mermaid=m.default;mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"default"});mermaid.run({nodes:nodes}).then(function(){nodes.forEach(function(n){var p=n.parentElement;if(p)p.setAttribute("data-pwb-mermaid-rendered","true");});}).catch(function(){});}).catch(function(){});}catch(e){}})();</script></section><div class="section-head" style="margin-top:48px"><span class="section-eyebrow">Built with</span></div><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul><section class="pwb-evidence-list" aria-label="Verified facts"><h3 class="pwb-evidence-heading">Verified facts</h3><ul class="pwb-evidence-items"><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-tick" aria-label="Verified by the pipeline" title="This claim has been verified against the source">✓</span><span class="pwb-evidence-claim-text">Written in TypeScript</span><span class="pwb-evidence-source" title="Evidence type: dependency">from package.json</span></div><details class="pwb-evidence-details"><summary class="pwb-evidence-summary">Evidence</summary><div class="pwb-evidence-body"><blockquote class="pwb-evidence-quote">&quot;typescript&quot;: &quot;^5.4.0&quot; in package.json</blockquote><p class="pwb-evidence-ref"><span class="pwb-evidence-ref-label">Source:</span> <code>package.json</code></p></div></details></div></li><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-tick" aria-label="Verified by the pipeline" title="This claim has been verified against the source">✓</span><span class="pwb-evidence-claim-text">Uses Drizzle ORM for the Postgres source of truth</span><span class="pwb-evidence-source" title="Evidence type: repo_file">from code</span></div><details class="pwb-evidence-details"><summary class="pwb-evidence-summary">Evidence</summary><div class="pwb-evidence-body"><blockquote class="pwb-evidence-quote">import { pgTable } from &#x27;drizzle-orm/pg-core&#x27;; 12 tables defined in schema.ts.</blockquote><p class="pwb-evidence-ref"><span class="pwb-evidence-ref-label">Source:</span> <code>src/lib/db/schema.ts</code></p></div></details></div></li><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-claim-text">Server-side template rendering via renderToStaticMarkup</span><span class="pwb-evidence-source" title="Evidence type: readme">from README</span></div></div></li></ul></section><p style="margin-top:40px"><a class="contact-link" href="https://github.com/acme/signal-forge" target="_blank" rel="noopener noreferrer">View repository ↗</a></p></article></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script><script>/**
  * Signal template — progressive enhancement bootstrap.
  *
- * §2.9  Magnetic hover on [data-magnet] project cards.
- * §nav  Scroll-driven active nav: IntersectionObserver watches each
- *       <section id="…"> and toggles .is-active on the matching
- *       [href="#id"] rail nav link.
+ * Each block is a self-contained IIFE so a missing element / unsupported
+ * API silently no-ops without short-circuiting the rest of the bundle.
+ *
+ *   §2.9   Magnetic hover on [data-magnet] project cards.
+ *   §nav   Scroll-driven active nav (IntersectionObserver toggles
+ *          .is-active on matching .rail-nav anchors).
+ *   §2.4   rAF video fade loop (only when basics.heroVideoUrl set).
+ *   §2.5   HLS bootstrap (Safari-native first, then hls.js UMD fallback).
  *
  * Constraints:
  *   - IIFE, no dependencies, ≤5 KB minified.
- *   - Fully honours prefers-reduced-motion (magnetic skipped; IO still runs
- *     because toggling a class is not an animation).
+ *   - Fully honours prefers-reduced-motion.
  *   - Does not touch currentPage-based .active class — coexists.
  */
 (function () {
+  "use strict";
   var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.9 Magnetic hover ──────────────────────────────────────── */
@@ -1509,57 +1690,112 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: si
   }
 
   /* ── Scroll-driven active nav ─────────────────────────────────── */
-  if (!("IntersectionObserver" in window)) return;
-
-  // Collect all <section id="…"> elements in the main content column.
-  var sections = Array.prototype.slice.call(
-    document.querySelectorAll("main section[id]")
-  );
-  if (sections.length === 0) return;
-
-  // Build a map: sectionId → nav anchor element.
-  // Nav links are [href="#id"] inside .rail-nav. We also accept
-  // plain href="/path/#id" patterns so the home anchor stat pill
-  // doesn't break anything.
-  var navLinks = document.querySelectorAll(".rail-nav a[href]");
-  var linkMap = {};
-  navLinks.forEach(function (a) {
-    var href = a.getAttribute("href") || "";
-    // Match both "#work" and "/#work" shapes.
-    var match = href.match(/#([^/]+)$/);
-    if (match) {
-      linkMap[match[1]] = a;
-    }
-  });
-
-  var activeId = null;
-
-  var observer = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        var id = entry.target.id;
-        if (entry.isIntersecting) {
-          // Section entered viewport — mark it active.
-          if (activeId && linkMap[activeId]) {
-            linkMap[activeId].classList.remove("is-active");
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var sections = Array.prototype.slice.call(
+      document.querySelectorAll("main section[id]")
+    );
+    if (sections.length === 0) return;
+    var navLinks = document.querySelectorAll(".rail-nav a[href]");
+    var linkMap = {};
+    navLinks.forEach(function (a) {
+      var href = a.getAttribute("href") || "";
+      var match = href.match(/#([^/]+)$/);
+      if (match) linkMap[match[1]] = a;
+    });
+    var activeId = null;
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          var id = entry.target.id;
+          if (entry.isIntersecting) {
+            if (activeId && linkMap[activeId]) {
+              linkMap[activeId].classList.remove("is-active");
+            }
+            activeId = id;
+            if (linkMap[id]) linkMap[id].classList.add("is-active");
           }
-          activeId = id;
-          if (linkMap[id]) {
-            linkMap[id].classList.add("is-active");
-          }
-        }
-      });
-    },
-    {
-      // Trigger when section crosses the middle third of the viewport.
-      rootMargin: "-30% 0px -60% 0px",
-      threshold: 0,
-    }
-  );
+        });
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+    );
+    sections.forEach(function (section) {
+      observer.observe(section);
+    });
+  })();
 
-  sections.forEach(function (section) {
-    observer.observe(section);
-  });
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ─────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
+
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+    }
+
+    /* prefers-reduced-motion: still first frame, no autoplay loop */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08;
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) raf = requestAnimationFrame(tick);
+      })();
+    }
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
 </script></body></html>"
 `;
@@ -1569,18 +1805,22 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: si
 <html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/" class="active">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section aria-label="All projects"><div class="section-head"><span class="section-eyebrow">Index</span><h2>All work</h2></div><ol class="case-list"><li class="case-card" data-magnet="true"><div class="case-num">01</div><div class="case-body"><h3 class="case-title"><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="case-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="case-desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="case-outcomes" aria-label="Project outcomes"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul></div></li></ol></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script><script>/**
  * Signal template — progressive enhancement bootstrap.
  *
- * §2.9  Magnetic hover on [data-magnet] project cards.
- * §nav  Scroll-driven active nav: IntersectionObserver watches each
- *       <section id="…"> and toggles .is-active on the matching
- *       [href="#id"] rail nav link.
+ * Each block is a self-contained IIFE so a missing element / unsupported
+ * API silently no-ops without short-circuiting the rest of the bundle.
+ *
+ *   §2.9   Magnetic hover on [data-magnet] project cards.
+ *   §nav   Scroll-driven active nav (IntersectionObserver toggles
+ *          .is-active on matching .rail-nav anchors).
+ *   §2.4   rAF video fade loop (only when basics.heroVideoUrl set).
+ *   §2.5   HLS bootstrap (Safari-native first, then hls.js UMD fallback).
  *
  * Constraints:
  *   - IIFE, no dependencies, ≤5 KB minified.
- *   - Fully honours prefers-reduced-motion (magnetic skipped; IO still runs
- *     because toggling a class is not an animation).
+ *   - Fully honours prefers-reduced-motion.
  *   - Does not touch currentPage-based .active class — coexists.
  */
 (function () {
+  "use strict";
   var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.9 Magnetic hover ──────────────────────────────────────── */
@@ -1600,57 +1840,112 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: si
   }
 
   /* ── Scroll-driven active nav ─────────────────────────────────── */
-  if (!("IntersectionObserver" in window)) return;
-
-  // Collect all <section id="…"> elements in the main content column.
-  var sections = Array.prototype.slice.call(
-    document.querySelectorAll("main section[id]")
-  );
-  if (sections.length === 0) return;
-
-  // Build a map: sectionId → nav anchor element.
-  // Nav links are [href="#id"] inside .rail-nav. We also accept
-  // plain href="/path/#id" patterns so the home anchor stat pill
-  // doesn't break anything.
-  var navLinks = document.querySelectorAll(".rail-nav a[href]");
-  var linkMap = {};
-  navLinks.forEach(function (a) {
-    var href = a.getAttribute("href") || "";
-    // Match both "#work" and "/#work" shapes.
-    var match = href.match(/#([^/]+)$/);
-    if (match) {
-      linkMap[match[1]] = a;
-    }
-  });
-
-  var activeId = null;
-
-  var observer = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        var id = entry.target.id;
-        if (entry.isIntersecting) {
-          // Section entered viewport — mark it active.
-          if (activeId && linkMap[activeId]) {
-            linkMap[activeId].classList.remove("is-active");
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var sections = Array.prototype.slice.call(
+      document.querySelectorAll("main section[id]")
+    );
+    if (sections.length === 0) return;
+    var navLinks = document.querySelectorAll(".rail-nav a[href]");
+    var linkMap = {};
+    navLinks.forEach(function (a) {
+      var href = a.getAttribute("href") || "";
+      var match = href.match(/#([^/]+)$/);
+      if (match) linkMap[match[1]] = a;
+    });
+    var activeId = null;
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          var id = entry.target.id;
+          if (entry.isIntersecting) {
+            if (activeId && linkMap[activeId]) {
+              linkMap[activeId].classList.remove("is-active");
+            }
+            activeId = id;
+            if (linkMap[id]) linkMap[id].classList.add("is-active");
           }
-          activeId = id;
-          if (linkMap[id]) {
-            linkMap[id].classList.add("is-active");
-          }
-        }
-      });
-    },
-    {
-      // Trigger when section crosses the middle third of the viewport.
-      rootMargin: "-30% 0px -60% 0px",
-      threshold: 0,
-    }
-  );
+        });
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 }
+    );
+    sections.forEach(function (section) {
+      observer.observe(section);
+    });
+  })();
 
-  sections.forEach(function (section) {
-    observer.observe(section);
-  });
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ─────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
+
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+    }
+
+    /* prefers-reduced-motion: still first frame, no autoplay loop */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08;
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) raf = requestAnimationFrame(tick);
+      })();
+    }
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
 </script></body></html>"
 `;
