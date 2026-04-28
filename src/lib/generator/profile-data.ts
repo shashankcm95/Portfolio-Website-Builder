@@ -81,52 +81,85 @@ export async function assembleProfileData(
   // ── Build skills from facts across all projects ─────────────────────────
   const skillsMap = new Map<string, Skill>();
 
+  /**
+   * Phase E8d — single helper for "add this name to skillsMap with this
+   * project as evidence". Lower-cased key gives natural dedupe across
+   * sources; the original casing of the FIRST occurrence wins (so
+   * `metadata.language` "TypeScript" beats a topic "typescript").
+   */
+  function addSkill(
+    name: string,
+    category: Skill["category"],
+    projectName: string
+  ): void {
+    const trimmed = typeof name === "string" ? name.trim() : "";
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase();
+    const existing = skillsMap.get(key);
+    if (existing) {
+      existing.evidence = existing.evidence || [];
+      // De-dupe per project so a skill that appears via three different
+      // sources (language + tech_stack + topic) on the same repo
+      // doesn't inflate the evidence count.
+      if (!existing.evidence.some((e) => e.projectName === projectName)) {
+        existing.evidence.push({
+          projectName,
+          usage: `Used in ${projectName}`,
+        });
+      }
+      return;
+    }
+    skillsMap.set(key, {
+      name: trimmed,
+      category,
+      evidence: [{ projectName, usage: `Used in ${projectName}` }],
+    });
+  }
+
   for (const proj of projectRows) {
     const projectName =
       proj.displayName || proj.repoName || "Unnamed Project";
 
-    // Extract skills from facts with category "tech-stack" or "language"
+    // Extract skills from facts with category "tech-stack" or "language".
+    // Phase E6 + E8d — `looksLikeSkillName` rejects sentence-shaped
+    // claims at filter time. The fact-extractor still routinely emits
+    // them ("The repository uses Python as the primary programming
+    // language"), so most fact-derived skills get filtered out. The
+    // sources below catch the gap.
     for (const fact of proj.facts) {
       const category = mapFactCategoryToSkillCategory(fact.category);
       if (category) {
-        const existing = skillsMap.get(fact.claim.toLowerCase());
-        if (existing) {
-          existing.evidence = existing.evidence || [];
-          existing.evidence.push({
-            projectName,
-            usage: fact.evidenceText || fact.claim,
-          });
-        } else {
-          skillsMap.set(fact.claim.toLowerCase(), {
-            name: fact.claim,
-            category,
-            evidence: [
-              {
-                projectName,
-                usage: fact.evidenceText || fact.claim,
-              },
-            ],
-          });
-        }
+        addSkill(fact.claim, category, projectName);
       }
     }
 
-    // Also extract skills from repo metadata topics
+    // Phase E8d — verified tech stack from package.json / pyproject /
+    // Cargo.toml. Populated by the credibility fetcher's
+    // `extractVerifiedStack` and stored on `projects.techStack` jsonb.
+    // Already noun-phrase shaped ("react", "next", "drizzle-orm") —
+    // exactly what the skills row should carry.
+    const techStack = Array.isArray(proj.techStack)
+      ? (proj.techStack as unknown[])
+      : [];
+    for (const tech of techStack) {
+      addSkill(String(tech), "framework", projectName);
+    }
+
+    // Phase E8d — primary language from GitHub repo metadata. One per
+    // project ("TypeScript", "Python", "Java"). The language stat is
+    // GitHub's by-bytes ranking — reliable when present.
     const metadata = proj.repoMetadata as Record<string, unknown> | null;
+    if (typeof metadata?.language === "string") {
+      addSkill(metadata.language, "language", projectName);
+    }
+
+    // Repo metadata topics — owner-curated GitHub topics like
+    // "bittorrent", "p2p-network", "android". Already noun-phrase
+    // shaped; default category is "other" since they don't fit the
+    // language/framework/tool taxonomy cleanly.
     if (metadata?.topics && Array.isArray(metadata.topics)) {
       for (const topic of metadata.topics as string[]) {
-        if (!skillsMap.has(topic.toLowerCase())) {
-          skillsMap.set(topic.toLowerCase(), {
-            name: topic,
-            category: "other",
-            evidence: [
-              {
-                projectName,
-                usage: `Used in ${projectName}`,
-              },
-            ],
-          });
-        }
+        addSkill(topic, "other", projectName);
       }
     }
   }
