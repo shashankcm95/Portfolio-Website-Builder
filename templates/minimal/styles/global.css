@@ -1173,6 +1173,8 @@ img, svg, video, iframe, pre { max-width: 100%; }
 /* an explicit no-op so users with prefers-reduced-motion see a static page. */
 
 @media (prefers-reduced-motion: reduce) {
+  /* §2.15 — disable smooth scroll for users with vestibular sensitivity. */
+  html                 { scroll-behavior: auto; }
   .animate-blur-fade-up { animation: none; opacity: 1; filter: none; transform: none; }
   .scroll-reveal       { animation: none; opacity: 1; transform: none; }
 }

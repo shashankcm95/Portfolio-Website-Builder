@@ -169,6 +169,13 @@ p { margin: 0 0 1em; }
 }
 @keyframes blink { to { visibility: hidden; } }
 
+/* a11y — the cursor is the only persistent animation in this template;
+   honour prefers-reduced-motion so users with vestibular sensitivity
+   (or who simply requested no flashing) see a static, solid cursor. */
+@media (prefers-reduced-motion: reduce) {
+  .cursor::after { animation: none; }
+}
+
 /* ─── Hero ─────────────────────────────────────────────────────────── */
 
 .hero { padding: 32px 0 8px; }
