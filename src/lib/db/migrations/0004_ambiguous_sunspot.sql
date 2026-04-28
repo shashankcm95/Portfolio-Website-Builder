@@ -1,0 +1,1 @@
+ALTER TABLE "portfolios" ADD COLUMN "hero_background_effect" text;

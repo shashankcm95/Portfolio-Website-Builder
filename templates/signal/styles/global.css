@@ -126,11 +126,11 @@ a:hover { color: var(--color-accent); }
   isolation: isolate; /* contain the ::before backdrop at z-index < 1 */
 }
 
-/* R7 — subtle animated backdrop. Cool sky-toned radial pulses behind
-   the hero content; matches the signal palette without competing with
-   the rail. Slower + softer than kinetic's heroBreathe so it reads as
-   ambient rather than cinematic — signal is design-engineer, not
-   premium-cinematic. */
+/* R7 — animated hero backdrops. Default behavior + four named effects
+   driven by basics.heroBackgroundEffect. The Hero component renders
+   `<section class="hero hero-fx-<id>">` (where id ∈ drift|aurora|orbs|
+   prism). When no id is set the .hero::before drift falls through. */
+
 .hero::before {
   content: "";
   position: absolute;
@@ -148,8 +148,68 @@ a:hover { color: var(--color-accent); }
   from { transform: translate(0, 0) scale(1); }
   to   { transform: translate(2%, -1%) scale(1.06); }
 }
+
+/* ── Aurora — flowing horizontal hue-shifting bands ─────────────── */
+.hero-fx-aurora::before {
+  background:
+    linear-gradient(180deg,
+      transparent 0%,
+      hsl(199 89% 48% / 0.16) 30%,
+      hsl(280 85% 60% / 0.18) 50%,
+      hsl(199 89% 48% / 0.14) 70%,
+      transparent 100%);
+  background-size: 200% 200%;
+  animation: signalAurora 14s ease-in-out infinite alternate;
+}
+@keyframes signalAurora {
+  from { background-position: 0% 0%;   filter: hue-rotate(0deg); }
+  to   { background-position: 100% 100%; filter: hue-rotate(40deg); }
+}
+
+/* ── Orbs — multiple soft radial blobs floating independently ───── */
+.hero-fx-orbs::before {
+  background:
+    radial-gradient(circle 240px at 15% 25%,
+      hsl(199 89% 48% / 0.20) 0%, transparent 70%),
+    radial-gradient(circle 200px at 75% 60%,
+      hsl(280 85% 60% / 0.18) 0%, transparent 70%),
+    radial-gradient(circle 180px at 50% 90%,
+      hsl(160 70% 55% / 0.14) 0%, transparent 70%);
+  animation: signalOrbs 20s ease-in-out infinite alternate;
+}
+@keyframes signalOrbs {
+  from {
+    background-position: 0% 0%, 0% 0%, 0% 0%;
+    transform: scale(1);
+  }
+  to {
+    background-position: 8% 12%, -10% 6%, 6% -8%;
+    transform: scale(1.08);
+  }
+}
+
+/* ── Prism — diagonal conic gradient with hue rotation ──────────── */
+.hero-fx-prism::before {
+  background:
+    conic-gradient(from 45deg at 50% 50%,
+      hsl(199 89% 48% / 0.16) 0%,
+      hsl(280 85% 60% / 0.14) 25%,
+      hsl(160 70% 55% / 0.12) 50%,
+      hsl(40 90% 60% / 0.14) 75%,
+      hsl(199 89% 48% / 0.16) 100%);
+  filter: blur(40px);
+  animation: signalPrism 30s linear infinite;
+}
+@keyframes signalPrism {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hero::before { animation: none; }
+  .hero::before,
+  .hero-fx-aurora::before,
+  .hero-fx-orbs::before,
+  .hero-fx-prism::before { animation: none; }
 }
 
 /* R7 — §2.4 / §2.5 Hero video variant for signal. Active only when

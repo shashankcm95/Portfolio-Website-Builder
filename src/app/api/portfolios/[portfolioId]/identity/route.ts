@@ -40,6 +40,7 @@ export async function GET(
       hireCtaText: portfolios.hireCtaText,
       hireCtaHref: portfolios.hireCtaHref,
       heroVideoUrl: portfolios.heroVideoUrl,
+      heroBackgroundEffect: portfolios.heroBackgroundEffect,
       anchorStatOverride: portfolios.anchorStatOverride,
       // Phase E8b — universal Tier-1 recruiter signals.
       currentRole: portfolios.currentRole,
@@ -135,6 +136,11 @@ export async function PATCH(
         ? null
         : body.heroVideoUrl.trim();
   }
+  // Phase R7 — heroBackgroundEffect picker. Allowed values are restricted
+  // by the Zod schema; null clears (template falls back to "drift").
+  if (body.heroBackgroundEffect !== undefined) {
+    set.heroBackgroundEffect = body.heroBackgroundEffect ?? null;
+  }
   if (body.anchorStatOverride !== undefined) {
     set.anchorStatOverride = body.anchorStatOverride;
   }
@@ -194,6 +200,7 @@ export async function PATCH(
       hireCtaText: portfolios.hireCtaText,
       hireCtaHref: portfolios.hireCtaHref,
       heroVideoUrl: portfolios.heroVideoUrl,
+      heroBackgroundEffect: portfolios.heroBackgroundEffect,
       anchorStatOverride: portfolios.anchorStatOverride,
       // Phase E8b — universal Tier-1 recruiter signals.
       currentRole: portfolios.currentRole,

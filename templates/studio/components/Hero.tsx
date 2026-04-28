@@ -65,9 +65,20 @@ export function Hero({ basics, firstTestimonial }: HeroProps) {
 
   const hasVideo = Boolean(heroVideoUrl);
   const videoIsHls = hasVideo && isHls(heroVideoUrl!);
+  // R7 — hero background effect picker. Active when no video is set.
+  // "drift" maps to .hero-fx-drift (a soft warm radial pulse — studio's
+  // palette equivalent of signal's sky/violet drift). Skipping the
+  // class entirely keeps the existing flat off-white when the user
+  // explicitly hasn't chosen anything (null).
+  const fxClass =
+    !hasVideo && basics.heroBackgroundEffect
+      ? ` hero-fx-${basics.heroBackgroundEffect}`
+      : "";
 
   return (
-    <section className={hasVideo ? "hero-section studio-hero--video" : "hero-section"}>
+    <section
+      className={`hero-section${hasVideo ? " studio-hero--video" : ""}${fxClass}`}
+    >
       {/* §2.4 / §2.5 decorative video backdrop — aria-hidden so screen readers
           skip it entirely. Only rendered when heroVideoUrl is set. The enhance.js
           bootstrap owns autoplay and the fade-loop; no `autoplay` or `loop`

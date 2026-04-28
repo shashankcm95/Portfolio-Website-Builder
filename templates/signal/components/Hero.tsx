@@ -24,13 +24,27 @@ function isHls(url: string): boolean {
 }
 
 export function Hero({ basics }: HeroProps) {
-  const { anchorStat, namedEmployers, summary, hiring, heroVideoUrl } = basics;
+  const {
+    anchorStat,
+    namedEmployers,
+    summary,
+    hiring,
+    heroVideoUrl,
+    heroBackgroundEffect,
+  } = basics;
   const hasVideo = Boolean(heroVideoUrl);
   const videoIsHls = hasVideo && isHls(heroVideoUrl!);
+  // R7 — apply the named effect class only when no video is set; the
+  // video takes over the backdrop entirely. "drift" maps to the bare
+  // .hero (no extra class) since that's the default look.
+  const fxClass =
+    !hasVideo && heroBackgroundEffect && heroBackgroundEffect !== "drift"
+      ? ` hero-fx-${heroBackgroundEffect}`
+      : "";
 
   return (
     <section
-      className={`hero${hasVideo ? " hero--video" : ""}`}
+      className={`hero${hasVideo ? " hero--video" : ""}${fxClass}`}
       aria-label="Introduction"
     >
       {/* R7 — when basics.heroVideoUrl is set, the animated CSS backdrop

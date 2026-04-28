@@ -94,7 +94,95 @@ a:hover { color: var(--color-accent-2); }
 
 /* ─── Hero ─────────────────────────────────────────────────────────── */
 
-.hero-section { padding: clamp(56px, 10vw, 120px) 0 clamp(40px, 7vw, 80px); }
+.hero-section {
+  position: relative;
+  padding: clamp(56px, 10vw, 120px) 0 clamp(40px, 7vw, 80px);
+  isolation: isolate; /* contain ::before fx at z-index < 1 */
+}
+
+/* R7 — pre-built hero background effects driven by basics.heroBackgroundEffect.
+   Studio's palette is warm terracotta on off-white, so the gradient stops
+   tilt warm (terracotta + peach + amber) rather than cool sky-and-violet
+   like signal. When no fx class is set the section renders its existing
+   flat off-white background. The hero-section itself owns the ::before
+   so it can sit behind the asymmetric grid + anchor card. */
+.hero-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0; /* default = no effect; fx classes set opacity:1 */
+}
+
+.hero-section.hero-fx-drift::before {
+  background:
+    radial-gradient(ellipse 50% 60% at 20% 30%,
+      hsl(18 80% 55% / 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 50% at 85% 80%,
+      hsl(40 85% 60% / 0.08) 0%, transparent 65%);
+  opacity: 1;
+  animation: studioDrift 24s ease-in-out infinite alternate;
+}
+@keyframes studioDrift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(2%, -1%) scale(1.06); }
+}
+
+.hero-section.hero-fx-aurora::before {
+  background:
+    linear-gradient(180deg,
+      transparent 0%,
+      hsl(18 80% 55% / 0.12) 30%,
+      hsl(40 85% 60% / 0.14) 50%,
+      hsl(18 80% 55% / 0.10) 70%,
+      transparent 100%);
+  background-size: 200% 200%;
+  opacity: 1;
+  animation: studioAurora 14s ease-in-out infinite alternate;
+}
+@keyframes studioAurora {
+  from { background-position: 0% 0%;     filter: hue-rotate(0deg); }
+  to   { background-position: 100% 100%; filter: hue-rotate(30deg); }
+}
+
+.hero-section.hero-fx-orbs::before {
+  background:
+    radial-gradient(circle 280px at 15% 25%,
+      hsl(18 80% 55% / 0.18) 0%, transparent 70%),
+    radial-gradient(circle 240px at 75% 60%,
+      hsl(40 85% 60% / 0.16) 0%, transparent 70%),
+    radial-gradient(circle 200px at 50% 90%,
+      hsl(160 50% 55% / 0.10) 0%, transparent 70%);
+  opacity: 1;
+  animation: studioOrbs 20s ease-in-out infinite alternate;
+}
+@keyframes studioOrbs {
+  from { background-position: 0% 0%, 0% 0%, 0% 0%; transform: scale(1); }
+  to   { background-position: 8% 12%, -10% 6%, 6% -8%; transform: scale(1.08); }
+}
+
+.hero-section.hero-fx-prism::before {
+  background:
+    conic-gradient(from 45deg at 50% 50%,
+      hsl(18 80% 55% / 0.14) 0%,
+      hsl(40 85% 60% / 0.12) 25%,
+      hsl(160 50% 55% / 0.10) 50%,
+      hsl(280 60% 60% / 0.12) 75%,
+      hsl(18 80% 55% / 0.14) 100%);
+  filter: blur(40px);
+  opacity: 1;
+  animation: studioPrism 30s linear infinite;
+}
+@keyframes studioPrism {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-section::before { animation: none; }
+}
+
 .hero-grid {
   display: grid;
   grid-template-columns: 1.15fr 1fr;

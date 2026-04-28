@@ -61,8 +61,41 @@ interface IdentityState {
   hireCtaHref: string | null;
   // Phase R5d — opt-in cinematic hero video URL for the studio template.
   heroVideoUrl: string | null;
+  // Phase R7 — pre-built CSS background-effect picker. Active when
+  // heroVideoUrl is empty; ignored when a video is set. "drift" is the
+  // implicit default when null.
+  heroBackgroundEffect: "drift" | "aurora" | "orbs" | "prism" | null;
   anchorStatOverride: AnchorStat | null;
 }
+
+// Phase R7 — visible labels + hints for the four background effects.
+// The order is the order they render in the picker.
+const HERO_BG_EFFECT_OPTIONS: Array<{
+  value: NonNullable<IdentityState["heroBackgroundEffect"]>;
+  label: string;
+  hint: string;
+}> = [
+  {
+    value: "drift",
+    label: "Drift (default)",
+    hint: "Slow rotating radial gradient — subtle ambient motion.",
+  },
+  {
+    value: "aurora",
+    label: "Aurora",
+    hint: "Flowing horizontal hue-shifting bands. Cinematic.",
+  },
+  {
+    value: "orbs",
+    label: "Orbs",
+    hint: "Multiple soft radial blobs floating independently.",
+  },
+  {
+    value: "prism",
+    label: "Prism",
+    hint: "Diagonal conic gradient slowly rotating through hues.",
+  },
+];
 
 interface IdentityPitchCardProps {
   portfolioId: string;
@@ -98,6 +131,7 @@ function emptyState(): IdentityState {
     hireCtaText: null,
     hireCtaHref: null,
     heroVideoUrl: null,
+    heroBackgroundEffect: null,
     anchorStatOverride: null,
   };
 }
@@ -136,6 +170,9 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
           hireCtaText: id.hireCtaText ?? null,
           hireCtaHref: id.hireCtaHref ?? null,
           heroVideoUrl: id.heroVideoUrl ?? null,
+          heroBackgroundEffect:
+            (id.heroBackgroundEffect as IdentityState["heroBackgroundEffect"]) ??
+            null,
           anchorStatOverride: id.anchorStatOverride ?? null,
         };
         setState(loadedState);
@@ -239,6 +276,7 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
           state.hireCtaHref && state.hireCtaHref.trim().length > 0
             ? state.hireCtaHref.trim()
             : null,
+        heroBackgroundEffect: state.heroBackgroundEffect,
         heroVideoUrl:
           state.heroVideoUrl && state.heroVideoUrl.trim().length > 0
             ? state.heroVideoUrl.trim()
@@ -267,6 +305,9 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
         hireCtaText: body.hireCtaText,
         hireCtaHref: body.hireCtaHref,
         heroVideoUrl: body.heroVideoUrl,
+        heroBackgroundEffect:
+          (body.heroBackgroundEffect as IdentityState["heroBackgroundEffect"]) ??
+          null,
         anchorStatOverride: body.anchorStatOverride,
       });
       setMessage({ kind: "ok", text: "Saved. Republish to go live." });
@@ -454,6 +495,23 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
               valid={heroVideoValid}
             />
 
+            {/* ── Hero background effect (cinematic templates only) ────── */}
+            {/* Phase R7 — pre-built CSS effect for the hero background.
+                Active when no Hero video URL is set; the video wins.
+                Templates that consume this field paint the effect in
+                their own palette (signal sky-blue, kinetic coral, etc).
+                Other templates silently ignore the field. */}
+            <HeroBackgroundEffectField
+              value={state.heroBackgroundEffect}
+              onChange={(v) =>
+                setState((s) => ({ ...s, heroBackgroundEffect: v }))
+              }
+              videoActive={
+                state.heroVideoUrl !== null &&
+                state.heroVideoUrl.trim().length > 0
+              }
+            />
+
             <Separator />
 
             {/* ── Anchor stat override ─────────────────────────────────── */}
@@ -608,6 +666,61 @@ function HeroVideoUrlField({
           <span className="text-destructive">
             {" "}
             Must end in .mp4 or .m3u8.
+          </span>
+        )}
+      </p>
+    </div>
+  );
+}
+
+function HeroBackgroundEffectField({
+  value,
+  onChange,
+  videoActive,
+}: {
+  value: IdentityState["heroBackgroundEffect"];
+  onChange: (v: IdentityState["heroBackgroundEffect"]) => void;
+  videoActive: boolean;
+}) {
+  // R7 — radio-style picker. Each option shows a visible label + a tiny
+  // hint. The picker stays interactive even when a video is set (the
+  // video wins at render time, but the user might still want to choose
+  // an effect for the empty-video state).
+  const current = value ?? "drift";
+  return (
+    <div className="space-y-2">
+      <Label>Hero background effect</Label>
+      <div className="grid grid-cols-2 gap-2">
+        {HERO_BG_EFFECT_OPTIONS.map((opt) => {
+          const selected = current === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value === "drift" ? null : opt.value)}
+              aria-pressed={selected}
+              className={[
+                "rounded-md border px-3 py-2 text-left text-sm transition",
+                selected
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50",
+              ].join(" ")}
+            >
+              <div className="font-medium">{opt.label}</div>
+              <div className="text-xs text-muted-foreground">{opt.hint}</div>
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Pre-built CSS effect for the hero background. Templates that opt
+        into cinematic backgrounds (signal, studio, kinetic) paint the
+        chosen effect in their own palette.
+        {videoActive && (
+          <span className="text-amber-600">
+            {" "}
+            A hero video is currently set — it overrides this effect.
+            Clear the video URL above to see the effect render.
           </span>
         )}
       </p>

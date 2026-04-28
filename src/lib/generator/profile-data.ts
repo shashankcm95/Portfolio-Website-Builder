@@ -286,6 +286,13 @@ export async function assembleProfileData(
       location: readLocation(portfolio.locationOverride, resumeJson),
       positioning: portfolio.positioning ?? undefined,
       heroVideoUrl: portfolio.heroVideoUrl ?? undefined,
+      heroBackgroundEffect:
+        (portfolio.heroBackgroundEffect as
+          | "drift"
+          | "aurora"
+          | "orbs"
+          | "prism"
+          | null) ?? undefined,
       namedEmployers: namedEmployers.length > 0 ? namedEmployers : undefined,
       hiring,
       anchorStat,

@@ -102,6 +102,17 @@ export const identityPatchSchema = z
         },
         "Hero video URL must be HTTPS and end in .mp4 or .m3u8."
       ),
+    // Phase R7 — pre-built hero background effect picker. Stored as one of
+    // four allowed strings. Null clears (template falls back to "drift").
+    heroBackgroundEffect: z
+      .union([
+        z.literal("drift"),
+        z.literal("aurora"),
+        z.literal("orbs"),
+        z.literal("prism"),
+        z.null(),
+      ])
+      .optional(),
     // Tier 3 in the editability model — user can override with an explicit
     // { value, unit } pair but can't type arbitrary freeform prose into
     // them. Frontend should populate this dropdown from ranked candidates

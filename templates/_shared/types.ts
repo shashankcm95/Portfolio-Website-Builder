@@ -71,6 +71,15 @@ export interface ProfileData {
      */
     heroVideoUrl?: string;
     /**
+     * Phase R7 — pre-built CSS background effect for the hero. One of
+     * "drift" | "aurora" | "orbs" | "prism". Templates that opt into
+     * cinematic backgrounds (signal, studio, kinetic today) paint the
+     * named effect in their own palette. When `heroVideoUrl` is set the
+     * video wins and this field is ignored. Absent → "drift" (the
+     * existing default behavior).
+     */
+    heroBackgroundEffect?: "drift" | "aurora" | "orbs" | "prism";
+    /**
      * Phase A — recognizable employer/client names surfaced in the hero
      * (e.g. ["Apple", "Klaviyo"]). Source of truth is `portfolios
      * .namedEmployers` jsonb. Empty array ⇒ no "Previously at" line.

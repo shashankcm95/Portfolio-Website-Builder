@@ -99,6 +99,17 @@ export const portfolios = pgTable(
     // ignore the field. User-authored, Tier-1 in the editability model.
     // Null = static hero (default).
     heroVideoUrl: text("hero_video_url"),
+    // Phase R7 — pre-built CSS background effect for the hero. One of:
+    //   "drift"  → slow rotating gradient (default; matches existing
+    //              heroBreathe / signalDrift behavior)
+    //   "aurora" → flowing horizontal hue-shifting bands (northern-lights)
+    //   "orbs"   → multiple soft radial blobs floating independently
+    //   "prism"  → diagonal conic gradient with hue rotation
+    // Null/unset → "drift" (the current default look). Effects are
+    // overridden when basics.heroVideoUrl is set; the video takes priority.
+    // Each template paints the effect in its own palette so the same id
+    // looks different in signal vs kinetic vs studio. Tier-1, user-curated.
+    heroBackgroundEffect: text("hero_background_effect"),
     // Phase A — user override for the anchor stat (the single strongest
     // credential the hero leads with). Phase B fills in a pipeline-computed
     // default; this column lets the user override with one of the ranked

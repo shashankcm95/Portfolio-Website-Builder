@@ -95,10 +95,18 @@ export function Hero({ basics, namedEmployers }: HeroProps) {
 
   const hasVideo = Boolean(heroVideoUrl);
   const videoIsHls = hasVideo && isHls(heroVideoUrl!);
+  // R7 — apply hero-fx-<id> when no video is set; "drift" maps to the
+  // bare .hero-backdrop heroBreathe behavior.
+  const fxClass =
+    !hasVideo &&
+    basics.heroBackgroundEffect &&
+    basics.heroBackgroundEffect !== "drift"
+      ? ` hero-fx-${basics.heroBackgroundEffect}`
+      : "";
 
   return (
     <section
-      className={`kinetic-hero${hasVideo ? " kinetic-hero--video" : ""}`}
+      className={`kinetic-hero${hasVideo ? " kinetic-hero--video" : ""}${fxClass}`}
       aria-label="Introduction"
     >
       {hasVideo ? (
