@@ -1137,3 +1137,43 @@ img, svg, video, iframe, pre { max-width: 100%; }
 }
 .pwb-hero-signal-availability::before { content: "●"; color: var(--color-success, #10b981); font-size: 0.7em; }
 .pwb-hero-signal-sep { color: var(--color-gray-400); }
+
+/* ─── §2.2 BlurFadeUp entrance — minimal-soft variant ────────────────────── */
+/* Softer than the cinematic templates: blur 8px / lift 20px / 0.7s          */
+/* Conservative because minimal is the broad-appeal default — motion should */
+/* feel earned rather than performative.                                     */
+
+@keyframes blurFadeUp {
+  from { opacity: 0; filter: blur(8px); transform: translateY(20px); }
+  to   { opacity: 1; filter: blur(0);   transform: translateY(0); }
+}
+.animate-blur-fade-up {
+  opacity: 0;
+  animation: blurFadeUp 0.7s ease-out forwards;
+  animation-delay: var(--d, 0ms);
+}
+
+/* ─── §2.10 Scroll-reveal — minimal-conservative variant ────────────────── */
+
+.scroll-reveal {
+  animation: scrollReveal linear;
+  animation-timeline: view();
+  animation-range: entry 5% cover 35%;
+}
+@keyframes scrollReveal {
+  from { opacity: 0.3; transform: translateY(12px); }
+  to   { opacity: 1;   transform: translateY(0); }
+}
+@supports not (animation-timeline: view()) {
+  .scroll-reveal { opacity: 1; transform: none; }
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────────────── */
+/* Hard requirement per docs/motion-patterns.md §5 — every keyframe gets     */
+/* an explicit no-op so users with prefers-reduced-motion see a static page. */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blur-fade-up { animation: none; opacity: 1; filter: none; transform: none; }
+  .scroll-reveal       { animation: none; opacity: 1; transform: none; }
+}
+

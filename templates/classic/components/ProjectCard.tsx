@@ -16,7 +16,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
     .replace(/^-|-$/g, "");
 
   return (
-    <div className="card">
+    <div className="card scroll-reveal">
       <h3 className="card-title">
         <a href={`/projects/${slug}/`}>{project.name}</a>
       </h3>

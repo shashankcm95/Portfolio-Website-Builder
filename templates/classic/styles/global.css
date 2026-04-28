@@ -1252,3 +1252,45 @@ img, svg, video, iframe, pre { max-width: 100%; }
   align-self: flex-start;
 }
 .pwb-hero-signal-sep { color: var(--color-rule); }
+
+/* ─── §2.2 BlurFadeUp entrance animation ────────────────────────────── */
+
+@keyframes blurFadeUp {
+  from { opacity: 0; filter: blur(12px); transform: translateY(28px); }
+  to   { opacity: 1; filter: blur(0);    transform: translateY(0); }
+}
+.animate-blur-fade-up {
+  opacity: 0;
+  animation: blurFadeUp 0.85s ease-out forwards;
+  animation-delay: var(--d, 0ms);
+}
+
+/* ─── §2.10 Scroll-reveal (view-timeline) ───────────────────────────── */
+
+.scroll-reveal {
+  animation: scrollReveal linear;
+  animation-timeline: view();
+  animation-range: entry 5% cover 35%;
+}
+@keyframes scrollReveal {
+  from { opacity: 0.2;  transform: translateY(20px); }
+  to   { opacity: 1;    transform: translateY(0); }
+}
+/* Safari / browsers without scroll-timeline support */
+@supports not (animation-timeline: view()) {
+  .scroll-reveal { opacity: 1; transform: none; }
+}
+
+/* ─── Reduced motion ────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto; }
+  /* §2.2 fallback: elements are immediately visible */
+  .animate-blur-fade-up { animation: none; opacity: 1; filter: none; transform: none; }
+  /* §2.10 fallback */
+  .scroll-reveal { animation: none; opacity: 1; transform: none; }
+}

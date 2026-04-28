@@ -39,14 +39,28 @@ export function Hero({ basics }: HeroProps) {
           <img
             src={basics.avatar}
             alt={`${basics.name} avatar`}
-            className="hero-avatar"
+            className="hero-avatar animate-blur-fade-up"
+            style={{ "--d": "0ms" } as React.CSSProperties}
           />
         )}
-        <h1>{basics.name}</h1>
-        <p className="hero-label">{tagline}</p>
+        <h1
+          className="animate-blur-fade-up"
+          style={{ "--d": "100ms" } as React.CSSProperties}
+        >
+          {basics.name}
+        </h1>
+        <p
+          className="hero-label animate-blur-fade-up"
+          style={{ "--d": "200ms" } as React.CSSProperties}
+        >
+          {tagline}
+        </p>
 
         {basics.anchorStat && (
-          <p className="hero-anchor">
+          <p
+            className="hero-anchor animate-blur-fade-up"
+            style={{ "--d": "300ms" } as React.CSSProperties}
+          >
             <strong>{basics.anchorStat.value}</strong>{" "}
             {basics.anchorStat.unit}
             {basics.anchorStat.context && (
@@ -59,7 +73,10 @@ export function Hero({ basics }: HeroProps) {
         )}
 
         {basics.namedEmployers && basics.namedEmployers.length > 0 && (
-          <p className="hero-employers">
+          <p
+            className="hero-employers animate-blur-fade-up"
+            style={{ "--d": "400ms" } as React.CSSProperties}
+          >
             Previously at <span>{basics.namedEmployers.join(" · ")}</span>
           </p>
         )}
@@ -69,9 +86,17 @@ export function Hero({ basics }: HeroProps) {
             look exactly as they did before E8b. */}
         <HeroSignals basics={basics} />
 
-        <p className="hero-summary">{basics.summary}</p>
+        <p
+          className="hero-summary animate-blur-fade-up"
+          style={{ "--d": "500ms" } as React.CSSProperties}
+        >
+          {basics.summary}
+        </p>
 
-        <div className="hero-links">
+        <div
+          className="hero-links animate-blur-fade-up"
+          style={{ "--d": "600ms" } as React.CSSProperties}
+        >
           {showHireCta && (
             <a href={hireHref} className="btn btn-primary">
               {hireLabel}

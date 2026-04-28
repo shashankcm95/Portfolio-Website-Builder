@@ -34,9 +34,9 @@ export function Hero({ basics }: HeroProps) {
       <div className="container">
         <div className="hero-split">
           <div className="hero-text">
-            <p className="hero-eyebrow">Portfolio &mdash; {new Date().getFullYear()}</p>
-            <h1>{basics.name}</h1>
-            <p className="hero-label">{tagline}</p>
+            <p className="hero-eyebrow animate-blur-fade-up" style={{ "--d": "0ms" } as React.CSSProperties}>Portfolio &mdash; {new Date().getFullYear()}</p>
+            <h1 className="animate-blur-fade-up" style={{ "--d": "120ms" } as React.CSSProperties}>{basics.name}</h1>
+            <p className="hero-label animate-blur-fade-up" style={{ "--d": "240ms" } as React.CSSProperties}>{tagline}</p>
             <div className="hero-rule" />
 
             {basics.anchorStat && (
@@ -62,8 +62,8 @@ export function Hero({ basics }: HeroProps) {
             {/* Phase E8b — Tier-1 universal recruiter signals. */}
             <HeroSignals basics={basics} />
 
-            <p className="hero-summary">{basics.summary}</p>
-            <div className="hero-links">
+            <p className="hero-summary animate-blur-fade-up" style={{ "--d": "360ms" } as React.CSSProperties}>{basics.summary}</p>
+            <div className="hero-links animate-blur-fade-up" style={{ "--d": "480ms" } as React.CSSProperties}>
               {showHireCta ? (
                 <a href={hireHref} className="btn btn-primary">
                   {hireLabel}

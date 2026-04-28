@@ -34,7 +34,7 @@ export function HomePage({ profileData }: HomePageProps) {
       {topProjects.length > 0 && (
         <section className="section">
           <div className="container">
-            <div className="section-header">
+            <div className="section-header scroll-reveal">
               <h2>Featured Projects</h2>
               <p>A selection of projects I have built</p>
             </div>
@@ -61,7 +61,7 @@ export function HomePage({ profileData }: HomePageProps) {
       {topSkills.length > 0 && (
         <section className="section">
           <div className="container">
-            <div className="section-header">
+            <div className="section-header scroll-reveal">
               <h2>Skills &amp; Technologies</h2>
               <p>Technologies I work with regularly</p>
             </div>

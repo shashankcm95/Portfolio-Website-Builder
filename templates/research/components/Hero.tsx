@@ -27,8 +27,8 @@ export function Hero({ basics }: HeroProps) {
           />
         )}
         <div className="hero-text">
-          <h1 className="hero-name">{basics.name}</h1>
-          <p className="hero-label">{basics.positioning || basics.label}</p>
+          <h1 className="hero-name animate-blur-fade-up" style={{ "--d": "0ms" } as React.CSSProperties}>{basics.name}</h1>
+          <p className="hero-label animate-blur-fade-up" style={{ "--d": "80ms" } as React.CSSProperties}>{basics.positioning || basics.label}</p>
           {/* Phase R4 — anchor + employers in an academic "at a glance"
               footnote style. No CTA button — the template's philosophy
               (per Phase 7 Hero comment) is that the page itself is the
@@ -53,7 +53,7 @@ export function Hero({ basics }: HeroProps) {
               Previously at {basics.namedEmployers.join(", ")}
             </p>
           )}
-          <p className="hero-summary">{truncate(basics.summary, 280)}</p>
+          <p className="hero-summary animate-blur-fade-up" style={{ "--d": "160ms" } as React.CSSProperties}>{truncate(basics.summary, 280)}</p>
           {basics.hiring && basics.hiring.status !== "not-looking" && (
             <p className="hero-hiring">
               {basics.hiring.status === "available"

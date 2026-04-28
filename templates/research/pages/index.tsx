@@ -26,7 +26,7 @@ export function HomePage({ profileData }: HomePageProps) {
       {list.length > 0 && (
         <section className="section">
           <div className="container">
-            <h2>Selected work</h2>
+            <h2 className="scroll-reveal">Selected work</h2>
             <ul className="project-list">
               {list.map((p) => (
                 <ProjectCard key={p.id} project={p} />

@@ -37,10 +37,10 @@ export function About({ profileData }: AboutProps) {
       {/* Summary */}
       <section className="section">
         <div className="container container-narrow">
-          <div className="section-header">
+          <div className="section-header scroll-reveal">
             <h2>About Me</h2>
           </div>
-          <p>{basics.summary}</p>
+          <p className="scroll-reveal">{basics.summary}</p>
         </div>
       </section>
 
@@ -48,7 +48,7 @@ export function About({ profileData }: AboutProps) {
       {skills.length > 0 && (
         <section className="section">
           <div className="container">
-            <div className="section-header">
+            <div className="section-header scroll-reveal">
               <h2>Skills</h2>
               <p>Technologies and concepts I work with</p>
             </div>
@@ -76,12 +76,12 @@ export function About({ profileData }: AboutProps) {
       {experience && experience.length > 0 && (
         <section className="section">
           <div className="container container-narrow">
-            <div className="section-header">
+            <div className="section-header scroll-reveal">
               <h2>Experience</h2>
             </div>
             <div className="timeline">
               {experience.map((exp, index) => (
-                <div key={index} className="timeline-item">
+                <div key={index} className="timeline-item scroll-reveal">
                   <div className="timeline-date">
                     {exp.startDate}
                     {exp.endDate ? ` — ${exp.endDate}` : " — Present"}
@@ -109,12 +109,12 @@ export function About({ profileData }: AboutProps) {
       {education && education.length > 0 && (
         <section className="section">
           <div className="container container-narrow">
-            <div className="section-header">
+            <div className="section-header scroll-reveal">
               <h2>Education</h2>
             </div>
             <div className="timeline">
               {education.map((edu, index) => (
-                <div key={index} className="timeline-item">
+                <div key={index} className="timeline-item scroll-reveal">
                   {(edu.startDate || edu.endDate) && (
                     <div className="timeline-date">
                       {edu.startDate || ""}

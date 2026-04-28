@@ -35,13 +35,13 @@ export function About({ profileData }: AboutProps) {
   return (
     <div className="container">
       <section className="section">
-        <h2>About</h2>
+        <h2 className="scroll-reveal">About</h2>
         <p>{basics.summary}</p>
       </section>
 
       {skills.length > 0 && (
         <section className="section">
-          <h2>Areas</h2>
+          <h2 className="scroll-reveal">Areas</h2>
           {Object.entries(skillsByCategory).map(([category, list]) => (
             <div key={category} className="skills-group">
               <p className="skills-group-title">
@@ -59,7 +59,7 @@ export function About({ profileData }: AboutProps) {
 
       {experience && experience.length > 0 && (
         <section className="section">
-          <h2>Experience</h2>
+          <h2 className="scroll-reveal">Experience</h2>
           <div className="timeline">
             {experience.map((exp, i) => (
               <div key={i} className="timeline-item">
@@ -88,7 +88,7 @@ export function About({ profileData }: AboutProps) {
 
       {education && education.length > 0 && (
         <section className="section">
-          <h2>Education</h2>
+          <h2 className="scroll-reveal">Education</h2>
           <div className="timeline">
             {education.map((edu, i) => (
               <div key={i} className="timeline-item">
