@@ -494,6 +494,37 @@ The preview endpoint rewrites internal `<a href>` attributes through
 a `/<section>/` path, you're probably opening a stale tab — re-open the
 preview from the builder UI.
 
+**`error: column "X" does not exist` after pulling new code**
+A new schema column shipped in `src/lib/db/schema.ts` (and a corresponding
+migration file under `src/lib/db/migrations/`) but the column hasn't been
+applied to your local Postgres yet. **Your data is safe** — only reads are
+failing because Drizzle's generated `SELECT` references a column that
+doesn't exist.
+
+The `npm run db:migrate` command may not work cleanly because the
+historical `__drizzle_migrations` tracker drifted from reality (some
+migrations were applied via `db:push` rather than `migrate`, so the
+tracker thinks zero migrations have run and tries to re-run from idx 0,
+which fails on already-existing tables).
+
+Pragmatic fix — apply the missing column directly. Read the latest
+migration file under `src/lib/db/migrations/` to see the exact column
+name, then:
+
+```bash
+export $(grep "^DATABASE_URL" .env.local | xargs)
+psql "$DATABASE_URL" -c \
+  'ALTER TABLE "portfolios" ADD COLUMN IF NOT EXISTS "hero_video_url" text;'
+```
+
+`IF NOT EXISTS` makes it idempotent — safe to re-run. Refresh the dev
+server and the 500s clear immediately.
+
+For a more permanent fix (resyncing the migration tracker), see the
+`__drizzle_migrations` table in `db:studio` and seed it with the SHA
+hashes for the migrations that have actually been applied. That's a
+larger surgery; the per-column workaround above is fine for normal use.
+
 ---
 
 ## License
