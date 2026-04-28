@@ -45,11 +45,15 @@ body {
 }
 
 .chat-root {
+  /* Phase R6 fix — was `position: fixed; bottom: 16px; right: 16px;
+     width: 100vw; height: 100vh;` which made this box extend 16px past
+     the iframe's right + bottom edges. The launcher at `right: 8px`
+     inside it ended up 8px past the iframe boundary and got clipped by
+     the iframe's overflow. The whole thing is supposed to fill the
+     iframe exactly so absolute-positioned children measure offsets
+     from the iframe's actual edges. */
   position: fixed;
-  bottom: 16px;
-  right: 16px;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   pointer-events: none;
 }
 

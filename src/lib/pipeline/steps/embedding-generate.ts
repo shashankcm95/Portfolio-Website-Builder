@@ -250,70 +250,78 @@ function buildProfileInput(
   portfolioRow: typeof portfolios.$inferSelect,
   ownerRow: typeof users.$inferSelect | undefined
 ): ChunkerProfileInput {
+  // Phase R6 fix — read career fields from the LIVE columns on portfolioRow,
+  // not from the stale `profile_data` JSONB snapshot. The pipeline never
+  // writes back to that JSONB column, so it can be months out of date
+  // relative to the live identity-editor columns. Bug surfaced when "which
+  // companies has he worked for" kept hitting the canned refusal even after
+  // a re-embed: `pd.basics.namedEmployers` was empty in the JSON snapshot
+  // while `portfolios.named_employers` was correctly populated.
+  //
+  // We still read bio + skills + name from the JSONB because they don't
+  // have first-class column equivalents here; experience comes from the
+  // owner's resumeJson (the same source assembleProfileData() uses).
+
   const pd =
     (portfolioRow.profileData as Record<string, unknown> | null) ?? {};
-  const basics = (pd.basics as Record<string, unknown> | undefined) ?? {};
-  const skills = Array.isArray(pd.skills)
+  const basicsSnapshot =
+    (pd.basics as Record<string, unknown> | undefined) ?? {};
+  const skillsSnapshot = Array.isArray(pd.skills)
     ? (pd.skills as Array<{ name?: unknown }>)
-    : [];
-  const experienceRaw = Array.isArray(pd.experience)
-    ? (pd.experience as Array<Record<string, unknown>>)
     : [];
 
   const ownerName =
-    (typeof basics.name === "string" && basics.name.trim()) ||
+    (typeof basicsSnapshot.name === "string" && basicsSnapshot.name.trim()) ||
     ownerRow?.name ||
     ownerRow?.githubUsername ||
     "Portfolio owner";
 
   const bio =
-    (typeof basics.summary === "string" && basics.summary.trim()) || null;
+    (typeof basicsSnapshot.summary === "string" &&
+      basicsSnapshot.summary.trim()) ||
+    null;
 
-  const topSkills = skills
+  const topSkills = skillsSnapshot
     .map((s) => (typeof s.name === "string" ? s.name : ""))
     .filter((n) => n.length > 0)
     .slice(0, 12);
 
-  // Phase R6 — surface career data into the corpus so chatbot retrieval
-  // can answer employer/availability/role questions.
-  const positioning =
-    (typeof basics.positioning === "string" && basics.positioning.trim()) ||
-    null;
-  const currentRole =
-    (typeof basics.currentRole === "string" && basics.currentRole.trim()) ||
-    null;
-  const currentCompany =
-    (typeof basics.currentCompany === "string" &&
-      basics.currentCompany.trim()) ||
-    null;
-  const namedEmployers = Array.isArray(basics.namedEmployers)
-    ? (basics.namedEmployers as unknown[]).filter(
+  // ── Live-column reads ──────────────────────────────────────────────────
+  const positioning = portfolioRow.positioning ?? null;
+  const currentRole = portfolioRow.currentRole ?? null;
+  const currentCompany = portfolioRow.currentCompany ?? null;
+
+  const namedEmployers = Array.isArray(portfolioRow.namedEmployers)
+    ? (portfolioRow.namedEmployers as unknown[]).filter(
         (e): e is string => typeof e === "string" && e.trim().length > 0
       )
     : [];
-  const hiring =
-    basics.hiring && typeof basics.hiring === "object"
-      ? (basics.hiring as ChunkerProfileInput["hiring"])
-      : null;
+
+  const hiring: ChunkerProfileInput["hiring"] = portfolioRow.hireStatus
+    ? {
+        status: portfolioRow.hireStatus as
+          | "available"
+          | "open"
+          | "not-looking",
+        ctaText: portfolioRow.hireCtaText ?? null,
+        ctaHref: portfolioRow.hireCtaHref ?? null,
+      }
+    : null;
+
   const availability =
-    basics.availability && typeof basics.availability === "object"
-      ? (basics.availability as ChunkerProfileInput["availability"])
+    portfolioRow.availability && typeof portfolioRow.availability === "object"
+      ? (portfolioRow.availability as ChunkerProfileInput["availability"])
       : null;
 
-  const experience = experienceRaw
-    .map((e) => ({
-      company: typeof e.company === "string" ? e.company : "",
-      position: typeof e.position === "string" ? e.position : "",
-      startDate: typeof e.startDate === "string" ? e.startDate : null,
-      endDate: typeof e.endDate === "string" ? e.endDate : null,
-      summary: typeof e.summary === "string" ? e.summary : null,
-      highlights: Array.isArray(e.highlights)
-        ? (e.highlights as unknown[]).filter(
-            (h): h is string => typeof h === "string"
-          )
-        : null,
-    }))
-    .filter((e) => e.company && e.position);
+  // ── Experience from the resume JSON ────────────────────────────────────
+  // The user's resumeJson lives on the users table; assembleProfileData
+  // reads from `resumeJson.work[]` and maps it through extractExperience.
+  // Mirror that here so the chunker sees the same data the templates see.
+  const resumeJson = (ownerRow?.resumeJson as
+    | Record<string, unknown>
+    | null
+    | undefined) ?? null;
+  const experience = extractExperienceFromResume(resumeJson);
 
   return {
     portfolioId: portfolioRow.id,
@@ -328,4 +336,40 @@ function buildProfileInput(
     availability,
     experience: experience.length > 0 ? experience : null,
   };
+}
+
+/**
+ * Local mirror of profile-data.ts:extractExperience. Imported here rather
+ * than from profile-data.ts to keep the pipeline step's dependency
+ * footprint flat (profile-data.ts pulls in the full ProfileData
+ * assembler chain). Kept narrow — only the fields the chunker needs.
+ */
+function extractExperienceFromResume(
+  resumeJson: Record<string, unknown> | null
+): NonNullable<ChunkerProfileInput["experience"]> {
+  if (!resumeJson || !Array.isArray(resumeJson.work)) return [];
+  const out: NonNullable<ChunkerProfileInput["experience"]> = [];
+  for (const w of resumeJson.work as Array<Record<string, unknown>>) {
+    const company =
+      typeof w.name === "string"
+        ? w.name
+        : typeof w.company === "string"
+          ? w.company
+          : "";
+    const position = typeof w.position === "string" ? w.position : "";
+    if (!company || !position) continue;
+    out.push({
+      company,
+      position,
+      startDate: typeof w.startDate === "string" ? w.startDate : null,
+      endDate: typeof w.endDate === "string" ? w.endDate : null,
+      summary: typeof w.summary === "string" ? w.summary : null,
+      highlights: Array.isArray(w.highlights)
+        ? (w.highlights as unknown[]).filter(
+            (h): h is string => typeof h === "string"
+          )
+        : null,
+    });
+  }
+  return out;
 }
