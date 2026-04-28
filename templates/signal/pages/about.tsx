@@ -57,7 +57,7 @@ export function AboutPage({ profileData }: AboutPageProps) {
           </div>
           <ul className="xp-list">
             {experience.map((x, i) => (
-              <li className="xp-item" key={`${x.company}-${i}`}>
+              <li className="xp-item scroll-reveal" key={`${x.company}-${i}`}>
                 <div className="xp-when">
                   {formatRange(x.startDate, x.endDate)}
                 </div>
@@ -80,7 +80,7 @@ export function AboutPage({ profileData }: AboutPageProps) {
           </div>
           <ul className="xp-list">
             {education.map((ed, i) => (
-              <li className="xp-item" key={`${ed.institution}-${i}`}>
+              <li className="xp-item scroll-reveal" key={`${ed.institution}-${i}`}>
                 <div className="xp-when">
                   {formatRange(ed.startDate ?? "", ed.endDate)}
                 </div>

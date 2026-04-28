@@ -731,6 +731,24 @@ a:hover { color: var(--color-accent); }
   }
 }
 
+/* ─── §2.10 Scroll-reveal (view-timeline) ───────────────────────── */
+
+.scroll-reveal {
+  animation: scrollReveal linear;
+  animation-timeline: view();
+  animation-range: entry 5% cover 35%;
+}
+@keyframes scrollReveal {
+  from { opacity: 0.2; transform: translateY(16px); }
+  to   { opacity: 1;   transform: translateY(0); }
+}
+@supports not (animation-timeline: view()) {
+  .scroll-reveal { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal { animation: none; opacity: 1; transform: none; }
+}
+
 /* ─── §2.1 Liquid-glass (subtle variant) ────────────────────────── */
 
 .liquid-glass {

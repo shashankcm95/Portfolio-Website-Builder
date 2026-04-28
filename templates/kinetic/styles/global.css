@@ -81,6 +81,16 @@ a {
 }
 a:hover { color: var(--color-accent); }
 
+/* a11y — replace browser-default blue/black focus ring with the cinematic
+   coral accent so keyboard navigation reads with the dark palette rather
+   than against it. `:focus-visible` (not `:focus`) keeps mouse-clicks
+   from showing the ring, which matches user expectation. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 /* ─── Hero gradient backdrop (CSS-animated, video placeholder) ─────── */
 /* Future: when basics.heroVideoUrl exists (Phase #5), this is replaced  */
 /* by a real <video> + rAF fade loop. For now, a slow rotating radial    */
