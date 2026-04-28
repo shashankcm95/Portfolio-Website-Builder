@@ -21,12 +21,30 @@ export function Hero({ basics }: HeroProps) {
   return (
     <section className="hero">
       <div className="hero-inner">
-        <p className="hero-eyebrow">Portfolio · {new Date().getFullYear()}</p>
-        <h1 className="hero-name">{basics.name}</h1>
-        <p className="hero-label">{tagline}</p>
+        <p
+          className="hero-eyebrow animate-blur-fade-up"
+          style={{ "--d": "0ms" } as React.CSSProperties}
+        >
+          Portfolio · {new Date().getFullYear()}
+        </p>
+        <h1
+          className="hero-name animate-blur-fade-up"
+          style={{ "--d": "130ms" } as React.CSSProperties}
+        >
+          {basics.name}
+        </h1>
+        <p
+          className="hero-label animate-blur-fade-up"
+          style={{ "--d": "260ms" } as React.CSSProperties}
+        >
+          {tagline}
+        </p>
 
         {basics.anchorStat && (
-          <p className="hero-anchor">
+          <p
+            className="hero-anchor animate-blur-fade-up"
+            style={{ "--d": "390ms" } as React.CSSProperties}
+          >
             <strong>{basics.anchorStat.value}</strong>{" "}
             <em>{basics.anchorStat.unit}</em>
             {basics.anchorStat.context && (
@@ -42,15 +60,26 @@ export function Hero({ basics }: HeroProps) {
         <HeroSignals basics={basics} />
 
         {basics.namedEmployers && basics.namedEmployers.length > 0 && (
-          <p className="hero-employers">
+          <p
+            className="hero-employers animate-blur-fade-up"
+            style={{ "--d": "520ms" } as React.CSSProperties}
+          >
             Previously at <span>{basics.namedEmployers.join(" · ")}</span>
           </p>
         )}
 
-        <p className="hero-summary">{basics.summary}</p>
+        <p
+          className="hero-summary animate-blur-fade-up"
+          style={{ "--d": "650ms" } as React.CSSProperties}
+        >
+          {basics.summary}
+        </p>
 
         {showHire && (
-          <p className="hero-hiring">
+          <p
+            className="hero-hiring animate-blur-fade-up"
+            style={{ "--d": "780ms" } as React.CSSProperties}
+          >
             <em>
               {basics.hiring!.status === "available"
                 ? "Available for new work."
@@ -64,7 +93,10 @@ export function Hero({ basics }: HeroProps) {
           </p>
         )}
 
-        <p className="hero-links">
+        <p
+          className="hero-links animate-blur-fade-up"
+          style={{ "--d": "910ms" } as React.CSSProperties}
+        >
           {basics.email && (
             <a href={`mailto:${basics.email}`}>Email</a>
           )}

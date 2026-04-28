@@ -818,3 +818,50 @@ img, svg, video, iframe, pre { max-width: 100%; }
   text-transform: none; letter-spacing: 0;
 }
 .pwb-hero-signal-sep { color: var(--ink-mute); }
+
+/* ─── §2.2 BlurFadeUp entrance — editorial-assertive variant ───────────── */
+/* Slightly bolder than classic to match the magazine-spread / neo-brutalist */
+/* confidence: blur 14px / lift 30px / 1s / 130ms stagger. The hero h1 at    */
+/* clamp(3rem, 8vw, 6rem) reads as *deliberately* arriving rather than       */
+/* fading politely.                                                          */
+
+@keyframes blurFadeUp {
+  from { opacity: 0; filter: blur(14px); transform: translateY(30px); }
+  to   { opacity: 1; filter: blur(0);    transform: translateY(0); }
+}
+.animate-blur-fade-up {
+  opacity: 0;
+  animation: blurFadeUp 1s ease-out forwards;
+  animation-delay: var(--d, 0ms);
+}
+
+/* ─── §2.10 Scroll-reveal — editorial-standard variant ─────────────────── */
+
+.scroll-reveal {
+  animation: scrollReveal linear;
+  animation-timeline: view();
+  animation-range: entry 5% cover 35%;
+}
+@keyframes scrollReveal {
+  from { opacity: 0.2; transform: translateY(22px); }
+  to   { opacity: 1;   transform: translateY(0); }
+}
+@supports not (animation-timeline: view()) {
+  .scroll-reveal { opacity: 1; transform: none; }
+}
+
+/* ─── Reduced motion ────────────────────────────────────────────────────── */
+/* Hard requirement per docs/motion-patterns.md §5.4 — every keyframe gets   */
+/* an explicit no-op. Also gates §2.15 smooth-scroll (none declared in this  */
+/* template, but the override is cheap insurance for future additions).     */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto; }
+  .animate-blur-fade-up { animation: none; opacity: 1; filter: none; transform: none; }
+  .scroll-reveal       { animation: none; opacity: 1; transform: none; }
+}

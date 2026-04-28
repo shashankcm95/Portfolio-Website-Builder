@@ -25,7 +25,7 @@ export function HomePage({ profileData }: HomePageProps) {
       {list.length > 0 && (
         <section className="section">
           <div className="container">
-            <div className="section-header">
+            <div className="section-header scroll-reveal">
               <p className="section-eyebrow">Selected work</p>
               <h2>Recent case studies</h2>
             </div>

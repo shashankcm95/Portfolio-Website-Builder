@@ -30,7 +30,7 @@ export function About({ profileData }: AboutProps) {
   return (
     <div className="container">
       <section className="section">
-        <div className="section-header">
+        <div className="section-header scroll-reveal">
           <p className="section-eyebrow">Profile</p>
           <h2>About</h2>
         </div>
@@ -39,7 +39,7 @@ export function About({ profileData }: AboutProps) {
 
       {skills.length > 0 && (
         <section className="section">
-          <div className="section-header">
+          <div className="section-header scroll-reveal">
             <p className="section-eyebrow">Stack</p>
             <h2>Skills &amp; Tools</h2>
           </div>
@@ -60,13 +60,13 @@ export function About({ profileData }: AboutProps) {
 
       {experience && experience.length > 0 && (
         <section className="section">
-          <div className="section-header">
+          <div className="section-header scroll-reveal">
             <p className="section-eyebrow">Career</p>
             <h2>Experience</h2>
           </div>
           <div>
             {experience.map((exp, i) => (
-              <div key={i} className="timeline-row">
+              <div key={i} className="timeline-row scroll-reveal">
                 <div className="timeline-when">
                   {exp.startDate?.slice(0, 4) ?? ""}
                   {exp.endDate ? ` — ${exp.endDate.slice(0, 4)}` : " — Present"}
@@ -91,13 +91,13 @@ export function About({ profileData }: AboutProps) {
 
       {education && education.length > 0 && (
         <section className="section">
-          <div className="section-header">
+          <div className="section-header scroll-reveal">
             <p className="section-eyebrow">School</p>
             <h2>Education</h2>
           </div>
           <div>
             {education.map((edu, i) => (
-              <div key={i} className="timeline-row">
+              <div key={i} className="timeline-row scroll-reveal">
                 <div className="timeline-when">
                   {edu.startDate?.slice(0, 4) ?? ""}
                   {edu.endDate ? ` — ${edu.endDate.slice(0, 4)}` : ""}

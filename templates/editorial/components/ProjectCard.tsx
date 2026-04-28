@@ -24,7 +24,7 @@ export function ProjectCard({ project, num }: ProjectCardProps) {
   const techShort = project.techStack.slice(0, 5).join(" · ");
 
   return (
-    <li className="case-item">
+    <li className="case-item scroll-reveal">
       <span className="case-num">{num.toString().padStart(2, "0")}</span>
       <div className="case-body">
         <h3 className="case-title">
