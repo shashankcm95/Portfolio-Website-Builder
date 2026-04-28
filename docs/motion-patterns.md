@@ -391,6 +391,103 @@ A line that swaps a word every 2 s. 100% CSS:
 
 Pair with `:root[data-theme="dark"] { … }` in the template's CSS.
 
+### 2.13 Scroll-driven active-nav highlight
+
+Used by the `signal` rail (and any pinned-nav layout where the visible
+section should mark its corresponding link). CSS scroll-timeline can't
+express *cross-element state* (the section is in the right column, the link
+is in the rail) — vanilla JS via `IntersectionObserver` is the right tool.
+
+```js
+(() => {
+  if (!('IntersectionObserver' in window)) return;
+  const sections = [...document.querySelectorAll('main section[id]')];
+  if (!sections.length) return;
+
+  // Build a map: sectionId → nav anchor element. Match both "#work"
+  // and "/path/#work" hrefs so home-page anchors don't break.
+  const linkMap = {};
+  document.querySelectorAll('.rail-nav a[href]').forEach(a => {
+    const m = (a.getAttribute('href') || '').match(/#([^/]+)$/);
+    if (m) linkMap[m[1]] = a;
+  });
+
+  let activeId = null;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const id = e.target.id;
+      if (activeId && linkMap[activeId]) linkMap[activeId].classList.remove('is-active');
+      activeId = id;
+      if (linkMap[id]) linkMap[id].classList.add('is-active');
+    });
+  }, {
+    // Trigger when section crosses the middle third of the viewport.
+    rootMargin: '-30% 0px -60% 0px',
+    threshold: 0,
+  });
+  sections.forEach(s => io.observe(s));
+})();
+```
+
+CSS: pair `.is-active` with whatever active style the page already uses,
+e.g. `.rail-nav a.active, .rail-nav a.is-active { color: var(--fg); }` —
+this lets server-side `currentPage` styling and client-side scroll tracking
+coexist without conflict. Toggling a class is **not** an animation, so this
+runs even under `prefers-reduced-motion`.
+
+### 2.14 Availability badge
+
+Used by the `studio` template to surface the freelancer's availability as a
+prominent hero eyebrow (replacing the older 0.8 rem mono "Taking new work"
+line). A pill with a colored dot indicator, three statuses driven by
+`profileData.basics.hiring.status` ∈ `available | open | not-looking`.
+
+```html
+<span class="availability-badge">Taking new work</span>
+<span class="availability-badge is-open">Open to conversations</span>
+```
+
+```css
+.availability-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--accent);
+  background: var(--accent-tint, #fdf0eb);
+  color: var(--accent-text, #8a3612); /* must hit 4.5:1 vs background */
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.availability-badge::before {
+  content: "";
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--positive, #2d6a4f);
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.2);
+}
+.availability-badge.is-open {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.availability-badge.is-open::before {
+  background: var(--faint);
+  box-shadow: none;
+}
+```
+
+**Contrast caveat:** verify the badge's foreground/background pair
+(particularly when the brand accent is bright like terracotta) against the
+WCAG AA 4.5:1 floor. If the chosen accent fails, use a darker text variant
+(`#8a3612` instead of `#c24d2c` against `#fdf0eb` gives 5.1:1).
+
 ---
 
 ## 3. Per-template motif index
@@ -431,6 +528,7 @@ and translate to static SSR per Section 0.
 | `useScroll` / `useTransform` | `animation-timeline: view()` (fallback: opacity 1) |
 | Stagger via `transition={{staggerChildren: .08}}` | Pre-compute index, set `style="--i:N"`, multiply in keyframe delay |
 | `<AnimatePresence>` page transitions | View Transitions API (`@view-transition`) — Chromium only, cosmetic only |
+| `useEffect` watching scroll position to highlight nav | `IntersectionObserver` on `<section id>` toggling `.is-active` on the matching `[href="#id"]` link — see §2.13 |
 
 ---
 
