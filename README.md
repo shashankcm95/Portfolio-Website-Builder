@@ -7,10 +7,53 @@ by a verification pipeline, so the site is harder to bluff and faster to
 trust.
 
 The builder ships the full loop — ingest, analyze, narrate, verify, render,
-deploy, and measure — as a single Next.js app backed by Postgres. Five
-hand-authored templates cover SDE, SRE, research, leader, and
-designer-developer archetypes; a layout-review agent flags wrap, contrast, and
-font-size issues before you share.
+deploy, and measure — as a single Next.js app backed by Postgres. Eight
+hand-authored templates cover SDE, SRE, research, leader, designer-developer,
+freelancer, and design-engineer archetypes; a layout-review agent flags wrap,
+contrast, and font-size issues before you share.
+
+---
+
+## What's new — Phase R5
+
+The most recent release lands a major lift to the template system, the
+visual quality bar, and the motion-design tooling around it.
+
+- **Eight templates, up from five.** Two design-forward additions ship with
+  the release: `signal` (Brittany-Chiang-style design-engineer with pinned
+  rail, magnetic hover, scroll-aware nav) and `kinetic` (cinematic Velorah-
+  style with BlurText word-reveal hero, italic-serif accents, liquid-glass
+  nav, partners marquee). Plus `studio` (freelancer-first) was promoted out
+  of preview.
+- **Cinematic video-bg opt-in.** A new optional `heroVideoUrl` field lets
+  studio-template users drop in any HTTPS `.mp4` or `.m3u8` (HLS) URL — the
+  hero swaps to a dark cinematic backdrop with a custom rAF fade-loop and
+  vendored `hls.js` (gated to load only when the source is HLS). The
+  static hero renders byte-identically when the field is unset, so existing
+  portfolios are unaffected.
+- **Motion language across every template.** Subtle entrance animations
+  (BlurFadeUp staggered hero, view-timeline scroll reveals) tuned to each
+  template's personality: cinematic on `kinetic`, conservative on
+  `minimal`/`classic`, near-invisible on the academic `research` template.
+  Every keyframe ships with a `prefers-reduced-motion` no-op.
+- **Motion pattern library.** `docs/motion-patterns.md` is the new source
+  of truth for liquid-glass, blur reveals, video fade loops, HLS bootstraps,
+  marquees, floating-pill navs, scroll-driven animations, theme toggles,
+  and more — distilled from a 30-template reference corpus and translated
+  to this repo's static-SSR + 5 KB JS budget. Includes a Framer-Motion →
+  static-SSR cheatsheet so future templates don't re-derive the same
+  translations.
+- **`motion-ui-engineer` subagent + `/review-template-motion` slash
+  command.** A specialized Claude Code agent that consults the pattern
+  library and applies a six-gate review (motion budget, reduced motion,
+  a11y, static SSR, pattern reuse, test gates) on any branch that touches
+  `templates/<name>/`. Use it pre-merge for an isolated, structured
+  diagnostic — see `.claude/workflows/template-motion-review.md`.
+- **Lighthouse a11y closed to 100.** A WCAG AA contrast violation in the
+  `terminal` template's `.prompt` and `.ls-perm` text was found via the Q1
+  audit and fixed; an axe-core CI test now guards every template's home
+  + about page against future regressions (1209 tests, 16/16 axe AA cases,
+  42 snapshot guards).
 
 ---
 
@@ -127,22 +170,62 @@ Open [http://localhost:3000](http://localhost:3000) and sign in with GitHub.
 
 ## Templates
 
-Five archetypes ship with the builder. Each implements the same 6-component +
-5-page contract (`Layout`, `Hero`, `About`, `ProjectCard`, `ProjectDetail`,
-`ContactSection`; pages `index`, `about`, `projects`, `project-detail`,
-`contact`) and advertises an audience tag in `template.config.json`.
+Eight archetypes ship with the builder. Each implements the same 5-page
+contract (`index`, `about`, `projects`, `project-detail`, `contact`) and
+advertises an audience tag in `template.config.json`. Each renders to fully
+static HTML via `renderToStaticMarkup` — no client-side React framework
+ships in the published bundle. Per-template motion ships as small vanilla-JS
+bootstraps capped at 5 KB.
 
 | ID | Audience | Feel |
 |---|---|---|
-| `minimal` | Default / neutral | Clean single-column, neutral palette |
-| `classic` | SDE generalist | Editorial two-column with project grid |
-| `research` | ML researchers, PhDs | Academic serif, near-black on off-white, Crimson Pro + Inter |
+| `minimal` | Default / neutral | Clean single-column, neutral palette, soft entrance animation |
+| `classic` | SDE generalist | Editorial two-column with project grid, polished entrance |
+| `research` | ML researchers, PhDs | Academic serif, near-black on off-white, Crimson Pro + Inter, near-invisible motion |
 | `terminal` | SRE / DevOps / infra | JetBrains Mono, Monokai-ish dark palette, `$ whoami` section headers |
 | `editorial` | Leaders, designer-devs | Fraunces display, cream background, vermillion accent, numbered case studies |
+| `signal` | Senior design-engineers | Dark Brittany-Chiang style — pinned left rail, scroll-aware nav, magnetic hover, glass anchor stat |
+| `studio` | Freelancers, consultants | Light terracotta-on-cream, sticky topbar, testimonial carousel, marquee'd client wall, optional video-bg hero |
+| `kinetic` | Cinematic / motion-rich | BlurText word-reveal hero with italic-serif accent, liquid-glass floating-pill nav, partners marquee, theme toggle |
 
 The template picker in Portfolio Settings shows audience chips and a
 "Preview this template" link that renders any template against the current
 portfolio's data without persisting.
+
+### Cinematic video-bg hero (studio + future templates)
+
+The `studio` template optionally accepts a `heroVideoUrl` (HTTPS, `.mp4` or
+`.m3u8`) via Portfolio Settings → Identity. When set, the hero swaps to a
+dark cinematic backdrop with a custom rAF fade-loop and HLS bootstrap; when
+unset, the static hero renders unchanged. Self-hosted `hls.js` ships
+alongside the published deploy and only loads when the configured URL is an
+HLS playlist.
+
+---
+
+## Motion system
+
+Templates are governed by a shared motion pattern library at
+[`docs/motion-patterns.md`](./docs/motion-patterns.md) — fourteen primitives
+(liquid-glass, BlurFadeUp, BlurText, rAF video fade, HLS bootstrap,
+floating-pill navs, marquees, scroll-timeline reveals, magnetic hover,
+italic-serif accents, role cycling, theme toggle, scroll-driven active nav,
+availability badges) distilled from a 30-template reference corpus. Each
+primitive includes a `prefers-reduced-motion` no-op and a Framer-Motion →
+static-SSR translation note.
+
+A specialized Claude Code subagent —
+[`motion-ui-engineer`](./.claude/agents/motion-ui-engineer.md) — and slash
+command `/review-template-motion` automate pre-merge motion review. The
+agent reads the pattern library, diffs the working tree, applies six gates
+(motion budget ≤ 5 KB JS, reduced-motion fallbacks, a11y AA, static SSR
+discipline, pattern reuse, test pass), and returns a structured
+pass/concerns/blockers/verdict report. The full review checklist lives at
+[`.claude/workflows/template-motion-review.md`](./.claude/workflows/template-motion-review.md).
+
+The same pattern library is mirrored into a portable global skill at
+`~/.claude/skills/motion-ui-engineering/SKILL.md` so motion-UI knowledge
+compounds across projects, not just this repo.
 
 ---
 
@@ -355,7 +438,7 @@ GitHub repos + resume ─► Ingestion ─► Analysis (Claude)
                              Verified claims + evidence
                                          │
                                          ▼
-                            Template renderer (5 templates)
+                            Template renderer (8 templates)
                                          │
                                          ▼
                         Static HTML + CSS ─► Preview / Deploy
@@ -372,14 +455,21 @@ GitHub repos + resume ─► Ingestion ─► Analysis (Claude)
 ## Testing
 
 ```bash
-npm test                   # unit + integration (Jest)
-npm run test:e2e           # Playwright e2e
-npm run typecheck          # TypeScript
+npm test                                            # unit + integration (Jest, 1209 tests)
+npm test -- --testPathPattern="a11y-axe"            # axe-core WCAG AA gate (16 cases)
+npm test -- --testPathPattern="snapshots"           # template render snapshots (40 outputs)
+npm run test:e2e                                    # Playwright e2e
+npm run typecheck                                   # TypeScript
 ```
 
 Integration tests hit a dedicated test database — see `tests/setup/` for the
 fixtures. Running the layout-review integration tests requires Chromium to
 be installed.
+
+The axe-core suite renders every template's home + about page with the real
+template CSS inlined into a JSDOM document, then runs WCAG 2.1 AA rules
+against it. Any color-contrast / heading-order / ARIA regression in a future
+template change is caught at PR time, not after a real-site Lighthouse audit.
 
 ---
 
