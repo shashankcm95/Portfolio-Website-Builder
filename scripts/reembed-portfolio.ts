@@ -14,18 +14,30 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-// Load .env.local before importing the DB client (same pattern as seed-db.ts).
-const envPath = resolve(process.cwd(), ".env.local");
-try {
-  const raw = readFileSync(envPath, "utf-8");
-  for (const line of raw.split("\n")) {
-    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
-    if (m && !process.env[m[1]]) {
-      process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+// Load .env.local + .env before importing modules that read DATABASE_URL
+// at module init time. Mirrors scripts/seed-db.ts's parser exactly so this
+// script works in the same envs the seed script does.
+for (const file of [".env.local", ".env"]) {
+  try {
+    const contents = readFileSync(resolve(process.cwd(), file), "utf-8");
+    for (const rawLine of contents.split("\n")) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) continue;
+      const eq = line.indexOf("=");
+      if (eq === -1) continue;
+      const key = line.slice(0, eq).trim();
+      let value = line.slice(eq + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      if (!(key in process.env)) process.env[key] = value;
     }
+  } catch {
+    // Both files are optional.
   }
-} catch {
-  // .env.local optional — environment may already be set.
 }
 
 async function main() {
@@ -44,8 +56,14 @@ async function main() {
     "../src/lib/pipeline/steps/embedding-generate"
   );
 
+  // The projects table has no `name` column — use displayName or repoName
+  // for the human-readable label, falling back to a truncated id.
   const rows = await db
-    .select({ id: projects.id, name: projects.name })
+    .select({
+      id: projects.id,
+      displayName: projects.displayName,
+      repoName: projects.repoName,
+    })
     .from(projects)
     .where(eq(projects.portfolioId, portfolioId));
 
@@ -64,7 +82,8 @@ async function main() {
   let okCount = 0;
   let errCount = 0;
   for (const row of rows) {
-    process.stdout.write(`  ${row.name} ...`);
+    const label = row.displayName ?? row.repoName ?? row.id.slice(0, 8);
+    process.stdout.write(`  ${label} ...`);
     try {
       const result = await runEmbeddingGenerate(row.id, ac.signal);
       if (result.ok) {
