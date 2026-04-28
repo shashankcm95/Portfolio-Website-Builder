@@ -3,6 +3,8 @@ import type { Project } from "@/templates/_shared/types";
 
 interface ProjectCardProps {
   project: Project;
+  /** Additional CSS classes forwarded to the <li> wrapper (e.g. scroll-reveal). */
+  className?: string;
 }
 
 function slugify(name: string): string {
@@ -13,13 +15,14 @@ function slugify(name: string): string {
     .slice(0, 80);
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, className }: ProjectCardProps) {
   const slug = slugify(project.name);
   const href = `/projects/${slug}/`;
   const blurb = project.sections.summary || project.description;
+  const liClass = ["project-card", className].filter(Boolean).join(" ");
 
   return (
-    <li className="project-card">
+    <li className={liClass}>
       <h3>
         <a href={href}>{project.name}</a>
       </h3>

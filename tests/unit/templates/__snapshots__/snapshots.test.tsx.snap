@@ -110,29 +110,459 @@ exports[`Template snapshots — 7 templates × 5 pages = 35 outputs template: re
 
 exports[`Template snapshots — 7 templates × 5 pages = 35 outputs template: signal renders the about page 1`] = `
 "<!DOCTYPE html>
-<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/" class="active">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section aria-label="About"><div class="section-head"><span class="section-eyebrow">About</span><h2>Jane Doe</h2></div><div class="prose"><p><strong style="color:var(--color-text)">I build accessible, pixel-perfect experiences for the web.</strong></p><p>Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><p>Previously at <strong>Apple</strong>, <strong>Klaviyo</strong>.</p></div></section><section aria-label="Experience"><div class="section-head"><span class="section-eyebrow">Path</span><h2>Experience</h2></div><ul class="xp-list"><li class="xp-item"><div class="xp-when">2022 — 2025</div><div class="xp-what"><h4>Senior Software Engineer</h4><p class="role-co">Apple</p><p>Led the design-system team.</p></div></li></ul></section><section aria-label="Education"><div class="section-head"><span class="section-eyebrow">Study</span><h2>Education</h2></div><ul class="xp-list"><li class="xp-item"><div class="xp-when">2019 — 2021</div><div class="xp-what"><h4>M.S., Computer Science</h4><p class="role-co">Cornell Tech</p></div></li></ul></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script></body></html>"
+<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/" class="active">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section aria-label="About"><div class="section-head"><span class="section-eyebrow">About</span><h2>Jane Doe</h2></div><div class="prose"><p><strong style="color:var(--color-text)">I build accessible, pixel-perfect experiences for the web.</strong></p><p>Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><p>Previously at <strong>Apple</strong>, <strong>Klaviyo</strong>.</p></div></section><section aria-label="Experience"><div class="section-head"><span class="section-eyebrow">Path</span><h2>Experience</h2></div><ul class="xp-list"><li class="xp-item"><div class="xp-when">2022 — 2025</div><div class="xp-what"><h4>Senior Software Engineer</h4><p class="role-co">Apple</p><p>Led the design-system team.</p></div></li></ul></section><section aria-label="Education"><div class="section-head"><span class="section-eyebrow">Study</span><h2>Education</h2></div><ul class="xp-list"><li class="xp-item"><div class="xp-when">2019 — 2021</div><div class="xp-what"><h4>M.S., Computer Science</h4><p class="role-co">Cornell Tech</p></div></li></ul></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script><script>/**
+ * Signal template — progressive enhancement bootstrap.
+ *
+ * §2.9  Magnetic hover on [data-magnet] project cards.
+ * §nav  Scroll-driven active nav: IntersectionObserver watches each
+ *       <section id="…"> and toggles .is-active on the matching
+ *       [href="#id"] rail nav link.
+ *
+ * Constraints:
+ *   - IIFE, no dependencies, ≤5 KB minified.
+ *   - Fully honours prefers-reduced-motion (magnetic skipped; IO still runs
+ *     because toggling a class is not an animation).
+ *   - Does not touch currentPage-based .active class — coexists.
+ */
+(function () {
+  var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── §2.9 Magnetic hover ──────────────────────────────────────── */
+  if (!reducedMotion) {
+    var magnets = document.querySelectorAll("[data-magnet]");
+    magnets.forEach(function (el) {
+      el.addEventListener("pointermove", function (e) {
+        var r = el.getBoundingClientRect();
+        var x = (e.clientX - r.left - r.width / 2) * 0.15;
+        var y = (e.clientY - r.top - r.height / 2) * 0.15;
+        el.style.transform = "translate(" + x + "px, " + y + "px)";
+      });
+      el.addEventListener("pointerleave", function () {
+        el.style.transform = "";
+      });
+    });
+  }
+
+  /* ── Scroll-driven active nav ─────────────────────────────────── */
+  if (!("IntersectionObserver" in window)) return;
+
+  // Collect all <section id="…"> elements in the main content column.
+  var sections = Array.prototype.slice.call(
+    document.querySelectorAll("main section[id]")
+  );
+  if (sections.length === 0) return;
+
+  // Build a map: sectionId → nav anchor element.
+  // Nav links are [href="#id"] inside .rail-nav. We also accept
+  // plain href="/path/#id" patterns so the home anchor stat pill
+  // doesn't break anything.
+  var navLinks = document.querySelectorAll(".rail-nav a[href]");
+  var linkMap = {};
+  navLinks.forEach(function (a) {
+    var href = a.getAttribute("href") || "";
+    // Match both "#work" and "/#work" shapes.
+    var match = href.match(/#([^/]+)$/);
+    if (match) {
+      linkMap[match[1]] = a;
+    }
+  });
+
+  var activeId = null;
+
+  var observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        var id = entry.target.id;
+        if (entry.isIntersecting) {
+          // Section entered viewport — mark it active.
+          if (activeId && linkMap[activeId]) {
+            linkMap[activeId].classList.remove("is-active");
+          }
+          activeId = id;
+          if (linkMap[id]) {
+            linkMap[id].classList.add("is-active");
+          }
+        }
+      });
+    },
+    {
+      // Trigger when section crosses the middle third of the viewport.
+      rootMargin: "-30% 0px -60% 0px",
+      threshold: 0,
+    }
+  );
+
+  sections.forEach(function (section) {
+    observer.observe(section);
+  });
+})();
+</script></body></html>"
 `;
 
 exports[`Template snapshots — 7 templates × 5 pages = 35 outputs template: signal renders the contact page 1`] = `
 "<!DOCTYPE html>
-<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/" class="active">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section aria-label="Contact"><div class="section-head"><span class="section-eyebrow">Contact</span><h2>Reach out</h2></div><div class="contact-block"><p style="margin:0;color:var(--color-muted)">Currently available for new work.</p><div class="prose" style="margin:0"><p style="margin:0">I build accessible, pixel-perfect experiences for the web.</p></div><p style="margin:0"><a class="hero-cta" href="mailto:jane@example.test">Let&#x27;s work together</a></p><div style="display:flex;flex-wrap:wrap;gap:16px"><a class="contact-link" href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a class="contact-link" href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a></div></div></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script></body></html>"
+<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/" class="active">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section aria-label="Contact"><div class="section-head"><span class="section-eyebrow">Contact</span><h2>Reach out</h2></div><div class="contact-block"><p style="margin:0;color:var(--color-muted)">Currently available for new work.</p><div class="prose" style="margin:0"><p style="margin:0">I build accessible, pixel-perfect experiences for the web.</p></div><p style="margin:0"><a class="hero-cta" href="mailto:jane@example.test">Let&#x27;s work together</a></p><div style="display:flex;flex-wrap:wrap;gap:16px"><a class="contact-link" href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a class="contact-link" href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a></div></div></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script><script>/**
+ * Signal template — progressive enhancement bootstrap.
+ *
+ * §2.9  Magnetic hover on [data-magnet] project cards.
+ * §nav  Scroll-driven active nav: IntersectionObserver watches each
+ *       <section id="…"> and toggles .is-active on the matching
+ *       [href="#id"] rail nav link.
+ *
+ * Constraints:
+ *   - IIFE, no dependencies, ≤5 KB minified.
+ *   - Fully honours prefers-reduced-motion (magnetic skipped; IO still runs
+ *     because toggling a class is not an animation).
+ *   - Does not touch currentPage-based .active class — coexists.
+ */
+(function () {
+  var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── §2.9 Magnetic hover ──────────────────────────────────────── */
+  if (!reducedMotion) {
+    var magnets = document.querySelectorAll("[data-magnet]");
+    magnets.forEach(function (el) {
+      el.addEventListener("pointermove", function (e) {
+        var r = el.getBoundingClientRect();
+        var x = (e.clientX - r.left - r.width / 2) * 0.15;
+        var y = (e.clientY - r.top - r.height / 2) * 0.15;
+        el.style.transform = "translate(" + x + "px, " + y + "px)";
+      });
+      el.addEventListener("pointerleave", function () {
+        el.style.transform = "";
+      });
+    });
+  }
+
+  /* ── Scroll-driven active nav ─────────────────────────────────── */
+  if (!("IntersectionObserver" in window)) return;
+
+  // Collect all <section id="…"> elements in the main content column.
+  var sections = Array.prototype.slice.call(
+    document.querySelectorAll("main section[id]")
+  );
+  if (sections.length === 0) return;
+
+  // Build a map: sectionId → nav anchor element.
+  // Nav links are [href="#id"] inside .rail-nav. We also accept
+  // plain href="/path/#id" patterns so the home anchor stat pill
+  // doesn't break anything.
+  var navLinks = document.querySelectorAll(".rail-nav a[href]");
+  var linkMap = {};
+  navLinks.forEach(function (a) {
+    var href = a.getAttribute("href") || "";
+    // Match both "#work" and "/#work" shapes.
+    var match = href.match(/#([^/]+)$/);
+    if (match) {
+      linkMap[match[1]] = a;
+    }
+  });
+
+  var activeId = null;
+
+  var observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        var id = entry.target.id;
+        if (entry.isIntersecting) {
+          // Section entered viewport — mark it active.
+          if (activeId && linkMap[activeId]) {
+            linkMap[activeId].classList.remove("is-active");
+          }
+          activeId = id;
+          if (linkMap[id]) {
+            linkMap[id].classList.add("is-active");
+          }
+        }
+      });
+    },
+    {
+      // Trigger when section crosses the middle third of the viewport.
+      rootMargin: "-30% 0px -60% 0px",
+      threshold: 0,
+    }
+  );
+
+  sections.forEach(function (section) {
+    observer.observe(section);
+  });
+})();
+</script></body></html>"
 `;
 
 exports[`Template snapshots — 7 templates × 5 pages = 35 outputs template: signal renders the home page 1`] = `
 "<!DOCTYPE html>
-<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/" class="active">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section class="hero" aria-label="Introduction"><div class="hero-anchor"><strong>4.2k+</strong><span>GitHub stars</span><em>— on Signal Forge</em></div><p class="hero-employers">Previously at <span>Apple · Klaviyo</span></p><div class="pwb-hero-signals" aria-label="Availability and preferences"><p class="pwb-hero-signal pwb-hero-signal-place"><span class="pwb-hero-signal-value">London, UK</span></p></div><p class="hero-summary">Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><a class="hero-cta " href="mailto:jane@example.test">Let&#x27;s work together</a></section><section aria-label="Selected work"><div class="section-head"><span class="section-eyebrow">Selected work</span><h2>Recent projects</h2></div><ol class="case-list"><li class="case-card"><div class="case-num">01</div><div class="case-body"><h3 class="case-title"><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="case-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="case-desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="case-outcomes" aria-label="Project outcomes"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul></div></li><figure class="quote-block"><blockquote class="quote-text">“Working with her changed how we ship — the kind of engineer whose taste you feel in the product.”</blockquote><figcaption class="quote-attr"><strong><a href="https://example.test/alex" target="_blank" rel="noopener noreferrer">Alex Example</a></strong><span>VP Engineering · Acme</span></figcaption></figure></ol></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script></body></html>"
+<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/" class="active">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section class="hero" aria-label="Introduction"><div class="hero-anchor liquid-glass animate-blur-fade-up" style="--d:0ms"><span class="hero-anchor-star" aria-hidden="true">✦</span><strong>4.2k+</strong><span>GitHub stars</span><em>— on Signal Forge</em></div><p class="hero-employers animate-blur-fade-up" style="--d:120ms">Previously at <span>Apple · Klaviyo</span></p><div class="pwb-hero-signals" aria-label="Availability and preferences"><p class="pwb-hero-signal pwb-hero-signal-place"><span class="pwb-hero-signal-value">London, UK</span></p></div><p class="hero-summary animate-blur-fade-up" style="--d:240ms">Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><a class="hero-cta animate-blur-fade-up " href="mailto:jane@example.test" style="--d:360ms">Let&#x27;s work together</a></section><section id="work" aria-label="Selected work"><div class="section-head animate-blur-fade-up" style="--d:480ms"><span class="section-eyebrow">Selected work</span><h2>Recent projects</h2></div><ol class="case-list"><li class="case-card" data-magnet="true"><div class="case-num">01</div><div class="case-body"><h3 class="case-title"><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="case-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="case-desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="case-outcomes" aria-label="Project outcomes"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul></div></li><figure class="quote-block"><blockquote class="quote-text">“Working with her changed how we ship — the kind of engineer whose taste you feel in the product.”</blockquote><figcaption class="quote-attr"><strong><a href="https://example.test/alex" target="_blank" rel="noopener noreferrer">Alex Example</a></strong><span>VP Engineering · Acme</span></figcaption></figure></ol></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script><script>/**
+ * Signal template — progressive enhancement bootstrap.
+ *
+ * §2.9  Magnetic hover on [data-magnet] project cards.
+ * §nav  Scroll-driven active nav: IntersectionObserver watches each
+ *       <section id="…"> and toggles .is-active on the matching
+ *       [href="#id"] rail nav link.
+ *
+ * Constraints:
+ *   - IIFE, no dependencies, ≤5 KB minified.
+ *   - Fully honours prefers-reduced-motion (magnetic skipped; IO still runs
+ *     because toggling a class is not an animation).
+ *   - Does not touch currentPage-based .active class — coexists.
+ */
+(function () {
+  var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── §2.9 Magnetic hover ──────────────────────────────────────── */
+  if (!reducedMotion) {
+    var magnets = document.querySelectorAll("[data-magnet]");
+    magnets.forEach(function (el) {
+      el.addEventListener("pointermove", function (e) {
+        var r = el.getBoundingClientRect();
+        var x = (e.clientX - r.left - r.width / 2) * 0.15;
+        var y = (e.clientY - r.top - r.height / 2) * 0.15;
+        el.style.transform = "translate(" + x + "px, " + y + "px)";
+      });
+      el.addEventListener("pointerleave", function () {
+        el.style.transform = "";
+      });
+    });
+  }
+
+  /* ── Scroll-driven active nav ─────────────────────────────────── */
+  if (!("IntersectionObserver" in window)) return;
+
+  // Collect all <section id="…"> elements in the main content column.
+  var sections = Array.prototype.slice.call(
+    document.querySelectorAll("main section[id]")
+  );
+  if (sections.length === 0) return;
+
+  // Build a map: sectionId → nav anchor element.
+  // Nav links are [href="#id"] inside .rail-nav. We also accept
+  // plain href="/path/#id" patterns so the home anchor stat pill
+  // doesn't break anything.
+  var navLinks = document.querySelectorAll(".rail-nav a[href]");
+  var linkMap = {};
+  navLinks.forEach(function (a) {
+    var href = a.getAttribute("href") || "";
+    // Match both "#work" and "/#work" shapes.
+    var match = href.match(/#([^/]+)$/);
+    if (match) {
+      linkMap[match[1]] = a;
+    }
+  });
+
+  var activeId = null;
+
+  var observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        var id = entry.target.id;
+        if (entry.isIntersecting) {
+          // Section entered viewport — mark it active.
+          if (activeId && linkMap[activeId]) {
+            linkMap[activeId].classList.remove("is-active");
+          }
+          activeId = id;
+          if (linkMap[id]) {
+            linkMap[id].classList.add("is-active");
+          }
+        }
+      });
+    },
+    {
+      // Trigger when section crosses the middle third of the viewport.
+      rootMargin: "-30% 0px -60% 0px",
+      threshold: 0,
+    }
+  );
+
+  sections.forEach(function (section) {
+    observer.observe(section);
+  });
+})();
+</script></body></html>"
 `;
 
 exports[`Template snapshots — 7 templates × 5 pages = 35 outputs template: signal renders the project-detail page 1`] = `
 "<!DOCTYPE html>
-<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/" class="active">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><article><div class="section-head"><span class="section-eyebrow">Case study</span><h2>Signal Forge</h2></div><p class="case-byline" style="margin-top:-16px">Open-source project · 4.2k stars · 23 contributors</p><ul class="pwb-credibility-byline" aria-label="Project credibility signals"><li class="pwb-credibility-chip"><span class="pwb-credibility-category">OSS Author</span></li><li class="pwb-credibility-chip"><span>23 contributors</span></li><li class="pwb-credibility-chip"><span title="This repo runs continuous integration on every push"><span aria-hidden="true">✓</span> CI</span></li><li class="pwb-credibility-chip"><span title="This repo declares a test framework"><span aria-hidden="true">✓</span> Tests</span></li><li class="pwb-credibility-chip"><span title="This repo publishes versioned releases"><span aria-hidden="true">✓</span> Releases</span></li><li class="pwb-credibility-chip"><a class="pwb-credibility-live" href="https://signal-forge.example.test" target="_blank" rel="noopener noreferrer">Live <span aria-hidden="true">→</span></a></li></ul><ul class="case-outcomes" aria-label="Project outcomes" style="margin:20px 0 28px"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><section class="pwb-demos" aria-label="Demo"><h3 class="pwb-demos-heading">Demo</h3><figure class="pwb-demo pwb-demo-iframe"><div class="pwb-demo-aspect"><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Signal Forge in 90 seconds" loading="lazy" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen="" referrerPolicy="strict-origin-when-cross-origin"></iframe></div><figcaption class="pwb-demo-caption">Signal Forge in 90 seconds</figcaption></figure></section><div class="pwb-narrative pwb-narrative-toggle" data-pwb-scope="proj-1"><input type="radio" name="pwb-view-proj-1" id="pwb-view-recruiter-proj-1" class="pwb-narrative-radio pwb-narrative-radio-recruiter" aria-label="Recruiter view" checked=""/><input type="radio" name="pwb-view-proj-1" id="pwb-view-engineer-proj-1" class="pwb-narrative-radio pwb-narrative-radio-engineer" aria-label="Engineer view"/><div class="pwb-narrative-toggle-row" role="group" aria-label="Narrative view selection"><span class="pwb-narrative-toggle-label">View as</span><label for="pwb-view-recruiter-proj-1" class="pwb-narrative-toggle-option pwb-narrative-toggle-option-recruiter">Recruiter</label><label for="pwb-view-engineer-proj-1" class="pwb-narrative-toggle-option pwb-narrative-toggle-option-engineer">Engineer</label></div><div class="pwb-narrative-pane pwb-narrative-pane-recruiter"><div class="prose"><p>Signal Forge assembles GitHub evidence into a defensible portfolio.</p><h3>Architecture</h3><p class="pwb-narrative-text"><span class="pwb-sentence pwb-sentence-verified" data-pwb-status="verified">Edge-deployed static generator with a Postgres source of truth.</span></p><h3>Stack</h3><p class="pwb-narrative-text"><span class="pwb-sentence pwb-sentence-verified" data-pwb-status="verified">TypeScript end-to-end; React 18 + renderToStaticMarkup for templates.</span></p><h3>Deep dive</h3><p class="pwb-narrative-text"><span class="pwb-sentence pwb-sentence-flagged" data-pwb-status="flagged">The fact-extractor uses a two-pass LLM rubric with deterministic post-filters.</span></p></div></div><div class="pwb-narrative-pane pwb-narrative-pane-engineer"><div class="prose"><p>Phase 8.5 inlines the chatbot bootstrap so the publish target stays standalone.</p><h3>Architecture</h3><p>Static-site generator targeting Cloudflare Pages; per-portfolio Pages Function carries the chatbot retrieval corpus.</p><h3>Stack</h3><p>Drizzle ORM against Postgres for the source-of-truth, server-side React renderToStaticMarkup for templates, BGE-large embeddings cached in jsonb for chatbot retrieval.</p><h3>Deep dive</h3><p>The fact-extractor uses a two-pass LLM rubric: extraction with structured-output JSON Schema, then deterministic post-filters to drop low-confidence facts and de-duplicate against existing rows.</p></div></div></div><section class="pwb-storyboard" aria-label="Guided tour"><h3 class="pwb-storyboard-heading">Guided tour</h3><ol class="pwb-storyboard-grid"><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">💡</span><span class="pwb-storyboard-card-num">01</span><h4 class="pwb-storyboard-card-title">What it does</h4></header><p class="pwb-storyboard-card-desc">Turns a GitHub history into a proof-backed portfolio site.</p><ul class="pwb-storyboard-claims" aria-label="Verified claims"><li class="pwb-storyboard-claim"><span class="pwb-storyboard-marker pwb-storyboard-marker-ok" aria-label="Verified" title="The verifier confirmed this claim against repo state">✓</span><span class="pwb-storyboard-claim-label">Reads N projects per portfolio</span></li></ul></li><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">🛠</span><span class="pwb-storyboard-card-num">02</span><h4 class="pwb-storyboard-card-title">How it works</h4></header><p class="pwb-storyboard-card-desc">9-step pipeline: fetch → extract → narrate → verify.</p><ul class="pwb-storyboard-claims" aria-label="Verified claims"><li class="pwb-storyboard-claim"><span class="pwb-storyboard-marker pwb-storyboard-marker-ok" aria-label="Verified" title="The verifier confirmed this claim against repo state">✓</span><span class="pwb-storyboard-claim-label">Uses Drizzle for Postgres</span></li></ul></li><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">📄</span><span class="pwb-storyboard-card-num">03</span><h4 class="pwb-storyboard-card-title">Worth a look</h4></header><p class="pwb-storyboard-card-desc">The pipeline orchestrator: state machine + retries.</p><div class="pwb-storyboard-snippet"><p class="pwb-storyboard-snippet-path"><code>src/lib/pipeline/orchestrator.ts</code></p><pre class="pwb-storyboard-snippet-code"><code>export class PipelineOrchestrator { /* ... */ }</code></pre></div></li><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">✓</span><span class="pwb-storyboard-card-num">04</span><h4 class="pwb-storyboard-card-title">Tested</h4></header><p class="pwb-storyboard-card-desc">Jest covers the helpers; integration tests cover the API.</p><ul class="pwb-storyboard-claims" aria-label="Verified claims"><li class="pwb-storyboard-claim"><span class="pwb-storyboard-marker pwb-storyboard-marker-ok" aria-label="Verified" title="The verifier confirmed this claim against repo state">✓</span><span class="pwb-storyboard-claim-label">1000+ unit tests</span></li></ul></li><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">🚀</span><span class="pwb-storyboard-card-num">05</span><h4 class="pwb-storyboard-card-title">Deploys</h4></header><p class="pwb-storyboard-card-desc">Cloudflare Pages auto-provisions per portfolio.</p></li><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">▶</span><span class="pwb-storyboard-card-num">06</span><h4 class="pwb-storyboard-card-title">Try it</h4></header><p class="pwb-storyboard-card-desc">Click through to the live site.</p><div class="pwb-storyboard-demo"><a href="https://signal-forge.example.test" target="_blank" rel="noopener noreferrer" class="pwb-storyboard-demo-link">Try it <span aria-hidden="true">↗</span></a><pre class="pwb-storyboard-clone"><code>git clone https://github.com/acme/signal-forge</code></pre></div></li></ol><figure class="pwb-storyboard-diagram"><figcaption class="pwb-storyboard-diagram-summary">Architecture</figcaption><pre class="mermaid pwb-storyboard-diagram-source">graph TD
+<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/" class="active">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><article><div class="section-head"><span class="section-eyebrow">Case study</span><h2>Signal Forge</h2></div><p class="case-byline" style="margin-top:-16px">Open-source project · 4.2k stars · 23 contributors</p><ul class="pwb-credibility-byline" aria-label="Project credibility signals"><li class="pwb-credibility-chip"><span class="pwb-credibility-category">OSS Author</span></li><li class="pwb-credibility-chip"><span>23 contributors</span></li><li class="pwb-credibility-chip"><span title="This repo runs continuous integration on every push"><span aria-hidden="true">✓</span> CI</span></li><li class="pwb-credibility-chip"><span title="This repo declares a test framework"><span aria-hidden="true">✓</span> Tests</span></li><li class="pwb-credibility-chip"><span title="This repo publishes versioned releases"><span aria-hidden="true">✓</span> Releases</span></li><li class="pwb-credibility-chip"><a class="pwb-credibility-live" href="https://signal-forge.example.test" target="_blank" rel="noopener noreferrer">Live <span aria-hidden="true">→</span></a></li></ul><ul class="case-outcomes" aria-label="Project outcomes" style="margin:20px 0 28px"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><section class="pwb-demos" aria-label="Demo"><h3 class="pwb-demos-heading">Demo</h3><figure class="pwb-demo pwb-demo-iframe"><div class="pwb-demo-aspect"><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Signal Forge in 90 seconds" loading="lazy" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen="" referrerPolicy="strict-origin-when-cross-origin"></iframe></div><figcaption class="pwb-demo-caption">Signal Forge in 90 seconds</figcaption></figure></section><div class="pwb-narrative pwb-narrative-toggle" data-pwb-scope="proj-1"><input type="radio" name="pwb-view-proj-1" id="pwb-view-recruiter-proj-1" class="pwb-narrative-radio pwb-narrative-radio-recruiter" aria-label="Recruiter view" checked=""/><input type="radio" name="pwb-view-proj-1" id="pwb-view-engineer-proj-1" class="pwb-narrative-radio pwb-narrative-radio-engineer" aria-label="Engineer view"/><div class="pwb-narrative-toggle-row" role="group" aria-label="Narrative view selection"><span class="pwb-narrative-toggle-label">View as</span><label for="pwb-view-recruiter-proj-1" class="pwb-narrative-toggle-option pwb-narrative-toggle-option-recruiter">Recruiter</label><label for="pwb-view-engineer-proj-1" class="pwb-narrative-toggle-option pwb-narrative-toggle-option-engineer">Engineer</label></div><div class="pwb-narrative-pane pwb-narrative-pane-recruiter"><div class="prose"><p>Signal Forge assembles GitHub evidence into a defensible portfolio.</p><h3>Architecture</h3><p class="pwb-narrative-text"><span class="pwb-sentence pwb-sentence-verified" data-pwb-status="verified">Edge-deployed static generator with a Postgres source of truth.</span></p><h3>Stack</h3><p class="pwb-narrative-text"><span class="pwb-sentence pwb-sentence-verified" data-pwb-status="verified">TypeScript end-to-end; React 18 + renderToStaticMarkup for templates.</span></p><h3>Deep dive</h3><p class="pwb-narrative-text"><span class="pwb-sentence pwb-sentence-flagged" data-pwb-status="flagged">The fact-extractor uses a two-pass LLM rubric with deterministic post-filters.</span></p></div></div><div class="pwb-narrative-pane pwb-narrative-pane-engineer"><div class="prose"><p>Phase 8.5 inlines the chatbot bootstrap so the publish target stays standalone.</p><h3>Architecture</h3><p>Static-site generator targeting Cloudflare Pages; per-portfolio Pages Function carries the chatbot retrieval corpus.</p><h3>Stack</h3><p>Drizzle ORM against Postgres for the source-of-truth, server-side React renderToStaticMarkup for templates, BGE-large embeddings cached in jsonb for chatbot retrieval.</p><h3>Deep dive</h3><p>The fact-extractor uses a two-pass LLM rubric: extraction with structured-output JSON Schema, then deterministic post-filters to drop low-confidence facts and de-duplicate against existing rows.</p></div></div></div><section class="pwb-storyboard" aria-label="Guided tour"><h3 class="pwb-storyboard-heading">Guided tour</h3><ol class="pwb-storyboard-grid"><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">💡</span><span class="pwb-storyboard-card-num">01</span><h4 class="pwb-storyboard-card-title">What it does</h4></header><p class="pwb-storyboard-card-desc">Turns a GitHub history into a proof-backed portfolio site.</p><ul class="pwb-storyboard-claims" aria-label="Verified claims"><li class="pwb-storyboard-claim"><span class="pwb-storyboard-marker pwb-storyboard-marker-ok" aria-label="Verified" title="The verifier confirmed this claim against repo state">✓</span><span class="pwb-storyboard-claim-label">Reads N projects per portfolio</span></li></ul></li><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">🛠</span><span class="pwb-storyboard-card-num">02</span><h4 class="pwb-storyboard-card-title">How it works</h4></header><p class="pwb-storyboard-card-desc">9-step pipeline: fetch → extract → narrate → verify.</p><ul class="pwb-storyboard-claims" aria-label="Verified claims"><li class="pwb-storyboard-claim"><span class="pwb-storyboard-marker pwb-storyboard-marker-ok" aria-label="Verified" title="The verifier confirmed this claim against repo state">✓</span><span class="pwb-storyboard-claim-label">Uses Drizzle for Postgres</span></li></ul></li><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">📄</span><span class="pwb-storyboard-card-num">03</span><h4 class="pwb-storyboard-card-title">Worth a look</h4></header><p class="pwb-storyboard-card-desc">The pipeline orchestrator: state machine + retries.</p><div class="pwb-storyboard-snippet"><p class="pwb-storyboard-snippet-path"><code>src/lib/pipeline/orchestrator.ts</code></p><pre class="pwb-storyboard-snippet-code"><code>export class PipelineOrchestrator { /* ... */ }</code></pre></div></li><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">✓</span><span class="pwb-storyboard-card-num">04</span><h4 class="pwb-storyboard-card-title">Tested</h4></header><p class="pwb-storyboard-card-desc">Jest covers the helpers; integration tests cover the API.</p><ul class="pwb-storyboard-claims" aria-label="Verified claims"><li class="pwb-storyboard-claim"><span class="pwb-storyboard-marker pwb-storyboard-marker-ok" aria-label="Verified" title="The verifier confirmed this claim against repo state">✓</span><span class="pwb-storyboard-claim-label">1000+ unit tests</span></li></ul></li><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">🚀</span><span class="pwb-storyboard-card-num">05</span><h4 class="pwb-storyboard-card-title">Deploys</h4></header><p class="pwb-storyboard-card-desc">Cloudflare Pages auto-provisions per portfolio.</p></li><li class="pwb-storyboard-card"><header class="pwb-storyboard-card-head"><span class="pwb-storyboard-card-icon" aria-hidden="true">▶</span><span class="pwb-storyboard-card-num">06</span><h4 class="pwb-storyboard-card-title">Try it</h4></header><p class="pwb-storyboard-card-desc">Click through to the live site.</p><div class="pwb-storyboard-demo"><a href="https://signal-forge.example.test" target="_blank" rel="noopener noreferrer" class="pwb-storyboard-demo-link">Try it <span aria-hidden="true">↗</span></a><pre class="pwb-storyboard-clone"><code>git clone https://github.com/acme/signal-forge</code></pre></div></li></ol><figure class="pwb-storyboard-diagram"><figcaption class="pwb-storyboard-diagram-summary">Architecture</figcaption><pre class="mermaid pwb-storyboard-diagram-source">graph TD
   A[Repo] --&gt; B[Pipeline]
-  B --&gt; C[Static Site]</pre><p class="pwb-storyboard-diagram-hint">Diagram source rendered with <a href="https://mermaid.js.org/" target="_blank" rel="noopener noreferrer">mermaid.js</a>.</p></figure><script>(function(){try{if(typeof window==="undefined"||typeof document==="undefined")return;var nodes=document.querySelectorAll("pre.mermaid");if(!nodes||nodes.length===0)return;import("https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs").then(function(m){var mermaid=m.default;mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"default"});mermaid.run({nodes:nodes}).then(function(){nodes.forEach(function(n){var p=n.parentElement;if(p)p.setAttribute("data-pwb-mermaid-rendered","true");});}).catch(function(){});}).catch(function(){});}catch(e){}})();</script></section><div class="section-head" style="margin-top:48px"><span class="section-eyebrow">Built with</span></div><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul><section class="pwb-evidence-list" aria-label="Verified facts"><h3 class="pwb-evidence-heading">Verified facts</h3><ul class="pwb-evidence-items"><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-tick" aria-label="Verified by the pipeline" title="This claim has been verified against the source">✓</span><span class="pwb-evidence-claim-text">Written in TypeScript</span><span class="pwb-evidence-source" title="Evidence type: dependency">from package.json</span></div><details class="pwb-evidence-details"><summary class="pwb-evidence-summary">Evidence</summary><div class="pwb-evidence-body"><blockquote class="pwb-evidence-quote">&quot;typescript&quot;: &quot;^5.4.0&quot; in package.json</blockquote><p class="pwb-evidence-ref"><span class="pwb-evidence-ref-label">Source:</span> <code>package.json</code></p></div></details></div></li><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-tick" aria-label="Verified by the pipeline" title="This claim has been verified against the source">✓</span><span class="pwb-evidence-claim-text">Uses Drizzle ORM for the Postgres source of truth</span><span class="pwb-evidence-source" title="Evidence type: repo_file">from code</span></div><details class="pwb-evidence-details"><summary class="pwb-evidence-summary">Evidence</summary><div class="pwb-evidence-body"><blockquote class="pwb-evidence-quote">import { pgTable } from &#x27;drizzle-orm/pg-core&#x27;; 12 tables defined in schema.ts.</blockquote><p class="pwb-evidence-ref"><span class="pwb-evidence-ref-label">Source:</span> <code>src/lib/db/schema.ts</code></p></div></details></div></li><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-claim-text">Server-side template rendering via renderToStaticMarkup</span><span class="pwb-evidence-source" title="Evidence type: readme">from README</span></div></div></li></ul></section><p style="margin-top:40px"><a class="contact-link" href="https://github.com/acme/signal-forge" target="_blank" rel="noopener noreferrer">View repository ↗</a></p></article></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script></body></html>"
+  B --&gt; C[Static Site]</pre><p class="pwb-storyboard-diagram-hint">Diagram source rendered with <a href="https://mermaid.js.org/" target="_blank" rel="noopener noreferrer">mermaid.js</a>.</p></figure><script>(function(){try{if(typeof window==="undefined"||typeof document==="undefined")return;var nodes=document.querySelectorAll("pre.mermaid");if(!nodes||nodes.length===0)return;import("https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs").then(function(m){var mermaid=m.default;mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"default"});mermaid.run({nodes:nodes}).then(function(){nodes.forEach(function(n){var p=n.parentElement;if(p)p.setAttribute("data-pwb-mermaid-rendered","true");});}).catch(function(){});}).catch(function(){});}catch(e){}})();</script></section><div class="section-head" style="margin-top:48px"><span class="section-eyebrow">Built with</span></div><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul><section class="pwb-evidence-list" aria-label="Verified facts"><h3 class="pwb-evidence-heading">Verified facts</h3><ul class="pwb-evidence-items"><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-tick" aria-label="Verified by the pipeline" title="This claim has been verified against the source">✓</span><span class="pwb-evidence-claim-text">Written in TypeScript</span><span class="pwb-evidence-source" title="Evidence type: dependency">from package.json</span></div><details class="pwb-evidence-details"><summary class="pwb-evidence-summary">Evidence</summary><div class="pwb-evidence-body"><blockquote class="pwb-evidence-quote">&quot;typescript&quot;: &quot;^5.4.0&quot; in package.json</blockquote><p class="pwb-evidence-ref"><span class="pwb-evidence-ref-label">Source:</span> <code>package.json</code></p></div></details></div></li><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-tick" aria-label="Verified by the pipeline" title="This claim has been verified against the source">✓</span><span class="pwb-evidence-claim-text">Uses Drizzle ORM for the Postgres source of truth</span><span class="pwb-evidence-source" title="Evidence type: repo_file">from code</span></div><details class="pwb-evidence-details"><summary class="pwb-evidence-summary">Evidence</summary><div class="pwb-evidence-body"><blockquote class="pwb-evidence-quote">import { pgTable } from &#x27;drizzle-orm/pg-core&#x27;; 12 tables defined in schema.ts.</blockquote><p class="pwb-evidence-ref"><span class="pwb-evidence-ref-label">Source:</span> <code>src/lib/db/schema.ts</code></p></div></details></div></li><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-claim-text">Server-side template rendering via renderToStaticMarkup</span><span class="pwb-evidence-source" title="Evidence type: readme">from README</span></div></div></li></ul></section><p style="margin-top:40px"><a class="contact-link" href="https://github.com/acme/signal-forge" target="_blank" rel="noopener noreferrer">View repository ↗</a></p></article></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script><script>/**
+ * Signal template — progressive enhancement bootstrap.
+ *
+ * §2.9  Magnetic hover on [data-magnet] project cards.
+ * §nav  Scroll-driven active nav: IntersectionObserver watches each
+ *       <section id="…"> and toggles .is-active on the matching
+ *       [href="#id"] rail nav link.
+ *
+ * Constraints:
+ *   - IIFE, no dependencies, ≤5 KB minified.
+ *   - Fully honours prefers-reduced-motion (magnetic skipped; IO still runs
+ *     because toggling a class is not an animation).
+ *   - Does not touch currentPage-based .active class — coexists.
+ */
+(function () {
+  var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── §2.9 Magnetic hover ──────────────────────────────────────── */
+  if (!reducedMotion) {
+    var magnets = document.querySelectorAll("[data-magnet]");
+    magnets.forEach(function (el) {
+      el.addEventListener("pointermove", function (e) {
+        var r = el.getBoundingClientRect();
+        var x = (e.clientX - r.left - r.width / 2) * 0.15;
+        var y = (e.clientY - r.top - r.height / 2) * 0.15;
+        el.style.transform = "translate(" + x + "px, " + y + "px)";
+      });
+      el.addEventListener("pointerleave", function () {
+        el.style.transform = "";
+      });
+    });
+  }
+
+  /* ── Scroll-driven active nav ─────────────────────────────────── */
+  if (!("IntersectionObserver" in window)) return;
+
+  // Collect all <section id="…"> elements in the main content column.
+  var sections = Array.prototype.slice.call(
+    document.querySelectorAll("main section[id]")
+  );
+  if (sections.length === 0) return;
+
+  // Build a map: sectionId → nav anchor element.
+  // Nav links are [href="#id"] inside .rail-nav. We also accept
+  // plain href="/path/#id" patterns so the home anchor stat pill
+  // doesn't break anything.
+  var navLinks = document.querySelectorAll(".rail-nav a[href]");
+  var linkMap = {};
+  navLinks.forEach(function (a) {
+    var href = a.getAttribute("href") || "";
+    // Match both "#work" and "/#work" shapes.
+    var match = href.match(/#([^/]+)$/);
+    if (match) {
+      linkMap[match[1]] = a;
+    }
+  });
+
+  var activeId = null;
+
+  var observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        var id = entry.target.id;
+        if (entry.isIntersecting) {
+          // Section entered viewport — mark it active.
+          if (activeId && linkMap[activeId]) {
+            linkMap[activeId].classList.remove("is-active");
+          }
+          activeId = id;
+          if (linkMap[id]) {
+            linkMap[id].classList.add("is-active");
+          }
+        }
+      });
+    },
+    {
+      // Trigger when section crosses the middle third of the viewport.
+      rootMargin: "-30% 0px -60% 0px",
+      threshold: 0,
+    }
+  );
+
+  sections.forEach(function (section) {
+    observer.observe(section);
+  });
+})();
+</script></body></html>"
 `;
 
 exports[`Template snapshots — 7 templates × 5 pages = 35 outputs template: signal renders the projects list page 1`] = `
 "<!DOCTYPE html>
-<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/" class="active">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section aria-label="All projects"><div class="section-head"><span class="section-eyebrow">Index</span><h2>All work</h2></div><ol class="case-list"><li class="case-card"><div class="case-num">01</div><div class="case-body"><h3 class="case-title"><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="case-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="case-desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="case-outcomes" aria-label="Project outcomes"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul></div></li></ol></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script></body></html>"
+<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('signal-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><button type="button" class="theme-toggle" aria-label="Toggle theme" data-signal-theme-toggle="true"><span aria-hidden="true">◐</span></button><div class="shell"><aside class="rail"><div><h1 class="rail-brand"><a href="/">Jane Doe</a></h1><p class="rail-positioning">I build accessible, pixel-perfect experiences for the web.</p><nav class="rail-nav" aria-label="Primary"><ul><li><a href="/">Home</a></li><li><a href="/projects/" class="active">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav></div><div class="rail-socials" aria-label="Social profiles"><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></aside><main class="content"><section aria-label="All projects"><div class="section-head"><span class="section-eyebrow">Index</span><h2>All work</h2></div><ol class="case-list"><li class="case-card" data-magnet="true"><div class="case-num">01</div><div class="case-body"><h3 class="case-title"><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="case-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="case-desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="case-outcomes" aria-label="Project outcomes"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul></div></li></ol></section></main></div><script>(function(){var b=document.querySelector('[data-signal-theme-toggle]');if(!b)return;b.addEventListener('click',function(){var h=document.documentElement;var cur=h.getAttribute('data-theme')==='light'?'dark':'light';h.setAttribute('data-theme',cur);try{localStorage.setItem('signal-theme',cur);}catch(e){}});})();</script><script>/**
+ * Signal template — progressive enhancement bootstrap.
+ *
+ * §2.9  Magnetic hover on [data-magnet] project cards.
+ * §nav  Scroll-driven active nav: IntersectionObserver watches each
+ *       <section id="…"> and toggles .is-active on the matching
+ *       [href="#id"] rail nav link.
+ *
+ * Constraints:
+ *   - IIFE, no dependencies, ≤5 KB minified.
+ *   - Fully honours prefers-reduced-motion (magnetic skipped; IO still runs
+ *     because toggling a class is not an animation).
+ *   - Does not touch currentPage-based .active class — coexists.
+ */
+(function () {
+  var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── §2.9 Magnetic hover ──────────────────────────────────────── */
+  if (!reducedMotion) {
+    var magnets = document.querySelectorAll("[data-magnet]");
+    magnets.forEach(function (el) {
+      el.addEventListener("pointermove", function (e) {
+        var r = el.getBoundingClientRect();
+        var x = (e.clientX - r.left - r.width / 2) * 0.15;
+        var y = (e.clientY - r.top - r.height / 2) * 0.15;
+        el.style.transform = "translate(" + x + "px, " + y + "px)";
+      });
+      el.addEventListener("pointerleave", function () {
+        el.style.transform = "";
+      });
+    });
+  }
+
+  /* ── Scroll-driven active nav ─────────────────────────────────── */
+  if (!("IntersectionObserver" in window)) return;
+
+  // Collect all <section id="…"> elements in the main content column.
+  var sections = Array.prototype.slice.call(
+    document.querySelectorAll("main section[id]")
+  );
+  if (sections.length === 0) return;
+
+  // Build a map: sectionId → nav anchor element.
+  // Nav links are [href="#id"] inside .rail-nav. We also accept
+  // plain href="/path/#id" patterns so the home anchor stat pill
+  // doesn't break anything.
+  var navLinks = document.querySelectorAll(".rail-nav a[href]");
+  var linkMap = {};
+  navLinks.forEach(function (a) {
+    var href = a.getAttribute("href") || "";
+    // Match both "#work" and "/#work" shapes.
+    var match = href.match(/#([^/]+)$/);
+    if (match) {
+      linkMap[match[1]] = a;
+    }
+  });
+
+  var activeId = null;
+
+  var observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        var id = entry.target.id;
+        if (entry.isIntersecting) {
+          // Section entered viewport — mark it active.
+          if (activeId && linkMap[activeId]) {
+            linkMap[activeId].classList.remove("is-active");
+          }
+          activeId = id;
+          if (linkMap[id]) {
+            linkMap[id].classList.add("is-active");
+          }
+        }
+      });
+    },
+    {
+      // Trigger when section crosses the middle third of the viewport.
+      rootMargin: "-30% 0px -60% 0px",
+      threshold: 0,
+    }
+  );
+
+  sections.forEach(function (section) {
+    observer.observe(section);
+  });
+})();
+</script></body></html>"
 `;
 
 exports[`Template snapshots — 7 templates × 5 pages = 35 outputs template: studio renders the about page 1`] = `
@@ -147,7 +577,7 @@ exports[`Template snapshots — 7 templates × 5 pages = 35 outputs template: st
 
 exports[`Template snapshots — 7 templates × 5 pages = 35 outputs template: studio renders the home page 1`] = `
 "<!DOCTYPE html>
-<html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style></head><body><header class="topbar"><div class="container topbar-inner"><div class="brand"><a href="/">Jane Doe</a></div><nav aria-label="Primary"><ul class="nav-links"><li><a href="/" class="active">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav><span class="status-chip">Available for new work</span></div></header><main><section class="hero-section"><div class="container hero-grid"><div><p style="font-family:var(--font-mono);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--color-accent);margin:0">Taking new work</p><h1 class="hero-headline">I build accessible, <em>pixel-perfect experiences for the web.</em></h1><p class="hero-sub">Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><div class="hero-ctas"><a class="btn-primary" href="mailto:jane@example.test">Let&#x27;s work together</a><a class="btn-ghost" href="/projects/">See work</a></div><p style="margin-top:28px;color:var(--color-faint);font-family:var(--font-mono);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase">Trusted by <span style="color:var(--color-text)">Apple · Klaviyo</span></p><div class="pwb-hero-signals" aria-label="Availability and preferences"><p class="pwb-hero-signal pwb-hero-signal-place"><span class="pwb-hero-signal-value">London, UK</span></p></div></div><aside class="hero-anchor-card" aria-label="Signature stat"><p class="anchor-label">on Signal Forge</p><p class="anchor-value">4.2k+</p><p class="anchor-unit">GitHub stars</p></aside></div></section><section class="clients" aria-label="Previously worked with"><div class="container"><p class="clients-label">Previously at</p><ul class="clients-row"><li>Apple</li><li>Klaviyo</li></ul></div></section><section class="section"><div class="container"><div class="section-header"><h2>Selected work</h2><p>A cross-section of recent projects and what they shipped.</p></div><ul class="project-grid"><li class="project-card"><h3><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="project-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="outcome-row"><li class="outcome-chip"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-chip"><b>500+</b><span>Active users</span></li></ul><ul class="tech-row"><li>TypeScript</li><li>Next.js</li><li>Drizzle</li></ul></li></ul></div></section><section class="section"><div class="container"><div class="section-header"><h2>What collaborators say</h2><p>Quotes from people I&#x27;ve worked with directly.</p></div><div class="carousel" role="region" aria-label="Testimonials"><figure class="testimonial-card"><blockquote class="testimonial-quote">“Working with her changed how we ship — the kind of engineer whose taste you feel in the product.”</blockquote><figcaption class="testimonial-author"><div class="testimonial-meta"><strong><a href="https://example.test/alex" target="_blank" rel="noopener noreferrer">Alex Example</a></strong><span>VP Engineering · Acme</span></div></figcaption></figure></div></div></section><section class="section"><div class="container"><div class="section-header"><h2>What I work on</h2><p>Grouped by where I spend the most time.</p></div><ul class="services-grid"><li class="service-card"><h4>Languages</h4><p>TypeScript</p></li><li class="service-card"><h4>Frameworks</h4><p>Next.js</p></li></ul></div></section><section><div class="container"><div class="closing-cta"><h2>Have a project in mind?</h2><p>Jane Doe is currently taking new engagements. Share a few details and we&#x27;ll find a time to talk.</p><a class="btn-primary" href="mailto:jane@example.test">Let&#x27;s work together</a></div></div></section></main><footer class="footer"><div class="container footer-inner"><span>© 2026 Jane Doe</span><span><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a> · <a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></span></div></footer></body></html>"
+<html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style></head><body><header class="topbar"><div class="container topbar-inner"><div class="brand"><a href="/">Jane Doe</a></div><nav aria-label="Primary"><ul class="nav-links"><li><a href="/" class="active">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav><span class="status-chip">Available for new work</span></div></header><main><section class="hero-section"><div class="container hero-grid"><div><p class="animate-blur-fade-up availability-badge" style="--d:0ms">Taking new work</p><h1 class="hero-headline animate-blur-fade-up" style="--d:120ms">I build accessible, <em>pixel-perfect experiences for the web.</em></h1><p class="hero-sub animate-blur-fade-up" style="--d:240ms">Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><div class="hero-ctas animate-blur-fade-up" style="--d:360ms"><a class="btn-primary" href="mailto:jane@example.test">Let&#x27;s work together</a><a class="btn-ghost" href="/projects/">See work</a></div><div class="pwb-hero-signals" aria-label="Availability and preferences"><p class="pwb-hero-signal pwb-hero-signal-place"><span class="pwb-hero-signal-value">London, UK</span></p></div><figure class="hero-testimonial animate-blur-fade-up" style="--d:480ms"><blockquote>&quot;Working with her changed how we ship — the kind of engineer whose taste you feel in the product.&quot;</blockquote><figcaption><strong>Alex Example</strong><span> · VP Engineering · Acme</span></figcaption></figure></div><aside class="hero-anchor-card animate-blur-fade-up" aria-label="Signature stat" style="--d:240ms"><p class="anchor-label">on Signal Forge</p><p class="anchor-value">4.2k+</p><p class="anchor-unit">GitHub stars</p></aside></div></section><section class="clients" aria-label="Previously worked with"><div class="container"><p class="clients-label">Previously at</p><div class="clients-row marquee"><ul class="marquee__track"><li>Apple</li><li>Klaviyo</li></ul><ul class="marquee__track" aria-hidden="true"><li>Apple</li><li>Klaviyo</li></ul></div></div></section><section class="section"><div class="container"><div class="section-header scroll-reveal"><h2>Selected work</h2><p>A cross-section of recent projects and what they shipped.</p></div><ul class="project-grid"><li class="project-card scroll-reveal"><h3><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="project-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="outcome-row"><li class="outcome-chip"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-chip"><b>500+</b><span>Active users</span></li></ul><ul class="tech-row"><li>TypeScript</li><li>Next.js</li><li>Drizzle</li></ul></li></ul></div></section><section class="section"><div class="container"><div class="section-header scroll-reveal"><h2>What collaborators say</h2><p>Quotes from people I&#x27;ve worked with directly.</p></div><div class="carousel" role="region" aria-label="Testimonials"><figure class="testimonial-card"><blockquote class="testimonial-quote">“Working with her changed how we ship — the kind of engineer whose taste you feel in the product.”</blockquote><figcaption class="testimonial-author"><div class="testimonial-meta"><strong><a href="https://example.test/alex" target="_blank" rel="noopener noreferrer">Alex Example</a></strong><span>VP Engineering · Acme</span></div></figcaption></figure></div></div></section><section class="section"><div class="container"><div class="section-header scroll-reveal"><h2>What I work on</h2><p>Grouped by where I spend the most time.</p></div><ul class="services-grid"><li class="service-card scroll-reveal"><h4>Languages</h4><p>TypeScript</p></li><li class="service-card scroll-reveal"><h4>Frameworks</h4><p>Next.js</p></li></ul></div></section><section><div class="container"><div class="closing-cta scroll-reveal"><h2>Have a project in mind?</h2><p>Jane Doe is currently taking new engagements. Share a few details and we&#x27;ll find a time to talk.</p><a class="btn-primary" href="mailto:jane@example.test">Let&#x27;s work together</a></div></div></section></main><footer class="footer"><div class="container footer-inner"><span>© 2026 Jane Doe</span><span><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a> · <a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></span></div></footer></body></html>"
 `;
 
 exports[`Template snapshots — 7 templates × 5 pages = 35 outputs template: studio renders the project-detail page 1`] = `

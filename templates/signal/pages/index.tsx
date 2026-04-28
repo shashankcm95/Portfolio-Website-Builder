@@ -32,8 +32,12 @@ export function HomePage({ profileData }: HomePageProps) {
       <Hero basics={profileData.basics} />
 
       {list.length > 0 && (
-        <section aria-label="Selected work">
-          <div className="section-head">
+        <section id="work" aria-label="Selected work">
+          {/* §2.2 blurFadeUp — 480ms is the 5th stagger step after hero elements */}
+          <div
+            className="section-head animate-blur-fade-up"
+            style={{ "--d": "480ms" } as React.CSSProperties}
+          >
             <span className="section-eyebrow">Selected work</span>
             <h2>Recent projects</h2>
           </div>
@@ -60,7 +64,7 @@ export function HomePage({ profileData }: HomePageProps) {
       )}
 
       {tailTestimonials.length > 0 && (
-        <section aria-label="What people say">
+        <section id="testimonials" aria-label="What people say">
           <div className="section-head">
             <span className="section-eyebrow">Reception</span>
             <h2>What people say</h2>

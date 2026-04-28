@@ -40,19 +40,35 @@ export function HomePage({ profileData }: HomePageProps) {
   const list = (featured.length > 0 ? featured : projects).slice(0, 6);
   const services = groupSkills(skills);
 
+  // Fix 1 — surface first testimonial in hero; remainder stay in carousel
+  const firstTestimonial =
+    testimonials && testimonials.length > 0 ? testimonials[0] : undefined;
+
   return (
     <>
-      <Hero basics={basics} />
+      <Hero basics={basics} firstTestimonial={firstTestimonial} />
 
+      {/* Fix 4 — §2.7 marquee replaces static flex-wrap row */}
       {basics.namedEmployers && basics.namedEmployers.length > 0 && (
         <section className="clients" aria-label="Previously worked with">
           <div className="container">
             <p className="clients-label">Previously at</p>
-            <ul className="clients-row">
-              {basics.namedEmployers.map((e) => (
-                <li key={e}>{e}</li>
-              ))}
-            </ul>
+            {/* Marquee wrapper div; inner track rendered twice for seamless
+                loop. The duplicate track is aria-hidden so screen readers
+                only encounter the list once. */}
+            <div className="clients-row marquee">
+              <ul className="marquee__track">
+                {basics.namedEmployers.map((e) => (
+                  <li key={e}>{e}</li>
+                ))}
+              </ul>
+              {/* duplicate copy hidden from AT */}
+              <ul className="marquee__track" aria-hidden="true">
+                {basics.namedEmployers.map((e) => (
+                  <li key={`dup-${e}`}>{e}</li>
+                ))}
+              </ul>
+            </div>
           </div>
         </section>
       )}
@@ -60,13 +76,15 @@ export function HomePage({ profileData }: HomePageProps) {
       {list.length > 0 && (
         <section className="section">
           <div className="container">
-            <div className="section-header">
+            {/* Fix 3 — scroll-reveal on section heading */}
+            <div className="section-header scroll-reveal">
               <h2>Selected work</h2>
               <p>A cross-section of recent projects and what they shipped.</p>
             </div>
             <ul className="project-grid">
               {list.map((p) => (
-                <ProjectCard key={p.id} project={p} />
+                // Fix 3 — scroll-reveal on each project card
+                <ProjectCard key={p.id} project={p} className="scroll-reveal" />
               ))}
             </ul>
           </div>
@@ -76,7 +94,7 @@ export function HomePage({ profileData }: HomePageProps) {
       {testimonials && testimonials.length > 0 && (
         <section className="section">
           <div className="container">
-            <div className="section-header">
+            <div className="section-header scroll-reveal">
               <h2>What collaborators say</h2>
               <p>Quotes from people I've worked with directly.</p>
             </div>
@@ -88,13 +106,13 @@ export function HomePage({ profileData }: HomePageProps) {
       {services.length >= 2 && (
         <section className="section">
           <div className="container">
-            <div className="section-header">
+            <div className="section-header scroll-reveal">
               <h2>What I work on</h2>
               <p>Grouped by where I spend the most time.</p>
             </div>
             <ul className="services-grid">
               {services.map((s) => (
-                <li className="service-card" key={s.title}>
+                <li className="service-card scroll-reveal" key={s.title}>
                   <h4>{s.title}</h4>
                   <p>{s.items.join(" · ")}</p>
                 </li>
@@ -104,9 +122,10 @@ export function HomePage({ profileData }: HomePageProps) {
         </section>
       )}
 
+      {/* Fix 3 — scroll-reveal on closing CTA banner */}
       <section>
         <div className="container">
-          <div className="closing-cta">
+          <div className="closing-cta scroll-reveal">
             <h2>
               {basics.hiring?.status === "available"
                 ? "Have a project in mind?"

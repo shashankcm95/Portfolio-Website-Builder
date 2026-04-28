@@ -34,7 +34,7 @@ export function ProjectCard({ project, num }: ProjectCardProps) {
   const blurb = project.sections.summary || project.description;
 
   return (
-    <li className="case-card">
+    <li className="case-card" data-magnet>
       <div className="case-num">{String(num).padStart(2, "0")}</div>
       <div className="case-body">
         <h3 className="case-title">

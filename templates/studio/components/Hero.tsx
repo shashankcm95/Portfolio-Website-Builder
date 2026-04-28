@@ -1,9 +1,12 @@
 import React from "react";
-import type { ProfileData } from "@/templates/_shared/types";
+import type { ProfileData, Testimonial } from "@/templates/_shared/types";
 import { HeroSignals } from "@/templates/_shared/hero-signals";
 
 interface HeroProps {
   basics: ProfileData["basics"];
+  /** First testimonial surfaced above the fold (Fix 1). Optional — hero
+   *  renders cleanly without it. The full carousel remains below. */
+  firstTestimonial?: Testimonial;
 }
 
 /**
@@ -17,9 +20,8 @@ interface HeroProps {
  * sentence — we italicize the final clause when the positioning contains
  * one. Pure presentational flourish, skipped silently when not applicable.
  */
-export function Hero({ basics }: HeroProps) {
-  const { anchorStat, namedEmployers, summary, hiring, positioning, label } =
-    basics;
+export function Hero({ basics, firstTestimonial }: HeroProps) {
+  const { anchorStat, summary, hiring, positioning, label } = basics;
   const headline = positioning || label;
   // Phase R4 — explicit null-safety on the CTA copy. The original code
   // fell through to "Let's build something" even when `hiring` was
@@ -38,32 +40,55 @@ export function Hero({ basics }: HeroProps) {
         : "Get in touch");
   const ctaPrimaryHref = hiring?.ctaHref || "/contact/";
 
+  // Fix 2 — availability badge class
+  const badgeClass =
+    hiring?.status === "available"
+      ? "availability-badge"
+      : "availability-badge is-open";
+  const badgeText =
+    hiring?.status === "available"
+      ? "Taking new work"
+      : "Open to conversations";
+
+  // Fix 1 — inline first testimonial in hero zone (surfaced above fold)
+  const testimonialMeta = firstTestimonial
+    ? [firstTestimonial.authorTitle, firstTestimonial.authorCompany]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
+
   return (
     <section className="hero-section">
       <div className="container hero-grid">
         <div>
+          {/* Fix 2 — proper status chip / availability badge */}
           {(hiring?.status === "available" || hiring?.status === "open") && (
             <p
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "0.8rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.14em",
-                color: "var(--color-accent)",
-                margin: 0,
-              }}
+              className={`animate-blur-fade-up ${badgeClass}`}
+              style={{ "--d": "0ms" } as React.CSSProperties}
             >
-              {hiring.status === "available"
-                ? "Taking new work"
-                : "Open to conversations"}
+              {badgeText}
             </p>
           )}
 
-          <h1 className="hero-headline">{renderHeadline(headline)}</h1>
+          <h1
+            className="hero-headline animate-blur-fade-up"
+            style={{ "--d": "120ms" } as React.CSSProperties}
+          >
+            {renderHeadline(headline)}
+          </h1>
 
-          <p className="hero-sub">{summary}</p>
+          <p
+            className="hero-sub animate-blur-fade-up"
+            style={{ "--d": "240ms" } as React.CSSProperties}
+          >
+            {summary}
+          </p>
 
-          <div className="hero-ctas">
+          <div
+            className="hero-ctas animate-blur-fade-up"
+            style={{ "--d": "360ms" } as React.CSSProperties}
+          >
             <a className="btn-primary" href={ctaPrimaryHref}>
               {ctaPrimaryText}
             </a>
@@ -72,30 +97,32 @@ export function Hero({ basics }: HeroProps) {
             </a>
           </div>
 
-          {namedEmployers && namedEmployers.length > 0 && (
-            <p
-              style={{
-                marginTop: 28,
-                color: "var(--color-faint)",
-                fontFamily: "var(--font-mono)",
-                fontSize: "0.78rem",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-              }}
-            >
-              Trusted by{" "}
-              <span style={{ color: "var(--color-text)" }}>
-                {namedEmployers.join(" · ")}
-              </span>
-            </p>
-          )}
-
           {/* Phase E8b — Tier-1 universal recruiter signals. */}
           <HeroSignals basics={basics} />
+
+          {/* Fix 1 — first testimonial surfaced above the fold, before
+              the namedEmployers marquee. The full carousel still renders
+              below the project grid. */}
+          {firstTestimonial && (
+            <figure
+              className="hero-testimonial animate-blur-fade-up"
+              style={{ "--d": "480ms" } as React.CSSProperties}
+            >
+              <blockquote>"{firstTestimonial.quote}"</blockquote>
+              <figcaption>
+                <strong>{firstTestimonial.authorName}</strong>
+                {testimonialMeta && <span> · {testimonialMeta}</span>}
+              </figcaption>
+            </figure>
+          )}
         </div>
 
         {anchorStat && (
-          <aside className="hero-anchor-card" aria-label="Signature stat">
+          <aside
+            className="hero-anchor-card animate-blur-fade-up"
+            aria-label="Signature stat"
+            style={{ "--d": "240ms" } as React.CSSProperties}
+          >
             <p className="anchor-label">
               {anchorStat.context || "Signature"}
             </p>

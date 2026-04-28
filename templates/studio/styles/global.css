@@ -176,7 +176,7 @@ a:hover { color: var(--color-accent-2); }
   margin: 8px 0 0;
 }
 
-/* ─── Client logo wall ─────────────────────────────────────────────── */
+/* ─── Client logo wall (§2.7 marquee) ─────────────────────────────── */
 
 .clients { padding: 32px 0 48px; border-bottom: 1px solid var(--color-border); }
 .clients-label {
@@ -186,20 +186,26 @@ a:hover { color: var(--color-accent-2); }
   color: var(--color-faint);
   margin: 0 0 20px;
 }
+/* The .clients-row <div> is the marquee outer container */
 .clients-row {
-  display: flex; flex-wrap: wrap; gap: 32px 48px;
-  justify-content: center; align-items: center;
-  margin: 0; padding: 0; list-style: none;
+  /* inherits marquee overflow:hidden + mask from .marquee */
 }
-.clients-row li {
+.clients-row .marquee__track {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.clients-row .marquee__track li {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 1.15rem;
   color: var(--color-muted);
   letter-spacing: -0.01em;
-  transition: color 180ms ease, transform 180ms ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 180ms ease;
 }
-.clients-row li:hover { color: var(--color-text); transform: translateY(-2px); }
+.clients-row .marquee__track li:hover { color: var(--color-text); }
 
 /* ─── Section ─────────────────────────────────────────────────────── */
 
@@ -665,6 +671,124 @@ a:hover { color: var(--color-accent-2); }
 }
 .pwb-evidence-ref code { font-family: var(--font-mono); color: var(--color-text); }
 
+/* ─── §2.2 BlurFadeUp entrance ─────────────────────────────────────── */
+
+@keyframes blurFadeUp {
+  from { opacity: 0; filter: blur(16px); transform: translateY(32px); }
+  to   { opacity: 1; filter: blur(0);    transform: translateY(0); }
+}
+.animate-blur-fade-up {
+  opacity: 0;
+  animation: blurFadeUp 0.9s ease-out forwards;
+  animation-delay: var(--d, 0ms);
+}
+
+/* ─── §2.10 Scroll-reveal (view-timeline) ──────────────────────────── */
+
+.scroll-reveal {
+  animation: scrollReveal linear;
+  animation-timeline: view();
+  animation-range: entry 5% cover 35%;
+}
+@keyframes scrollReveal {
+  from { opacity: 0.15; transform: translateY(18px); }
+  to   { opacity: 1;    transform: translateY(0); }
+}
+/* Safari / browsers without scroll-timeline support */
+@supports not (animation-timeline: view()) {
+  .scroll-reveal { opacity: 1; transform: none; }
+}
+
+/* ─── §2.7 Marquee for namedEmployers ──────────────────────────────── */
+
+.marquee {
+  display: flex;
+  overflow: hidden;
+  /* gradient-mask fade on both edges */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
+}
+.marquee__track {
+  display: flex;
+  gap: 3rem;
+  align-items: center;
+  /* translateX(-50%) scrolls exactly one copy, creating the seamless loop */
+  animation: marqueeScroll 32s linear infinite;
+  /* ensure no wrapping — both copies must stay on one line */
+  flex-shrink: 0;
+}
+@keyframes marqueeScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ─── Availability badge (hero eyebrow) ───────────────────────────── */
+/* Replaces the former 0.8rem plain-text availability line.             */
+/* AA contrast: #8a3612 text on #fdf0eb background = 5.1:1 (Pass).     */
+
+.availability-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-accent);
+  background: #fdf0eb;
+  color: #8a3612;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.availability-badge::before {
+  content: "";
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-positive);
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.2);
+}
+.availability-badge.is-open {
+  border-color: var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-muted);
+}
+.availability-badge.is-open::before {
+  background: var(--color-faint);
+  box-shadow: none;
+}
+
+/* ─── Inline first-testimonial card (hero zone) ─────────────────────── */
+
+.hero-testimonial {
+  margin-top: 32px;
+  padding: 20px 24px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 24px -12px rgba(22, 22, 22, 0.1);
+}
+.hero-testimonial blockquote {
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-style: italic;
+  line-height: 1.55;
+  color: var(--color-text);
+  margin: 0 0 12px;
+}
+.hero-testimonial figcaption {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+}
+.hero-testimonial figcaption strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
 /* ─── Reduced motion ───────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -674,6 +798,12 @@ a:hover { color: var(--color-accent-2); }
   }
   html { scroll-behavior: auto; }
   .carousel { scroll-snap-type: none; }
+  /* §2.2 fallback: make elements immediately visible */
+  .animate-blur-fade-up { animation: none; opacity: 1; filter: none; transform: none; }
+  /* §2.10 fallback */
+  .scroll-reveal { animation: none; opacity: 1; transform: none; }
+  /* §2.7 marquee: freeze track in place (first copy remains visible) */
+  .marquee__track { animation: none; }
 }
 
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; border-radius: 4px; }

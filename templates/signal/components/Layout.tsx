@@ -1,8 +1,24 @@
 import React from "react";
+import fs from "fs";
+import path from "path";
 import type { ProfileData } from "@/templates/_shared/types";
 import { buildAnalyticsSnippet } from "@/templates/_shared/analytics-snippet";
 import { buildChatbotSnippet } from "@/templates/_shared/chatbot-snippet";
 import { SignalRail } from "./SignalRail";
+
+// Read the enhance.js bootstrap at module-load time (SSR only).
+// Inlining avoids an extra HTTP request; the file is ≤5 KB per the budget.
+const enhanceScript = (() => {
+  try {
+    return fs.readFileSync(
+      path.join(process.cwd(), "templates", "signal", "scripts", "enhance.js"),
+      "utf-8"
+    );
+  } catch {
+    // Missing in test environments that mock the filesystem — degrade silently.
+    return "";
+  }
+})();
 
 interface LayoutProps {
   profileData: ProfileData;
@@ -67,7 +83,7 @@ export function Layout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
 
@@ -130,6 +146,11 @@ export function Layout({
               }),
             }}
           />
+        )}
+
+        {/* §2.9 magnetic hover + scroll-driven active nav (Fix 3 + Fix 4) */}
+        {enhanceScript && (
+          <script dangerouslySetInnerHTML={{ __html: enhanceScript }} />
         )}
       </body>
     </html>
