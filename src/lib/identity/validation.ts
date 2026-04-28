@@ -24,6 +24,10 @@ export const EMPLOYER_LIST_MAX = 10;
  *  optional and short. */
 export const CTA_TEXT_MAX = 60;
 
+/** Phase R5d — hero background video URL cap. 500 chars accommodates
+ *  signed CDN URLs (S3/Cloudflare Stream) without becoming unbounded. */
+export const HERO_VIDEO_URL_MAX = 500;
+
 /** Testimonial quote cap. 400 chars fits the pull-quote layouts without
  *  forcing scrolling or wrapping onto too many lines. */
 export const QUOTE_MAX = 400;
@@ -83,6 +87,21 @@ export const identityPatchSchema = z
       )
       .nullable()
       .optional(),
+    // Phase R5d — opt-in cinematic hero video URL (studio template only).
+    // Empty string OR null both clear the field; otherwise we require HTTPS
+    // and a .mp4 or .m3u8 (HLS) extension. The cap matches signed CDN URLs.
+    heroVideoUrl: z
+      .union([z.string().trim(), z.null()])
+      .optional()
+      .refine(
+        (v) => {
+          if (v === undefined || v === null || v === "") return true;
+          if (v.length > HERO_VIDEO_URL_MAX) return false;
+          if (!/^https:\/\//i.test(v)) return false;
+          return /\.(mp4|m3u8)$/i.test(v);
+        },
+        "Hero video URL must be HTTPS and end in .mp4 or .m3u8."
+      ),
     // Tier 3 in the editability model — user can override with an explicit
     // { value, unit } pair but can't type arbitrary freeform prose into
     // them. Frontend should populate this dropdown from ranked candidates

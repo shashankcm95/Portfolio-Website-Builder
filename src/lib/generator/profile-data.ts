@@ -285,6 +285,7 @@ export async function assembleProfileData(
       // single shape to consume.
       location: readLocation(portfolio.locationOverride, resumeJson),
       positioning: portfolio.positioning ?? undefined,
+      heroVideoUrl: portfolio.heroVideoUrl ?? undefined,
       namedEmployers: namedEmployers.length > 0 ? namedEmployers : undefined,
       hiring,
       anchorStat,

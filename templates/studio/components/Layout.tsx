@@ -1,7 +1,23 @@
 import React from "react";
+import fs from "fs";
+import path from "path";
 import type { ProfileData } from "@/templates/_shared/types";
 import { buildAnalyticsSnippet } from "@/templates/_shared/analytics-snippet";
 import { buildChatbotSnippet } from "@/templates/_shared/chatbot-snippet";
+
+// Read the enhance.js bootstrap at module-load time (SSR only).
+// Inlining avoids an extra HTTP round-trip; the file is ≤5 KB per the budget.
+// The try/catch degrades silently in test environments that mock the filesystem.
+const enhanceScript = (() => {
+  try {
+    return fs.readFileSync(
+      path.join(process.cwd(), "templates", "studio", "scripts", "enhance.js"),
+      "utf-8"
+    );
+  } catch {
+    return "";
+  }
+})();
 
 interface LayoutProps {
   profileData: ProfileData;
@@ -160,6 +176,14 @@ export function Layout({
             }}
           />
         )}
+
+        {/* §2.4 / §2.5 video fade-loop + HLS bootstrap.
+            Only injected when heroVideoUrl is set — saves ~5 KB on static-hero
+            pages where the video element is never rendered. */}
+        {(basics as ProfileData["basics"] & { heroVideoUrl?: string }).heroVideoUrl &&
+          enhanceScript && (
+            <script dangerouslySetInnerHTML={{ __html: enhanceScript }} />
+          )}
       </body>
     </html>
   );

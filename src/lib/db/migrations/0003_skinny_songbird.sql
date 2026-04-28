@@ -1,0 +1,1 @@
+ALTER TABLE "portfolios" ADD COLUMN "hero_video_url" text;

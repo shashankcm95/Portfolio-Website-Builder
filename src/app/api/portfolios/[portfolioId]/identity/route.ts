@@ -39,6 +39,7 @@ export async function GET(
       hireStatus: portfolios.hireStatus,
       hireCtaText: portfolios.hireCtaText,
       hireCtaHref: portfolios.hireCtaHref,
+      heroVideoUrl: portfolios.heroVideoUrl,
       anchorStatOverride: portfolios.anchorStatOverride,
       // Phase E8b — universal Tier-1 recruiter signals.
       currentRole: portfolios.currentRole,
@@ -125,6 +126,15 @@ export async function PATCH(
         ? null
         : body.hireCtaHref;
   }
+  // Phase R5d — opt-in cinematic hero video URL. Empty string and null both
+  // clear; otherwise we store the trimmed value (validation already enforced
+  // HTTPS + .mp4/.m3u8).
+  if (body.heroVideoUrl !== undefined) {
+    set.heroVideoUrl =
+      body.heroVideoUrl === null || body.heroVideoUrl.trim() === ""
+        ? null
+        : body.heroVideoUrl.trim();
+  }
   if (body.anchorStatOverride !== undefined) {
     set.anchorStatOverride = body.anchorStatOverride;
   }
@@ -164,6 +174,7 @@ export async function PATCH(
         hireStatus: portfolios.hireStatus,
         hireCtaText: portfolios.hireCtaText,
         hireCtaHref: portfolios.hireCtaHref,
+        heroVideoUrl: portfolios.heroVideoUrl,
         anchorStatOverride: portfolios.anchorStatOverride,
       })
       .from(portfolios)
@@ -182,6 +193,7 @@ export async function PATCH(
       hireStatus: portfolios.hireStatus,
       hireCtaText: portfolios.hireCtaText,
       hireCtaHref: portfolios.hireCtaHref,
+      heroVideoUrl: portfolios.heroVideoUrl,
       anchorStatOverride: portfolios.anchorStatOverride,
       // Phase E8b — universal Tier-1 recruiter signals.
       currentRole: portfolios.currentRole,

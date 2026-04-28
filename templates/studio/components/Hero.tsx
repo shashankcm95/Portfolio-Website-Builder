@@ -2,6 +2,11 @@ import React from "react";
 import type { ProfileData, Testimonial } from "@/templates/_shared/types";
 import { HeroSignals } from "@/templates/_shared/hero-signals";
 
+/** True when the URL looks like an HLS playlist. */
+function isHls(url: string): boolean {
+  return url.endsWith(".m3u8");
+}
+
 interface HeroProps {
   basics: ProfileData["basics"];
   /** First testimonial surfaced above the fold (Fix 1). Optional — hero
@@ -21,7 +26,8 @@ interface HeroProps {
  * one. Pure presentational flourish, skipped silently when not applicable.
  */
 export function Hero({ basics, firstTestimonial }: HeroProps) {
-  const { anchorStat, summary, hiring, positioning, label } = basics;
+  const { anchorStat, summary, hiring, positioning, label, heroVideoUrl } =
+    basics;
   const headline = positioning || label;
   // Phase R4 — explicit null-safety on the CTA copy. The original code
   // fell through to "Let's build something" even when `hiring` was
@@ -57,8 +63,45 @@ export function Hero({ basics, firstTestimonial }: HeroProps) {
         .join(" · ")
     : null;
 
+  const hasVideo = Boolean(heroVideoUrl);
+  const videoIsHls = hasVideo && isHls(heroVideoUrl!);
+
   return (
-    <section className="hero-section">
+    <section className={hasVideo ? "hero-section studio-hero--video" : "hero-section"}>
+      {/* §2.4 / §2.5 decorative video backdrop — aria-hidden so screen readers
+          skip it entirely. Only rendered when heroVideoUrl is set. The enhance.js
+          bootstrap owns autoplay and the fade-loop; no `autoplay` or `loop`
+          attributes here. */}
+      {hasVideo && (
+        <>
+          {videoIsHls ? (
+            /* HLS playlist — enhance.js sets src via data-hls-src at runtime */
+            <video
+              className="studio-hero__video"
+              data-video="hero"
+              data-hls-src={heroVideoUrl}
+              muted
+              playsInline
+              aria-hidden="true"
+            />
+          ) : (
+            /* Direct .mp4 — source child baked into static markup */
+            <video
+              className="studio-hero__video"
+              data-video="hero"
+              muted
+              playsInline
+              aria-hidden="true"
+            >
+              <source src={heroVideoUrl} type="video/mp4" />
+            </video>
+          )}
+          {/* HLS script only needed for .m3u8 URLs */}
+          {videoIsHls && (
+            <script src="/scripts/hls.min.js" />
+          )}
+        </>
+      )}
       <div className="container hero-grid">
         <div>
           {/* Fix 2 — proper status chip / availability badge */}

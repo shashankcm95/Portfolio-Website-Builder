@@ -39,6 +39,7 @@ import {
   CTA_TEXT_MAX,
   EMPLOYER_LIST_MAX,
   EMPLOYER_MAX,
+  HERO_VIDEO_URL_MAX,
   POSITIONING_MAX,
   POSITIONING_MIN,
 } from "@/lib/identity/validation";
@@ -58,6 +59,8 @@ interface IdentityState {
   hireStatus: "available" | "open" | "not-looking";
   hireCtaText: string | null;
   hireCtaHref: string | null;
+  // Phase R5d — opt-in cinematic hero video URL for the studio template.
+  heroVideoUrl: string | null;
   anchorStatOverride: AnchorStat | null;
 }
 
@@ -94,6 +97,7 @@ function emptyState(): IdentityState {
     hireStatus: "not-looking",
     hireCtaText: null,
     hireCtaHref: null,
+    heroVideoUrl: null,
     anchorStatOverride: null,
   };
 }
@@ -131,6 +135,7 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
           hireStatus: id.hireStatus ?? "not-looking",
           hireCtaText: id.hireCtaText ?? null,
           hireCtaHref: id.hireCtaHref ?? null,
+          heroVideoUrl: id.heroVideoUrl ?? null,
           anchorStatOverride: id.anchorStatOverride ?? null,
         };
         setState(loadedState);
@@ -161,6 +166,16 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
     positioningLength === 0 ||
     (positioningLength >= POSITIONING_MIN &&
       positioningLength <= POSITIONING_MAX);
+
+  // Phase R5d — hero video URL local validation. Empty is fine; otherwise
+  // require HTTPS + a .mp4 / .m3u8 ending so we surface the same constraint
+  // the API enforces before the user clicks save.
+  const heroVideoTrimmed = state.heroVideoUrl?.trim() ?? "";
+  const heroVideoValid =
+    heroVideoTrimmed === "" ||
+    (heroVideoTrimmed.length <= HERO_VIDEO_URL_MAX &&
+      /^https:\/\//i.test(heroVideoTrimmed) &&
+      /\.(mp4|m3u8)$/i.test(heroVideoTrimmed));
 
   // Phase R4 — dirty-flag via canonical JSON comparison. Cheap for the
   // small object we hold here; avoids writing a field-by-field diff
@@ -224,6 +239,10 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
           state.hireCtaHref && state.hireCtaHref.trim().length > 0
             ? state.hireCtaHref.trim()
             : null,
+        heroVideoUrl:
+          state.heroVideoUrl && state.heroVideoUrl.trim().length > 0
+            ? state.heroVideoUrl.trim()
+            : null,
         anchorStatOverride: state.anchorStatOverride,
       };
       const res = await fetch(`/api/portfolios/${portfolioId}/identity`, {
@@ -247,6 +266,7 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
         hireStatus: body.hireStatus,
         hireCtaText: body.hireCtaText,
         hireCtaHref: body.hireCtaHref,
+        heroVideoUrl: body.heroVideoUrl,
         anchorStatOverride: body.anchorStatOverride,
       });
       setMessage({ kind: "ok", text: "Saved. Republish to go live." });
@@ -261,7 +281,7 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
     }
   }, [portfolioId, state]);
 
-  const canSave = loaded && positioningValid && !saving;
+  const canSave = loaded && positioningValid && heroVideoValid && !saving;
 
   // Show the hire-copy fields only when there's actually a CTA to write.
   const showCtaFields = state.hireStatus !== "not-looking";
@@ -422,6 +442,18 @@ export function IdentityPitchCard({ portfolioId }: IdentityPitchCardProps) {
               )}
             </div>
 
+            {/* ── Hero video URL (studio template only) ────────────────── */}
+            {/* Phase R5d — opt-in cinematic background video for the studio
+                template's hero. Other templates ignore the field, so the
+                input is always available without forcing a template switch. */}
+            <HeroVideoUrlField
+              value={state.heroVideoUrl ?? ""}
+              onChange={(v) =>
+                setState((s) => ({ ...s, heroVideoUrl: v }))
+              }
+              valid={heroVideoValid}
+            />
+
             <Separator />
 
             {/* ── Anchor stat override ─────────────────────────────────── */}
@@ -534,6 +566,51 @@ function PositioningField({
           hint="Generate a few one-liners from your projects + resume"
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Phase R5d — Hero video URL input. Opt-in cinematic background for the
+ * studio template's hero. Other templates ignore the field. We surface
+ * the same constraint the API enforces (HTTPS + .mp4 / .m3u8) as live
+ * feedback so users don't have to round-trip a save to learn their URL
+ * is rejected.
+ */
+function HeroVideoUrlField({
+  value,
+  onChange,
+  valid,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  valid: boolean;
+}) {
+  const showError = value.trim().length > 0 && !valid;
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="hero-video-url">
+        Hero video URL (studio template only)
+      </Label>
+      <Input
+        id="hero-video-url"
+        type="url"
+        placeholder="https://example.com/hero.m3u8"
+        maxLength={HERO_VIDEO_URL_MAX + 20}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={showError ? true : undefined}
+      />
+      <p className="text-xs text-muted-foreground">
+        Optional cinematic background video — HTTPS .mp4 or .m3u8 only.
+        Leave empty for the standard studio hero.
+        {showError && (
+          <span className="text-destructive">
+            {" "}
+            Must end in .mp4 or .m3u8.
+          </span>
+        )}
+      </p>
     </div>
   );
 }

@@ -94,6 +94,11 @@ export const portfolios = pgTable(
     // Phase A — destination for the hire CTA (mailto:, calendar link, contact
     // form URL). Null = template falls back to the contact page.
     hireCtaHref: text("hire_cta_href"),
+    // Phase R5d — optional opt-in URL for a cinematic video background in the
+    // studio template's hero. HTTPS only; .mp4 or .m3u8 (HLS). Other templates
+    // ignore the field. User-authored, Tier-1 in the editability model.
+    // Null = static hero (default).
+    heroVideoUrl: text("hero_video_url"),
     // Phase A — user override for the anchor stat (the single strongest
     // credential the hero leads with). Phase B fills in a pipeline-computed
     // default; this column lets the user override with one of the ranked

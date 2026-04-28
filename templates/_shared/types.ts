@@ -64,6 +64,13 @@ export interface ProfileData {
      */
     positioning?: string;
     /**
+     * Phase R5d — optional URL to a cinematic background video for the
+     * studio template's hero. HTTPS only; .mp4 (direct) or .m3u8 (HLS via
+     * the §2.5 bootstrap). Other templates ignore the field. Null/absent
+     * means the studio hero renders its standard static layout.
+     */
+    heroVideoUrl?: string;
+    /**
      * Phase A — recognizable employer/client names surfaced in the hero
      * (e.g. ["Apple", "Klaviyo"]). Source of truth is `portfolios
      * .namedEmployers` jsonb. Empty array ⇒ no "Previously at" line.
