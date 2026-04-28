@@ -15,7 +15,11 @@
   --bg-prompt: #161b22;
   --text: #f8f8f2;
   --text-dim: #99a3b3;
-  --text-comment: #6c7086;
+  /* Phase Q1 — bumped from #6c7086 (3.95:1 against --bg, fails WCAG AA
+     for normal text) to #8b95ad (~5.8:1, passes AA with margin). Same
+     bluish-cool comment hue, just brighter so screen readers and
+     low-vision users can read prompt prefixes and ls metadata. */
+  --text-comment: #8b95ad;
   --green: #a6e22e;
   --pink: #f92672;
   --yellow: #e6db74;
@@ -44,8 +48,19 @@ html, body {
 }
 ::selection { background: var(--selection); color: var(--text); }
 
-a { color: var(--green); text-decoration: none; }
-a:hover { color: var(--text); background: var(--green); }
+/* Phase Q1 — inline links MUST have a non-color indicator. Pre-fix
+   the green-on-cream contrast was only 1.45:1 against surrounding
+   body text (WCAG requires 3:1, and color-only differentiation is
+   forbidden anyway). Underlined inline links keep the green
+   "terminal" feel while passing WCAG. The `:hover` swap is intact
+   since hover never carries the underline-indicator burden. */
+a { color: var(--green); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+a:hover { color: var(--text); background: var(--green); text-decoration: none; }
+/* Anchors that are visually obvious by other means (icon buttons,
+   nav links, social chips) opt out of the underline. */
+.nav-links a, .hero-links a, .rail-socials a, .ls-row a, .topbar a {
+  text-decoration: none;
+}
 
 h1, h2, h3, h4 {
   font-family: var(--mono);
