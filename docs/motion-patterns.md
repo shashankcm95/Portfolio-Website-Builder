@@ -488,6 +488,82 @@ line). A pill with a colored dot indicator, three statuses driven by
 WCAG AA 4.5:1 floor. If the chosen accent fails, use a darker text variant
 (`#8a3612` instead of `#c24d2c` against `#fdf0eb` gives 5.1:1).
 
+### 2.15 Smooth-scroll opt-in (the safely-gated form)
+
+`html { scroll-behavior: smooth }` is tempting because it makes anchor links
+glide instead of jump — but applied unconditionally it causes visible
+disorientation for users with vestibular disorders or motion sensitivity
+who have explicitly requested no motion. The correct pattern always pairs
+the smooth declaration with a reduced-motion override, in either of two
+equivalent shapes:
+
+```css
+/* Form A — wrap the smooth declaration in a no-preference query */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+```
+
+```css
+/* Form B — declare smooth unconditionally, override inside the
+   reduced-motion block where every other animation no-op already lives.
+   This is what studio + classic ship today. */
+html { scroll-behavior: smooth; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  /* …other no-ops… */
+}
+```
+
+**Always one or the other.** A bare `html { scroll-behavior: smooth }` with
+no override is a hard gate-2 failure. The motion-ui-engineer review checklist
+flags this, and the fix is one line either way.
+
+### 2.16 CSS-only cinematic backdrop (heroBreathe)
+
+Used when a template wants a "cinematic" feel but the user hasn't
+configured `basics.heroVideoUrl`. A slow rotating + hue-shifting radial
+gradient produces a video-like ambience entirely in CSS, swappable for a
+real `<video>` later without changing the surrounding hero markup.
+
+```css
+.hero-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 40%,
+      rgba(245, 100, 80, 0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 70%,
+      rgba(120, 80, 200, 0.18) 0%, transparent 65%),
+    var(--bg);
+  animation: heroBreathe 30s ease-in-out infinite alternate;
+}
+@keyframes heroBreathe {
+  from { transform: scale(1) rotate(0deg);    filter: hue-rotate(0deg); }
+  to   { transform: scale(1.08) rotate(2deg); filter: hue-rotate(15deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-backdrop { animation: none; }
+}
+```
+
+Tuned for **30 s** rotation cycle deliberately — anything faster reads as
+movement; this slow it functions as ambience the visitor barely registers.
+The radial-gradient stops use brand-accent colors with low alpha so the
+texture stays under the body text.
+
+**Z-stack:** `.hero-backdrop` sits at `z: 0`; hero content lives at `z: 1`
+or higher with `position: relative`. Any veil for text contrast (when the
+backdrop is a real video, see §2.4) goes between as a `::before` at `z: 1`.
+
+When `basics.heroVideoUrl` is set, replace `.hero-backdrop` with
+`<video data-video="hero">` and let §2.4 / §2.5 take over. Layout, z-stack,
+and surrounding markup are intentionally identical so the swap is one line.
+
 ---
 
 ## 3. Per-template motif index
