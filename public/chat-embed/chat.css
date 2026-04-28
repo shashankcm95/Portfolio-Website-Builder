@@ -89,9 +89,13 @@ body {
 .chat-panel {
   position: absolute;
   bottom: 8px;
-  right: 8px;
+  /* Phase R6 — bumped from 8px to 12px so the panel has consistent
+     visual breathing room from the iframe right edge across templates.
+     Some host pages (notably terminal with its centered .term-frame)
+     made the previous 8px feel cropped. */
+  right: 12px;
   width: 380px;
-  max-width: calc(100vw - 16px);
+  max-width: calc(100vw - 24px);
   height: 540px;
   max-height: calc(100vh - 16px);
   background: var(--bg);

@@ -279,6 +279,152 @@ describe("buildChunks", () => {
       "narrative",
     ]);
   });
+
+  // ─── Phase R6 — career + availability chunks ──────────────────────────────
+
+  it("emits a career chunk when namedEmployers is set", () => {
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Ada Lovelace",
+          namedEmployers: ["Apple", "Klaviyo"],
+        },
+      })
+    );
+    const career = out.find((c) => c.chunkType === "career");
+    expect(career).toBeDefined();
+    expect(career!.chunkText).toContain("Apple");
+    expect(career!.chunkText).toContain("Klaviyo");
+    // Two phrasings — covers "previously at" and "companies he worked for"
+    // embedding queries.
+    expect(career!.chunkText).toMatch(/Previously at: Apple, Klaviyo/);
+    expect(career!.chunkText).toMatch(/Companies Ada Lovelace has worked for/);
+    expect(career!.sourceRef).toBe("career:pf-1");
+  });
+
+  it("emits a career chunk with experience roles", () => {
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Ada",
+          experience: [
+            {
+              company: "Klaviyo",
+              position: "Senior Engineer",
+              startDate: "2021-03-01",
+              endDate: "2024-08-01",
+              summary: "Led pricing-engine rebuild.",
+              highlights: ["Cut p99 by 40%", "Mentored 3 IC4s"],
+            },
+            {
+              company: "Apple",
+              position: "Software Engineer",
+              startDate: "2018-06-01",
+              endDate: "2021-02-01",
+              summary: null,
+              highlights: null,
+            },
+          ],
+        },
+      })
+    );
+    const career = out.find((c) => c.chunkType === "career");
+    expect(career).toBeDefined();
+    expect(career!.chunkText).toContain("Senior Engineer at Klaviyo (2021 — 2024)");
+    expect(career!.chunkText).toContain("Software Engineer at Apple (2018 — 2021)");
+    expect(career!.chunkText).toContain("Led pricing-engine rebuild");
+    expect(career!.chunkText).toContain("Cut p99 by 40%");
+  });
+
+  it("does NOT emit a career chunk when no career data is present", () => {
+    const out = buildChunks(makeInput({}));
+    const career = out.find((c) => c.chunkType === "career");
+    expect(career).toBeUndefined();
+  });
+
+  it("emits an availability chunk for currentRole + hiring=available", () => {
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Ada",
+          currentRole: "Senior Engineer",
+          currentCompany: "Klaviyo",
+          hiring: { status: "available", ctaText: "Let's chat" },
+        },
+      })
+    );
+    const avail = out.find((c) => c.chunkType === "availability");
+    expect(avail).toBeDefined();
+    expect(avail!.chunkText).toContain(
+      "Ada is currently working as Senior Engineer at Klaviyo"
+    );
+    expect(avail!.chunkText).toContain("Ada is currently available for new work");
+    expect(avail!.chunkText).toContain('"Let\'s chat"');
+    expect(avail!.sourceRef).toBe("availability:pf-1");
+  });
+
+  it("emits an availability chunk for hiring=open without CTA", () => {
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Ada",
+          hiring: { status: "open" },
+        },
+      })
+    );
+    const avail = out.find((c) => c.chunkType === "availability");
+    expect(avail).toBeDefined();
+    expect(avail!.chunkText).toContain(
+      "Ada is open to conversations about new work"
+    );
+  });
+
+  it("does NOT emit an availability chunk when hiring is not-looking and no role", () => {
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Ada",
+          hiring: { status: "not-looking" },
+        },
+      })
+    );
+    const avail = out.find((c) => c.chunkType === "availability");
+    expect(avail).toBeUndefined();
+  });
+
+  it("orders career + availability immediately after the profile chunk", () => {
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Ada",
+          namedEmployers: ["Apple"],
+          currentRole: "Engineer",
+          currentCompany: "Klaviyo",
+          hiring: { status: "available" },
+        },
+        projects: [
+          {
+            id: "p-1",
+            name: "Widget",
+            description: "stuff",
+            stackSummary: "Go",
+          },
+        ],
+      })
+    );
+    expect(out.map((c) => c.chunkType)).toEqual([
+      "profile",
+      "career",
+      "availability",
+      "project_summary",
+    ]);
+  });
 });
 
 // ─── Primitive helpers ──────────────────────────────────────────────────────

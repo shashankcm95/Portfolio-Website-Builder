@@ -157,12 +157,39 @@ export async function buildChatbotBundleIfEnabled(
       )
     : [];
 
+  // Phase R6 — default greeting when the owner hasn't set one. Without
+  // this the embed panel opens to a blank transcript and the visitor has
+  // to guess what they can ask. The default introduces the assistant,
+  // names the owner, and prompts a question without dictating one.
+  const greeting = pickGreeting(row.chatbotGreeting, ownerName);
+
   return buildSelfHostedChatbotFiles({
     portfolioId,
     ownerName,
-    greeting: row.chatbotGreeting ?? null,
+    greeting,
     starters,
   });
+}
+
+/**
+ * Pick the greeting shown when the chat panel opens. Owner-authored
+ * wins; absent → a friendly default that names the owner and invites
+ * a question. Returning null suppresses the greeting entirely (the
+ * old behavior), only used when ownerName is empty.
+ */
+function pickGreeting(
+  authored: string | null | undefined,
+  ownerName: string
+): string | null {
+  if (typeof authored === "string" && authored.trim().length > 0) {
+    return authored.trim();
+  }
+  const trimmedName = ownerName.trim();
+  if (!trimmedName) return null;
+  // Use the first name when present so the greeting doesn't feel like
+  // a database lookup. "Shashank C M" → "Shashank".
+  const firstName = trimmedName.split(/\s+/)[0];
+  return `Hi! I'm here to answer questions about ${firstName}'s work — projects, skills, experience, availability. What would you like to know?`;
 }
 
 // ─── Template rendering ────────────────────────────────────────────────────

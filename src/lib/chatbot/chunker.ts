@@ -61,6 +61,34 @@ export interface ChunkerProfileInput {
   ownerName: string;
   bio?: string | null;
   topSkills?: string[] | null;
+  /**
+   * Phase R6 — career data baked into the retrieval corpus so the chatbot
+   * can answer "which companies has he worked for", "is he available?",
+   * "what's his current role?" without falling back to the canned out-of-
+   * scope refusal. Each field is optional; absent ones are silently
+   * skipped from the chunk.
+   */
+  positioning?: string | null;
+  currentRole?: string | null;
+  currentCompany?: string | null;
+  namedEmployers?: string[] | null;
+  hiring?: {
+    status: "available" | "open" | "not-looking";
+    ctaText?: string | null;
+    ctaHref?: string | null;
+  } | null;
+  availability?: {
+    kind: "available_now" | "available_after" | "open_to_chat" | "not_looking";
+    startDate?: string | null;
+  } | null;
+  experience?: Array<{
+    company: string;
+    position: string;
+    startDate?: string | null;
+    endDate?: string | null;
+    summary?: string | null;
+    highlights?: string[] | null;
+  }> | null;
 }
 
 export interface ChunkerInput {
@@ -86,6 +114,20 @@ export function buildChunks(input: ChunkerInput): EmbeddingChunk[] {
 
   // 1. Profile chunk — always exactly one per portfolio.
   out.push(buildProfileChunk(input.profile));
+
+  // 1b. Career chunk — Phase R6. Emits a separate chunk for employers +
+  //     experience history so embedding similarity can match queries like
+  //     "where has he worked" / "previous companies" without being diluted
+  //     by the bio/skills text in the profile chunk. Skipped silently
+  //     when no career data is set.
+  const careerChunk = buildCareerChunk(input.profile);
+  if (careerChunk) out.push(careerChunk);
+
+  // 1c. Availability chunk — Phase R6. Same logic for hiring status +
+  //     current role. Lets "is he available?" retrieve the right
+  //     answer even when the bio/skills are unrelated.
+  const availabilityChunk = buildAvailabilityChunk(input.profile);
+  if (availabilityChunk) out.push(availabilityChunk);
 
   // 2. Per project, in the order given by the caller.
   for (const project of input.projects) {
@@ -126,6 +168,135 @@ function buildProfileChunk(profile: ChunkerProfileInput): EmbeddingChunk {
     sourceRef: `profile:${profile.portfolioId}`,
     metadata: { portfolioId: profile.portfolioId },
   };
+}
+
+/**
+ * Phase R6 — career chunk. Surfaces the data that drives "which
+ * companies has he worked for" / "tell me about his work history" /
+ * "where did he work before". Returns null when no career data exists,
+ * so old portfolios that haven't filled in employers + experience get
+ * a smaller (but still functional) corpus rather than empty chunks.
+ */
+function buildCareerChunk(
+  profile: ChunkerProfileInput
+): EmbeddingChunk | null {
+  const employers = (profile.namedEmployers ?? []).filter(Boolean);
+  const experience = (profile.experience ?? []).filter(
+    (e) => e && e.company && e.position
+  );
+
+  if (employers.length === 0 && experience.length === 0) {
+    return null;
+  }
+
+  const parts: string[] = [`${profile.ownerName}'s career and work history.`];
+
+  if (employers.length > 0) {
+    // Two phrasings — the embedding picks up both "previously at" and
+    // "companies he worked for" phrasings of the same query.
+    parts.push(
+      `Previously at: ${employers.join(", ")}. ` +
+        `Companies ${profile.ownerName} has worked for: ${employers.join(", ")}.`
+    );
+  }
+
+  if (experience.length > 0) {
+    const lines = experience.map((e) => {
+      const range = formatExperienceRange(e.startDate, e.endDate);
+      const head = `${e.position} at ${e.company}${range ? ` (${range})` : ""}`;
+      const summary = e.summary?.trim() ?? "";
+      const highlights = (e.highlights ?? [])
+        .filter(Boolean)
+        .slice(0, 3)
+        .join("; ");
+      const tail = [summary, highlights].filter(Boolean).join(" ");
+      return tail ? `${head} — ${tail}` : head;
+    });
+    parts.push(`Roles:\n${lines.join("\n")}`);
+  }
+
+  return {
+    chunkType: "career",
+    chunkText: parts.join("\n"),
+    sourceRef: `career:${profile.portfolioId}`,
+    metadata: { portfolioId: profile.portfolioId },
+  };
+}
+
+/**
+ * Phase R6 — availability chunk. Surfaces hiring status + current role
+ * so "is he available", "what's he doing now", "is he looking for work"
+ * land on real data. Returns null when neither hiring status nor current
+ * role is set.
+ */
+function buildAvailabilityChunk(
+  profile: ChunkerProfileInput
+): EmbeddingChunk | null {
+  const lines: string[] = [];
+
+  if (profile.currentRole || profile.currentCompany) {
+    const where = [profile.currentRole, profile.currentCompany]
+      .filter(Boolean)
+      .join(" at ");
+    lines.push(`${profile.ownerName} is currently working as ${where}.`);
+  }
+
+  const h = profile.hiring;
+  if (h && h.status !== "not-looking") {
+    if (h.status === "available") {
+      lines.push(
+        `${profile.ownerName} is currently available for new work.` +
+          (h.ctaText ? ` Hire CTA: "${h.ctaText}".` : "")
+      );
+    } else if (h.status === "open") {
+      lines.push(`${profile.ownerName} is open to conversations about new work.`);
+    }
+  }
+
+  const a = profile.availability;
+  if (a && a.kind !== "not_looking") {
+    const phrasing: Record<string, string> = {
+      available_now: `${profile.ownerName} is available for work now.`,
+      available_after: a.startDate
+        ? `${profile.ownerName} will be available starting ${a.startDate}.`
+        : `${profile.ownerName} will be available soon.`,
+      open_to_chat: `${profile.ownerName} is open to having a conversation.`,
+      not_looking: "",
+    };
+    const sentence = phrasing[a.kind];
+    if (sentence) lines.push(sentence);
+  }
+
+  if (profile.positioning) {
+    lines.push(`Positioning: ${profile.positioning}`);
+  }
+
+  if (lines.length === 0) {
+    return null;
+  }
+
+  return {
+    chunkType: "availability",
+    chunkText: lines.join("\n"),
+    sourceRef: `availability:${profile.portfolioId}`,
+    metadata: { portfolioId: profile.portfolioId },
+  };
+}
+
+/**
+ * Format a YYYY-MM-DD or YYYY date range as "2021 — 2024" / "2024 — Present".
+ * Tolerates partial / ISO / unparseable dates and falls back to the raw
+ * string rather than producing "NaN — NaN".
+ */
+function formatExperienceRange(
+  startDate?: string | null,
+  endDate?: string | null
+): string {
+  const start = (startDate ?? "").slice(0, 4);
+  const end = endDate ? endDate.slice(0, 4) : "Present";
+  if (!start) return "";
+  if (start === end) return start;
+  return `${start} — ${end}`;
 }
 
 function buildProjectSummaryChunk(

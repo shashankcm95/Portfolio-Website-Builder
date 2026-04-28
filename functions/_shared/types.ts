@@ -21,7 +21,11 @@ export type ChunkType =
   | "derived_fact"
   | "narrative"
   | "project_summary"
-  | "profile";
+  | "profile"
+  // Phase R6 — keep this list byte-identical to src/lib/chatbot/types.ts
+  // (the cf-port-parity test enforces it).
+  | "career"
+  | "availability";
 
 export interface EmbeddingChunk {
   chunkType: ChunkType;

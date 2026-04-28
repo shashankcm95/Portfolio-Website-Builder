@@ -256,6 +256,9 @@ function buildProfileInput(
   const skills = Array.isArray(pd.skills)
     ? (pd.skills as Array<{ name?: unknown }>)
     : [];
+  const experienceRaw = Array.isArray(pd.experience)
+    ? (pd.experience as Array<Record<string, unknown>>)
+    : [];
 
   const ownerName =
     (typeof basics.name === "string" && basics.name.trim()) ||
@@ -271,10 +274,58 @@ function buildProfileInput(
     .filter((n) => n.length > 0)
     .slice(0, 12);
 
+  // Phase R6 — surface career data into the corpus so chatbot retrieval
+  // can answer employer/availability/role questions.
+  const positioning =
+    (typeof basics.positioning === "string" && basics.positioning.trim()) ||
+    null;
+  const currentRole =
+    (typeof basics.currentRole === "string" && basics.currentRole.trim()) ||
+    null;
+  const currentCompany =
+    (typeof basics.currentCompany === "string" &&
+      basics.currentCompany.trim()) ||
+    null;
+  const namedEmployers = Array.isArray(basics.namedEmployers)
+    ? (basics.namedEmployers as unknown[]).filter(
+        (e): e is string => typeof e === "string" && e.trim().length > 0
+      )
+    : [];
+  const hiring =
+    basics.hiring && typeof basics.hiring === "object"
+      ? (basics.hiring as ChunkerProfileInput["hiring"])
+      : null;
+  const availability =
+    basics.availability && typeof basics.availability === "object"
+      ? (basics.availability as ChunkerProfileInput["availability"])
+      : null;
+
+  const experience = experienceRaw
+    .map((e) => ({
+      company: typeof e.company === "string" ? e.company : "",
+      position: typeof e.position === "string" ? e.position : "",
+      startDate: typeof e.startDate === "string" ? e.startDate : null,
+      endDate: typeof e.endDate === "string" ? e.endDate : null,
+      summary: typeof e.summary === "string" ? e.summary : null,
+      highlights: Array.isArray(e.highlights)
+        ? (e.highlights as unknown[]).filter(
+            (h): h is string => typeof h === "string"
+          )
+        : null,
+    }))
+    .filter((e) => e.company && e.position);
+
   return {
     portfolioId: portfolioRow.id,
     ownerName,
     bio,
     topSkills: topSkills.length > 0 ? topSkills : null,
+    positioning,
+    currentRole,
+    currentCompany,
+    namedEmployers: namedEmployers.length > 0 ? namedEmployers : null,
+    hiring,
+    availability,
+    experience: experience.length > 0 ? experience : null,
   };
 }

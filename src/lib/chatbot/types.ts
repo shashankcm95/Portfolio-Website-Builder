@@ -41,7 +41,13 @@ export type ChunkType =
   | "derived_fact"
   | "narrative"
   | "project_summary"
-  | "profile";
+  | "profile"
+  // Phase R6 — career chunk (named employers + experience history) and
+  // availability chunk (current role + hiring status). Kept separate from
+  // the bio-heavy "profile" chunk so embedding similarity matches
+  // "where has he worked" / "is he available" cleanly.
+  | "career"
+  | "availability";
 
 /** A single chunk emitted by the chunker, ready for embedding + insert. */
 export interface EmbeddingChunk {
