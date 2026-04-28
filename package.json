@@ -13,6 +13,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed-db.ts",
+    "reembed:portfolio": "tsx scripts/reembed-portfolio.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:e2e": "playwright test"
