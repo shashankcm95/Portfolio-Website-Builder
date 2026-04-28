@@ -108,6 +108,51 @@ const shippedTemplates = [
       audience: ["leader", "designer-dev", "writing"],
     },
   },
+  {
+    id: "signal",
+    name: "Signal",
+    description:
+      "Dark, motion-driven, product-builder template. Pinned left rail with bio + nav, scrolling work column with magnetic project cards. Anchor stat + named employers in the hero, scroll-driven nav highlight, liquid-glass anchor pill. Optimal for senior design-engineers, product builders.",
+    isActive: true,
+    isPremium: false,
+    config: {
+      primaryColor: "#7dd3fc",
+      fontFamily: "Inter",
+      showGitHubStats: true,
+      showTechStack: true,
+      audience: ["design-engineer", "senior", "product"],
+    },
+  },
+  {
+    id: "studio",
+    name: "Studio",
+    description:
+      "Light, freelancer-first template. Availability badge above the fold, hero CTA driven by hire status, testimonial carousel, marquee'd client wall. Optional cinematic video-bg hero (set Hero video URL in Identity panel). Optimal for freelancers, consultants, agency leads.",
+    isActive: true,
+    isPremium: false,
+    config: {
+      primaryColor: "#c24d2c",
+      fontFamily: "Fraunces",
+      showGitHubStats: true,
+      showTechStack: true,
+      audience: ["freelancer", "consultant", "agency"],
+    },
+  },
+  {
+    id: "kinetic",
+    name: "Kinetic",
+    description:
+      "Cinematic, motion-rich template. Floating-pill nav, BlurText word-reveal hero with italic-serif accent, liquid-glass anchor pill, partners marquee, magnetic project cards, dark-by-default with theme toggle. Optional video-bg hero. Optimal for design-engineers who treat their portfolio as a piece of work in itself.",
+    isActive: true,
+    isPremium: false,
+    config: {
+      primaryColor: "#f56450",
+      fontFamily: "Inter",
+      showGitHubStats: true,
+      showTechStack: true,
+      audience: ["design-engineer", "premium", "cinematic"],
+    },
+  },
 ];
 
 async function main() {
