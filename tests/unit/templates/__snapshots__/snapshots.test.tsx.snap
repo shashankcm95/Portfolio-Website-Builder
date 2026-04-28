@@ -1,5 +1,283 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Cinematic video-bg variant — templates that consume heroVideoUrl kinetic home page renders the cinematic variant 1`] = `
+"<!DOCTYPE html>
+<html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Instrument+Serif:ital@0;1&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('kinetic-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><div class="kinetic-shell"><nav class="kinetic-nav liquid-glass" aria-label="Primary navigation"><a href="/" class="kinetic-nav-brand">jane<em>·</em></a><div class="kinetic-nav-links"><a href="/" class="kinetic-nav-link active">Work</a><a href="/about/" class="kinetic-nav-link ">About</a><a href="/projects/" class="kinetic-nav-link ">Index</a><a href="/contact/" class="kinetic-nav-link ">Contact</a></div><a href="mailto:jane@example.test" class="kinetic-nav-cta">Let&#x27;s work together</a></nav><section class="kinetic-hero kinetic-hero--video" aria-label="Introduction"><video class="kinetic-hero__video" data-video="hero" aria-hidden="true" muted="" playsinline="" data-hls-src="https://example.test/hero.m3u8"></video><div class="kinetic-hero-content"><span class="kinetic-hero-eyebrow liquid-glass animate-blur-fade-up" style="--d:0ms">London — design × engineering</span><h1 class="blur-text"><span class="word" style="--i:0">I</span><span class="word" style="--i:1">build</span><span class="word" style="--i:2">accessible,</span><span class="word" style="--i:3">pixel-perfect</span><span class="word" style="--i:4">experiences</span><span class="word" style="--i:5">for</span><span class="word" style="--i:6">the</span><em class="word" style="--i:7">web.</em></h1><p class="kinetic-hero-positioning animate-blur-fade-up" style="--d:900ms">Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><div class="pwb-hero-signals" aria-label="Availability and preferences"><p class="pwb-hero-signal pwb-hero-signal-place"><span class="pwb-hero-signal-value">London, UK</span></p></div><p class="kinetic-hero-employers animate-blur-fade-up" style="--d:1050ms">Previously at<span>Apple · Klaviyo</span></p><div class="kinetic-anchor liquid-glass animate-blur-fade-up" style="--d:1150ms"><span class="kinetic-anchor-star" aria-hidden="true">✦</span><strong>4.2k+</strong><span>GitHub stars</span><em>— on Signal Forge</em></div><div class="kinetic-hero-ctas animate-blur-fade-up" style="--d:1250ms"><a class="kinetic-cta" href="mailto:jane@example.test">Let&#x27;s work together<span class="kinetic-cta-arrow" aria-hidden="true">↗</span></a><a class="kinetic-cta is-ghost" href="/projects/">See work</a></div></div><div class="kinetic-partners animate-blur-fade-up" style="--d:1400ms"><span class="kinetic-partners-label">Trusted by teams at</span><div class="marquee"><ul class="marquee__track"><li>Apple</li><li>Klaviyo</li><li>Apple</li><li>Klaviyo</li><li>Apple</li><li>Klaviyo</li></ul><ul class="marquee__track" aria-hidden="true"><li>Apple</li><li>Klaviyo</li><li>Apple</li><li>Klaviyo</li><li>Apple</li><li>Klaviyo</li></ul></div></div></section><main class="kinetic-main"><section id="work" aria-label="Selected work"><div class="section-head scroll-reveal"><span class="section-eyebrow">Selected work</span><h2>Recent <em>projects</em></h2></div><ol class="case-list"><li class="case-card scroll-reveal" data-magnet="true"><div class="case-num">01</div><div class="case-body"><h3 class="case-title"><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="case-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="case-desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="case-outcomes" aria-label="Project outcomes"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul></div></li></ol></section><section id="testimonials" aria-label="What people say"><div class="section-head scroll-reveal"><span class="section-eyebrow">Reception</span><h2>What people <em>say</em></h2></div><div><figure class="pull-quote scroll-reveal"><blockquote class="pull-quote-text">“Working with her changed how we ship — the kind of engineer whose taste you feel in the product.”</blockquote><figcaption class="pull-quote-attr"><strong><a href="https://example.test/alex" target="_blank" rel="noopener noreferrer">Alex Example</a></strong><span>VP Engineering · Acme</span></figcaption></figure></div></section></main><footer class="kinetic-footer"><span>© 2026 Jane Doe</span><span>Built kinetic — proof-backed portfolio</span></footer></div><button type="button" class="kinetic-theme-toggle" aria-label="Toggle theme" data-kinetic-theme-toggle="true"><span aria-hidden="true">◐</span></button><script src="/scripts/hls.min.js" defer=""></script><script>/**
+ * Kinetic template — progressive enhancement bootstrap.
+ *
+ * Bundle (≤5 KB before adding video; ≤5 KB target overall):
+ *   1. §2.12 Theme toggle wiring (data-kinetic-theme-toggle)
+ *   2. §2.9  Magnetic hover on [data-magnet] cards
+ *   3. §2.3  BlurText IO observer for below-the-fold instances
+ *   4. §2.4  rAF video fade loop (only when basics.heroVideoUrl set)
+ *   5. §2.5  HLS bootstrap (Safari-native first, then hls.js UMD fallback)
+ *
+ * Each block is self-contained — a missing element / unsupported API
+ * silently no-ops without short-circuiting the rest of the bundle.
+ */
+(function () {
+  "use strict";
+
+  var reducedMotion =
+    typeof matchMedia === "function" &&
+    matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── §2.12 Theme toggle ──────────────────────────────────────────── */
+  (function () {
+    var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
+    if (!toggleBtn) return;
+    toggleBtn.addEventListener("click", function () {
+      var html = document.documentElement;
+      var next = html.getAttribute("data-theme") === "light" ? "dark" : "light";
+      html.setAttribute("data-theme", next);
+      try {
+        localStorage.setItem("kinetic-theme", next);
+      } catch (_) {
+        /* private mode / sandboxed iframe — silently ignore */
+      }
+    });
+  })();
+
+  /* ── §2.9 Magnetic hover ─────────────────────────────────────────── */
+  if (!reducedMotion) {
+    var magnets = document.querySelectorAll("[data-magnet]");
+    magnets.forEach(function (el) {
+      el.addEventListener("pointermove", function (e) {
+        var r = el.getBoundingClientRect();
+        var x = (e.clientX - r.left - r.width / 2) * 0.12;
+        var y = (e.clientY - r.top - r.height / 2) * 0.12;
+        el.style.transform = "translate(" + x + "px, " + y + "px)";
+      });
+      el.addEventListener("pointerleave", function () {
+        el.style.transform = "";
+      });
+    });
+  }
+
+  /* ── §2.3 BlurText IO observer (below-the-fold gating) ───────────── */
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var gated = document.querySelectorAll(".blur-text-gated");
+    if (gated.length === 0) return;
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("blur-text--visible");
+          io.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0 }
+    );
+    gated.forEach(function (el) {
+      io.observe(el);
+    });
+  })();
+
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ───────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
+
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+      // No-op when neither path available — the .hero-backdrop CSS
+      // gradient remains visible behind the empty <video>.
+    }
+    // For .mp4 sources the <source> child is in the markup already.
+
+    /* prefers-reduced-motion: paint first frame, then pause. CSS keeps
+       opacity at 1 so the still frame is always visible. */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08; // ~12-frame ease
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) {
+          raf = requestAnimationFrame(tick);
+        }
+      })();
+    }
+
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          // Autoplay blocked — fall through with opacity 1 so the still
+          // frame is at least visible.
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
+})();
+</script></body></html>"
+`;
+
+exports[`Cinematic video-bg variant — templates that consume heroVideoUrl studio home page renders the cinematic variant 1`] = `
+"<!DOCTYPE html>
+<html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style></head><body><header class="topbar"><div class="container topbar-inner"><div class="brand"><a href="/">Jane Doe</a></div><nav aria-label="Primary"><ul class="nav-links"><li><a href="/" class="active">Home</a></li><li><a href="/projects/">Work</a></li><li><a href="/about/">About</a></li><li><a href="/contact/">Contact</a></li></ul></nav><span class="status-chip">Available for new work</span></div></header><main><section class="hero-section studio-hero--video"><video class="studio-hero__video" data-video="hero" data-hls-src="https://example.test/hero.m3u8" muted="" playsinline="" aria-hidden="true"></video><script src="/scripts/hls.min.js"></script><div class="container hero-grid"><div><p class="animate-blur-fade-up availability-badge" style="--d:0ms">Taking new work</p><h1 class="hero-headline animate-blur-fade-up" style="--d:120ms">I build accessible, <em>pixel-perfect experiences for the web.</em></h1><p class="hero-sub animate-blur-fade-up" style="--d:240ms">Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><div class="hero-ctas animate-blur-fade-up" style="--d:360ms"><a class="btn-primary" href="mailto:jane@example.test">Let&#x27;s work together</a><a class="btn-ghost" href="/projects/">See work</a></div><div class="pwb-hero-signals" aria-label="Availability and preferences"><p class="pwb-hero-signal pwb-hero-signal-place"><span class="pwb-hero-signal-value">London, UK</span></p></div><figure class="hero-testimonial animate-blur-fade-up" style="--d:480ms"><blockquote>&quot;Working with her changed how we ship — the kind of engineer whose taste you feel in the product.&quot;</blockquote><figcaption><strong>Alex Example</strong><span> · VP Engineering · Acme</span></figcaption></figure></div><aside class="hero-anchor-card animate-blur-fade-up" aria-label="Signature stat" style="--d:240ms"><p class="anchor-label">on Signal Forge</p><p class="anchor-value">4.2k+</p><p class="anchor-unit">GitHub stars</p></aside></div></section><section class="clients" aria-label="Previously worked with"><div class="container"><p class="clients-label">Previously at</p><div class="clients-row marquee"><ul class="marquee__track"><li>Apple</li><li>Klaviyo</li></ul><ul class="marquee__track" aria-hidden="true"><li>Apple</li><li>Klaviyo</li></ul></div></div></section><section class="section"><div class="container"><div class="section-header scroll-reveal"><h2>Selected work</h2><p>A cross-section of recent projects and what they shipped.</p></div><ul class="project-grid"><li class="project-card scroll-reveal"><h3><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="project-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="outcome-row"><li class="outcome-chip"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-chip"><b>500+</b><span>Active users</span></li></ul><ul class="tech-row"><li>TypeScript</li><li>Next.js</li><li>Drizzle</li></ul></li></ul></div></section><section class="section"><div class="container"><div class="section-header scroll-reveal"><h2>What collaborators say</h2><p>Quotes from people I&#x27;ve worked with directly.</p></div><div class="carousel" role="region" aria-label="Testimonials"><figure class="testimonial-card"><blockquote class="testimonial-quote">“Working with her changed how we ship — the kind of engineer whose taste you feel in the product.”</blockquote><figcaption class="testimonial-author"><div class="testimonial-meta"><strong><a href="https://example.test/alex" target="_blank" rel="noopener noreferrer">Alex Example</a></strong><span>VP Engineering · Acme</span></div></figcaption></figure></div></div></section><section class="section"><div class="container"><div class="section-header scroll-reveal"><h2>What I work on</h2><p>Grouped by where I spend the most time.</p></div><ul class="services-grid"><li class="service-card scroll-reveal"><h4>Languages</h4><p>TypeScript</p></li><li class="service-card scroll-reveal"><h4>Frameworks</h4><p>Next.js</p></li></ul></div></section><section><div class="container"><div class="closing-cta scroll-reveal"><h2>Have a project in mind?</h2><p>Jane Doe is currently taking new engagements. Share a few details and we&#x27;ll find a time to talk.</p><a class="btn-primary" href="mailto:jane@example.test">Let&#x27;s work together</a></div></div></section></main><footer class="footer"><div class="container footer-inner"><span>© 2026 Jane Doe</span><span><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a> · <a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></span></div></footer><script>/**
+ * Studio template — progressive enhancement bootstrap.
+ *
+ * §2.4  rAF video fade loop on [data-video="hero"].
+ * §2.5  HLS bootstrap (Safari-native first, then hls.js UMD fallback).
+ *
+ * Constraints:
+ *   - IIFE, no dependencies, ≤5 KB minified.
+ *   - Honours prefers-reduced-motion: shows a still first-frame instead of
+ *     autoplaying; the rAF fade loop does not run.
+ *   - NO autoplay or loop attributes on the <video> element — this script
+ *     owns both concerns at runtime.
+ *   - Exits immediately (no-op) when [data-video="hero"] is absent, so
+ *     static-hero pages pay zero cost.
+ */
+(function () {
+  /* ── Guard: no video element → nothing to do ───────────────────── */
+  var v = document.querySelector('[data-video="hero"]');
+  if (!v) return;
+
+  /* ── §2.5 HLS bootstrap ─────────────────────────────────────────── */
+  var hlsSrc = v.getAttribute("data-hls-src");
+  if (hlsSrc) {
+    if (v.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari — native HLS support; set src directly.
+      v.src = hlsSrc;
+    } else if (window.Hls && window.Hls.isSupported()) {
+      // Chromium / Firefox — use the vendored hls.js UMD build.
+      var hls = new window.Hls();
+      hls.loadSource(hlsSrc);
+      hls.attachMedia(v);
+    }
+    // If neither path is available (very old browser, no hls.js loaded),
+    // the video element stays empty and the .studio-hero--video section
+    // falls back to its dark-background CSS — still readable.
+  }
+  // For .mp4 sources the <source> child is already in the markup; no
+  // additional src wiring needed here.
+
+  /* ── prefers-reduced-motion: show still first frame, then stop ─── */
+  var reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reducedMotion) {
+    // Load enough data to paint the first frame, then immediately pause.
+    // The CSS rule \`.studio-hero__video { opacity: 1 !important; }\` ensures
+    // the still frame is always visible.
+    v.addEventListener("loadeddata", function () {
+      v.pause();
+    }, { once: true });
+    return; // Do not attach the fade-loop handlers below.
+  }
+
+  /* ── §2.4 rAF fade loop ─────────────────────────────────────────── */
+  // Start opacity at 0 so the initial load fades in smoothly.
+  v.style.opacity = "0";
+
+  var raf = 0;
+  var fadingOut = false;
+
+  /**
+   * Animate opacity toward \`target\` using a proportional easing step.
+   * Reads the live v.style.opacity so re-entry after a loop restart is
+   * always smooth regardless of where the previous fade stopped.
+   */
+  function fadeTo(target) {
+    cancelAnimationFrame(raf);
+    (function tick() {
+      var cur = parseFloat(v.style.opacity || "0");
+      var delta = (target - cur) * 0.08; // ~12-frame ease
+      var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+      v.style.opacity = String(next);
+      if (next !== target) {
+        raf = requestAnimationFrame(tick);
+      }
+    }());
+  }
+
+  // First frame ready → fade in from 0 to 1, then begin playback.
+  v.addEventListener("loadeddata", function () {
+    v.style.opacity = "0";
+    v.play().catch(function () {
+      // Autoplay blocked (e.g. no user gesture yet on some browsers).
+      // Leave video paused at first frame; opacity set to 1 by CSS
+      // fallback so content area is still visible.
+      v.style.opacity = "1";
+    });
+    fadeTo(1);
+  }, { once: true });
+
+  // Near-end detection: begin fade-out in the last 0.55 s of the clip.
+  v.addEventListener("timeupdate", function () {
+    if (fadingOut) return;
+    var remaining = v.duration - v.currentTime;
+    if (remaining > 0 && remaining <= 0.55) {
+      fadingOut = true;
+      fadeTo(0);
+    }
+  });
+
+  // Clip ended: wait one tick, reset, play again, fade back in.
+  // \`loop\` attribute is NOT on the <video> element — this handler owns
+  // the loop so the fade transition fires every cycle without a hard cut.
+  v.addEventListener("ended", function () {
+    v.style.opacity = "0";
+    setTimeout(function () {
+      v.currentTime = 0;
+      fadingOut = false;
+      v.play().catch(function () {});
+      fadeTo(1);
+    }, 100);
+  });
+}());
+</script></body></html>"
+`;
+
 exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: classic renders the about page 1`] = `
 "<!DOCTYPE html>
 <html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — Senior Software Engineer</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — Senior Software Engineer"/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — Senior Software Engineer"/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&amp;family=Source+Sans+3:wght@400;500;600&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style></head><body><nav class="nav"><div class="nav-inner"><a href="/" class="nav-brand">Jane Doe</a><ul class="nav-links"><li><a href="/">Home</a></li><li><a href="/about/" class="active">About</a></li><li><a href="/projects/">Projects</a></li><li><a href="/contact/">Contact</a></li></ul></div></nav><main><div><section class="section"><div class="container container-narrow"><div class="section-header scroll-reveal"><h2>About Me</h2></div><p>Jane builds accessible, pixel-perfect interfaces for large-scale products.</p></div></section><section class="section"><div class="container"><div class="section-header scroll-reveal"><h2>Skills</h2><p>Technologies and concepts I work with</p></div><div class="skills-group"><h4 class="skills-group-title">Languages</h4><div class="badge-group"><span class="badge">TypeScript</span></div></div><div class="skills-group"><h4 class="skills-group-title">Frameworks &amp; Libraries</h4><div class="badge-group"><span class="badge">Next.js</span></div></div></div></section><section class="section"><div class="container container-narrow"><div class="section-header scroll-reveal"><h2>Experience</h2></div><div class="timeline"><div class="timeline-item scroll-reveal"><div class="timeline-date">2022 — 2025</div><h3 class="timeline-title">Senior Software Engineer</h3><div class="timeline-subtitle">Apple</div><p class="timeline-content">Led the design-system team.</p></div></div></div></section><section class="section"><div class="container container-narrow"><div class="section-header scroll-reveal"><h2>Education</h2></div><div class="timeline"><div class="timeline-item scroll-reveal"><div class="timeline-date">2019 — 2021</div><h3 class="timeline-title">Cornell Tech</h3><div class="timeline-subtitle">M.S. in Computer Science</div></div></div></div></section></div></main><footer class="footer"><div class="footer-inner"><p class="footer-text">© 2026 Jane Doe. All rights reserved.</p><ul class="footer-links"><li><a href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub</a></li><li><a href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn</a></li></ul></div></footer></body></html>"
@@ -59,16 +337,15 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
 <html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Instrument+Serif:ital@0;1&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('kinetic-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><div class="kinetic-shell"><nav class="kinetic-nav liquid-glass" aria-label="Primary navigation"><a href="/" class="kinetic-nav-brand">jane<em>·</em></a><div class="kinetic-nav-links"><a href="/" class="kinetic-nav-link ">Work</a><a href="/about/" class="kinetic-nav-link active">About</a><a href="/projects/" class="kinetic-nav-link ">Index</a><a href="/contact/" class="kinetic-nav-link ">Contact</a></div><a href="mailto:jane@example.test" class="kinetic-nav-cta">Let&#x27;s work together</a></nav><main class="kinetic-main"><section aria-label="About"><div class="section-head animate-blur-fade-up" style="--d:0ms"><span class="section-eyebrow">About</span><h2><em>Jane Doe</em></h2></div><div class="prose animate-blur-fade-up" style="--d:180ms"><p><strong>I build accessible, pixel-perfect experiences for the web.</strong></p><p>Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><p>Previously at <strong>Apple</strong>, <strong>Klaviyo</strong>.</p></div></section><section aria-label="Experience" class="scroll-reveal"><div class="section-head"><span class="section-eyebrow">Experience</span><h2>Where I&#x27;ve worked</h2></div><ol class="experience-list"><li class="experience-item"><div class="experience-range">2022 — 2025</div><div><h3 class="experience-position">Senior Software Engineer</h3><p class="experience-company">Apple</p><p class="experience-summary">Led the design-system team.</p></div></li></ol></section><section aria-label="Education" class="scroll-reveal"><div class="section-head"><span class="section-eyebrow">Education</span><h2>Studied</h2></div><ol class="experience-list"><li class="experience-item"><div class="experience-range">2019 — 2021</div><div><h3 class="experience-position">M.S. — Computer Science</h3><p class="experience-company">Cornell Tech</p></div></li></ol></section></main><footer class="kinetic-footer"><span>© 2026 Jane Doe</span><span>Built kinetic — proof-backed portfolio</span></footer></div><button type="button" class="kinetic-theme-toggle" aria-label="Toggle theme" data-kinetic-theme-toggle="true"><span aria-hidden="true">◐</span></button><script>/**
  * Kinetic template — progressive enhancement bootstrap.
  *
- * Bundle (≤5 KB):
+ * Bundle (≤5 KB before adding video; ≤5 KB target overall):
  *   1. §2.12 Theme toggle wiring (data-kinetic-theme-toggle)
  *   2. §2.9  Magnetic hover on [data-magnet] cards
  *   3. §2.3  BlurText IO observer for below-the-fold instances
+ *   4. §2.4  rAF video fade loop (only when basics.heroVideoUrl set)
+ *   5. §2.5  HLS bootstrap (Safari-native first, then hls.js UMD fallback)
  *
- * Above-the-fold .blur-text instances animate from CSS on parse — no JS
- * gating needed. The IO observer is for any instance with .blur-text-gated
- * which means "wait until in view".
- *
- * All motion respects prefers-reduced-motion.
+ * Each block is self-contained — a missing element / unsupported API
+ * silently no-ops without short-circuiting the rest of the bundle.
  */
 (function () {
   "use strict";
@@ -78,8 +355,9 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
     matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.12 Theme toggle ──────────────────────────────────────────── */
-  var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
-  if (toggleBtn) {
+  (function () {
+    var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
+    if (!toggleBtn) return;
     toggleBtn.addEventListener("click", function () {
       var html = document.documentElement;
       var next = html.getAttribute("data-theme") === "light" ? "dark" : "light";
@@ -90,7 +368,7 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
         /* private mode / sandboxed iframe — silently ignore */
       }
     });
-  }
+  })();
 
   /* ── §2.9 Magnetic hover ─────────────────────────────────────────── */
   if (!reducedMotion) {
@@ -109,30 +387,109 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
   }
 
   /* ── §2.3 BlurText IO observer (below-the-fold gating) ───────────── */
-  if (!("IntersectionObserver" in window)) return;
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var gated = document.querySelectorAll(".blur-text-gated");
+    if (gated.length === 0) return;
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("blur-text--visible");
+          io.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0 }
+    );
+    gated.forEach(function (el) {
+      io.observe(el);
+    });
+  })();
 
-  var gated = document.querySelectorAll(".blur-text-gated");
-  if (gated.length === 0) return;
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ───────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
 
-  // Words inside a gated .blur-text start with animation-play-state:paused
-  // (set inline via the markup) and toggle to running when the wrapper
-  // enters the viewport.
-  var io = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("blur-text--visible");
-        io.unobserve(entry.target);
-      });
-    },
-    {
-      rootMargin: "0px 0px -10% 0px",
-      threshold: 0,
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+      // No-op when neither path available — the .hero-backdrop CSS
+      // gradient remains visible behind the empty <video>.
     }
-  );
-  gated.forEach(function (el) {
-    io.observe(el);
-  });
+    // For .mp4 sources the <source> child is in the markup already.
+
+    /* prefers-reduced-motion: paint first frame, then pause. CSS keeps
+       opacity at 1 so the still frame is always visible. */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08; // ~12-frame ease
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) {
+          raf = requestAnimationFrame(tick);
+        }
+      })();
+    }
+
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          // Autoplay blocked — fall through with opacity 1 so the still
+          // frame is at least visible.
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
 </script></body></html>"
 `;
@@ -142,16 +499,15 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
 <html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Instrument+Serif:ital@0;1&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('kinetic-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><div class="kinetic-shell"><nav class="kinetic-nav liquid-glass" aria-label="Primary navigation"><a href="/" class="kinetic-nav-brand">jane<em>·</em></a><div class="kinetic-nav-links"><a href="/" class="kinetic-nav-link ">Work</a><a href="/about/" class="kinetic-nav-link ">About</a><a href="/projects/" class="kinetic-nav-link ">Index</a><a href="/contact/" class="kinetic-nav-link active">Contact</a></div><a href="mailto:jane@example.test" class="kinetic-nav-cta">Let&#x27;s work together</a></nav><main class="kinetic-main"><section aria-label="Contact"><div class="section-head animate-blur-fade-up" style="--d:0ms"><span class="section-eyebrow">Contact</span><h2>Reach <em>out</em></h2></div><div class="contact-block animate-blur-fade-up" style="--d:180ms"><p style="margin:0;color:var(--color-muted)">Currently available for new work.</p><div class="prose" style="margin:0"><p style="margin:0">I build accessible, pixel-perfect experiences for the web.</p></div><p style="margin:0"><a class="kinetic-cta" href="mailto:jane@example.test">Let&#x27;s work together<span class="kinetic-cta-arrow" aria-hidden="true">↗</span></a></p><div style="display:flex;flex-wrap:wrap;gap:16px"><a class="contact-link" href="https://github.com/janedoe" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a class="contact-link" href="https://linkedin.com/in/janedoe" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a></div></div></section></main><footer class="kinetic-footer"><span>© 2026 Jane Doe</span><span>Built kinetic — proof-backed portfolio</span></footer></div><button type="button" class="kinetic-theme-toggle" aria-label="Toggle theme" data-kinetic-theme-toggle="true"><span aria-hidden="true">◐</span></button><script>/**
  * Kinetic template — progressive enhancement bootstrap.
  *
- * Bundle (≤5 KB):
+ * Bundle (≤5 KB before adding video; ≤5 KB target overall):
  *   1. §2.12 Theme toggle wiring (data-kinetic-theme-toggle)
  *   2. §2.9  Magnetic hover on [data-magnet] cards
  *   3. §2.3  BlurText IO observer for below-the-fold instances
+ *   4. §2.4  rAF video fade loop (only when basics.heroVideoUrl set)
+ *   5. §2.5  HLS bootstrap (Safari-native first, then hls.js UMD fallback)
  *
- * Above-the-fold .blur-text instances animate from CSS on parse — no JS
- * gating needed. The IO observer is for any instance with .blur-text-gated
- * which means "wait until in view".
- *
- * All motion respects prefers-reduced-motion.
+ * Each block is self-contained — a missing element / unsupported API
+ * silently no-ops without short-circuiting the rest of the bundle.
  */
 (function () {
   "use strict";
@@ -161,8 +517,9 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
     matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.12 Theme toggle ──────────────────────────────────────────── */
-  var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
-  if (toggleBtn) {
+  (function () {
+    var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
+    if (!toggleBtn) return;
     toggleBtn.addEventListener("click", function () {
       var html = document.documentElement;
       var next = html.getAttribute("data-theme") === "light" ? "dark" : "light";
@@ -173,7 +530,7 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
         /* private mode / sandboxed iframe — silently ignore */
       }
     });
-  }
+  })();
 
   /* ── §2.9 Magnetic hover ─────────────────────────────────────────── */
   if (!reducedMotion) {
@@ -192,30 +549,109 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
   }
 
   /* ── §2.3 BlurText IO observer (below-the-fold gating) ───────────── */
-  if (!("IntersectionObserver" in window)) return;
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var gated = document.querySelectorAll(".blur-text-gated");
+    if (gated.length === 0) return;
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("blur-text--visible");
+          io.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0 }
+    );
+    gated.forEach(function (el) {
+      io.observe(el);
+    });
+  })();
 
-  var gated = document.querySelectorAll(".blur-text-gated");
-  if (gated.length === 0) return;
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ───────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
 
-  // Words inside a gated .blur-text start with animation-play-state:paused
-  // (set inline via the markup) and toggle to running when the wrapper
-  // enters the viewport.
-  var io = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("blur-text--visible");
-        io.unobserve(entry.target);
-      });
-    },
-    {
-      rootMargin: "0px 0px -10% 0px",
-      threshold: 0,
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+      // No-op when neither path available — the .hero-backdrop CSS
+      // gradient remains visible behind the empty <video>.
     }
-  );
-  gated.forEach(function (el) {
-    io.observe(el);
-  });
+    // For .mp4 sources the <source> child is in the markup already.
+
+    /* prefers-reduced-motion: paint first frame, then pause. CSS keeps
+       opacity at 1 so the still frame is always visible. */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08; // ~12-frame ease
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) {
+          raf = requestAnimationFrame(tick);
+        }
+      })();
+    }
+
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          // Autoplay blocked — fall through with opacity 1 so the still
+          // frame is at least visible.
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
 </script></body></html>"
 `;
@@ -225,16 +661,15 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
 <html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Instrument+Serif:ital@0;1&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('kinetic-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><div class="kinetic-shell"><nav class="kinetic-nav liquid-glass" aria-label="Primary navigation"><a href="/" class="kinetic-nav-brand">jane<em>·</em></a><div class="kinetic-nav-links"><a href="/" class="kinetic-nav-link active">Work</a><a href="/about/" class="kinetic-nav-link ">About</a><a href="/projects/" class="kinetic-nav-link ">Index</a><a href="/contact/" class="kinetic-nav-link ">Contact</a></div><a href="mailto:jane@example.test" class="kinetic-nav-cta">Let&#x27;s work together</a></nav><section class="kinetic-hero" aria-label="Introduction"><div class="hero-backdrop" aria-hidden="true"></div><div class="kinetic-hero-content"><span class="kinetic-hero-eyebrow liquid-glass animate-blur-fade-up" style="--d:0ms">London — design × engineering</span><h1 class="blur-text"><span class="word" style="--i:0">I</span><span class="word" style="--i:1">build</span><span class="word" style="--i:2">accessible,</span><span class="word" style="--i:3">pixel-perfect</span><span class="word" style="--i:4">experiences</span><span class="word" style="--i:5">for</span><span class="word" style="--i:6">the</span><em class="word" style="--i:7">web.</em></h1><p class="kinetic-hero-positioning animate-blur-fade-up" style="--d:900ms">Jane builds accessible, pixel-perfect interfaces for large-scale products.</p><div class="pwb-hero-signals" aria-label="Availability and preferences"><p class="pwb-hero-signal pwb-hero-signal-place"><span class="pwb-hero-signal-value">London, UK</span></p></div><p class="kinetic-hero-employers animate-blur-fade-up" style="--d:1050ms">Previously at<span>Apple · Klaviyo</span></p><div class="kinetic-anchor liquid-glass animate-blur-fade-up" style="--d:1150ms"><span class="kinetic-anchor-star" aria-hidden="true">✦</span><strong>4.2k+</strong><span>GitHub stars</span><em>— on Signal Forge</em></div><div class="kinetic-hero-ctas animate-blur-fade-up" style="--d:1250ms"><a class="kinetic-cta" href="mailto:jane@example.test">Let&#x27;s work together<span class="kinetic-cta-arrow" aria-hidden="true">↗</span></a><a class="kinetic-cta is-ghost" href="/projects/">See work</a></div></div><div class="kinetic-partners animate-blur-fade-up" style="--d:1400ms"><span class="kinetic-partners-label">Trusted by teams at</span><div class="marquee"><ul class="marquee__track"><li>Apple</li><li>Klaviyo</li><li>Apple</li><li>Klaviyo</li><li>Apple</li><li>Klaviyo</li></ul><ul class="marquee__track" aria-hidden="true"><li>Apple</li><li>Klaviyo</li><li>Apple</li><li>Klaviyo</li><li>Apple</li><li>Klaviyo</li></ul></div></div></section><main class="kinetic-main"><section id="work" aria-label="Selected work"><div class="section-head scroll-reveal"><span class="section-eyebrow">Selected work</span><h2>Recent <em>projects</em></h2></div><ol class="case-list"><li class="case-card scroll-reveal" data-magnet="true"><div class="case-num">01</div><div class="case-body"><h3 class="case-title"><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="case-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="case-desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="case-outcomes" aria-label="Project outcomes"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul></div></li></ol></section><section id="testimonials" aria-label="What people say"><div class="section-head scroll-reveal"><span class="section-eyebrow">Reception</span><h2>What people <em>say</em></h2></div><div><figure class="pull-quote scroll-reveal"><blockquote class="pull-quote-text">“Working with her changed how we ship — the kind of engineer whose taste you feel in the product.”</blockquote><figcaption class="pull-quote-attr"><strong><a href="https://example.test/alex" target="_blank" rel="noopener noreferrer">Alex Example</a></strong><span>VP Engineering · Acme</span></figcaption></figure></div></section></main><footer class="kinetic-footer"><span>© 2026 Jane Doe</span><span>Built kinetic — proof-backed portfolio</span></footer></div><button type="button" class="kinetic-theme-toggle" aria-label="Toggle theme" data-kinetic-theme-toggle="true"><span aria-hidden="true">◐</span></button><script>/**
  * Kinetic template — progressive enhancement bootstrap.
  *
- * Bundle (≤5 KB):
+ * Bundle (≤5 KB before adding video; ≤5 KB target overall):
  *   1. §2.12 Theme toggle wiring (data-kinetic-theme-toggle)
  *   2. §2.9  Magnetic hover on [data-magnet] cards
  *   3. §2.3  BlurText IO observer for below-the-fold instances
+ *   4. §2.4  rAF video fade loop (only when basics.heroVideoUrl set)
+ *   5. §2.5  HLS bootstrap (Safari-native first, then hls.js UMD fallback)
  *
- * Above-the-fold .blur-text instances animate from CSS on parse — no JS
- * gating needed. The IO observer is for any instance with .blur-text-gated
- * which means "wait until in view".
- *
- * All motion respects prefers-reduced-motion.
+ * Each block is self-contained — a missing element / unsupported API
+ * silently no-ops without short-circuiting the rest of the bundle.
  */
 (function () {
   "use strict";
@@ -244,8 +679,9 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
     matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.12 Theme toggle ──────────────────────────────────────────── */
-  var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
-  if (toggleBtn) {
+  (function () {
+    var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
+    if (!toggleBtn) return;
     toggleBtn.addEventListener("click", function () {
       var html = document.documentElement;
       var next = html.getAttribute("data-theme") === "light" ? "dark" : "light";
@@ -256,7 +692,7 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
         /* private mode / sandboxed iframe — silently ignore */
       }
     });
-  }
+  })();
 
   /* ── §2.9 Magnetic hover ─────────────────────────────────────────── */
   if (!reducedMotion) {
@@ -275,30 +711,109 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
   }
 
   /* ── §2.3 BlurText IO observer (below-the-fold gating) ───────────── */
-  if (!("IntersectionObserver" in window)) return;
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var gated = document.querySelectorAll(".blur-text-gated");
+    if (gated.length === 0) return;
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("blur-text--visible");
+          io.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0 }
+    );
+    gated.forEach(function (el) {
+      io.observe(el);
+    });
+  })();
 
-  var gated = document.querySelectorAll(".blur-text-gated");
-  if (gated.length === 0) return;
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ───────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
 
-  // Words inside a gated .blur-text start with animation-play-state:paused
-  // (set inline via the markup) and toggle to running when the wrapper
-  // enters the viewport.
-  var io = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("blur-text--visible");
-        io.unobserve(entry.target);
-      });
-    },
-    {
-      rootMargin: "0px 0px -10% 0px",
-      threshold: 0,
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+      // No-op when neither path available — the .hero-backdrop CSS
+      // gradient remains visible behind the empty <video>.
     }
-  );
-  gated.forEach(function (el) {
-    io.observe(el);
-  });
+    // For .mp4 sources the <source> child is in the markup already.
+
+    /* prefers-reduced-motion: paint first frame, then pause. CSS keeps
+       opacity at 1 so the still frame is always visible. */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08; // ~12-frame ease
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) {
+          raf = requestAnimationFrame(tick);
+        }
+      })();
+    }
+
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          // Autoplay blocked — fall through with opacity 1 so the still
+          // frame is at least visible.
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
 </script></body></html>"
 `;
@@ -310,16 +825,15 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
   B --&gt; C[Static Site]</pre><p class="pwb-storyboard-diagram-hint">Diagram source rendered with <a href="https://mermaid.js.org/" target="_blank" rel="noopener noreferrer">mermaid.js</a>.</p></figure><script>(function(){try{if(typeof window==="undefined"||typeof document==="undefined")return;var nodes=document.querySelectorAll("pre.mermaid");if(!nodes||nodes.length===0)return;import("https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs").then(function(m){var mermaid=m.default;mermaid.initialize({startOnLoad:false,securityLevel:"strict",theme:"default"});mermaid.run({nodes:nodes}).then(function(){nodes.forEach(function(n){var p=n.parentElement;if(p)p.setAttribute("data-pwb-mermaid-rendered","true");});}).catch(function(){});}).catch(function(){});}catch(e){}})();</script></section><div class="section-head" style="margin-top:48px"><span class="section-eyebrow">Built with</span></div><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul><section class="pwb-evidence-list" aria-label="Verified facts"><h3 class="pwb-evidence-heading">Verified facts</h3><ul class="pwb-evidence-items"><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-tick" aria-label="Verified by the pipeline" title="This claim has been verified against the source">✓</span><span class="pwb-evidence-claim-text">Written in TypeScript</span><span class="pwb-evidence-source" title="Evidence type: dependency">from package.json</span></div><details class="pwb-evidence-details"><summary class="pwb-evidence-summary">Evidence</summary><div class="pwb-evidence-body"><blockquote class="pwb-evidence-quote">&quot;typescript&quot;: &quot;^5.4.0&quot; in package.json</blockquote><p class="pwb-evidence-ref"><span class="pwb-evidence-ref-label">Source:</span> <code>package.json</code></p></div></details></div></li><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-tick" aria-label="Verified by the pipeline" title="This claim has been verified against the source">✓</span><span class="pwb-evidence-claim-text">Uses Drizzle ORM for the Postgres source of truth</span><span class="pwb-evidence-source" title="Evidence type: repo_file">from code</span></div><details class="pwb-evidence-details"><summary class="pwb-evidence-summary">Evidence</summary><div class="pwb-evidence-body"><blockquote class="pwb-evidence-quote">import { pgTable } from &#x27;drizzle-orm/pg-core&#x27;; 12 tables defined in schema.ts.</blockquote><p class="pwb-evidence-ref"><span class="pwb-evidence-ref-label">Source:</span> <code>src/lib/db/schema.ts</code></p></div></details></div></li><li class="pwb-evidence-item"><div class="pwb-evidence-claim"><div class="pwb-evidence-claim-line"><span class="pwb-evidence-claim-text">Server-side template rendering via renderToStaticMarkup</span><span class="pwb-evidence-source" title="Evidence type: readme">from README</span></div></div></li></ul></section><p style="margin-top:40px"><a class="contact-link" href="https://github.com/acme/signal-forge" target="_blank" rel="noopener noreferrer">View repository ↗</a></p></article></main><footer class="kinetic-footer"><span>© 2026 Jane Doe</span><span>Built kinetic — proof-backed portfolio</span></footer></div><button type="button" class="kinetic-theme-toggle" aria-label="Toggle theme" data-kinetic-theme-toggle="true"><span aria-hidden="true">◐</span></button><script>/**
  * Kinetic template — progressive enhancement bootstrap.
  *
- * Bundle (≤5 KB):
+ * Bundle (≤5 KB before adding video; ≤5 KB target overall):
  *   1. §2.12 Theme toggle wiring (data-kinetic-theme-toggle)
  *   2. §2.9  Magnetic hover on [data-magnet] cards
  *   3. §2.3  BlurText IO observer for below-the-fold instances
+ *   4. §2.4  rAF video fade loop (only when basics.heroVideoUrl set)
+ *   5. §2.5  HLS bootstrap (Safari-native first, then hls.js UMD fallback)
  *
- * Above-the-fold .blur-text instances animate from CSS on parse — no JS
- * gating needed. The IO observer is for any instance with .blur-text-gated
- * which means "wait until in view".
- *
- * All motion respects prefers-reduced-motion.
+ * Each block is self-contained — a missing element / unsupported API
+ * silently no-ops without short-circuiting the rest of the bundle.
  */
 (function () {
   "use strict";
@@ -329,8 +843,9 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
     matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.12 Theme toggle ──────────────────────────────────────────── */
-  var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
-  if (toggleBtn) {
+  (function () {
+    var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
+    if (!toggleBtn) return;
     toggleBtn.addEventListener("click", function () {
       var html = document.documentElement;
       var next = html.getAttribute("data-theme") === "light" ? "dark" : "light";
@@ -341,7 +856,7 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
         /* private mode / sandboxed iframe — silently ignore */
       }
     });
-  }
+  })();
 
   /* ── §2.9 Magnetic hover ─────────────────────────────────────────── */
   if (!reducedMotion) {
@@ -360,30 +875,109 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
   }
 
   /* ── §2.3 BlurText IO observer (below-the-fold gating) ───────────── */
-  if (!("IntersectionObserver" in window)) return;
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var gated = document.querySelectorAll(".blur-text-gated");
+    if (gated.length === 0) return;
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("blur-text--visible");
+          io.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0 }
+    );
+    gated.forEach(function (el) {
+      io.observe(el);
+    });
+  })();
 
-  var gated = document.querySelectorAll(".blur-text-gated");
-  if (gated.length === 0) return;
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ───────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
 
-  // Words inside a gated .blur-text start with animation-play-state:paused
-  // (set inline via the markup) and toggle to running when the wrapper
-  // enters the viewport.
-  var io = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("blur-text--visible");
-        io.unobserve(entry.target);
-      });
-    },
-    {
-      rootMargin: "0px 0px -10% 0px",
-      threshold: 0,
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+      // No-op when neither path available — the .hero-backdrop CSS
+      // gradient remains visible behind the empty <video>.
     }
-  );
-  gated.forEach(function (el) {
-    io.observe(el);
-  });
+    // For .mp4 sources the <source> child is in the markup already.
+
+    /* prefers-reduced-motion: paint first frame, then pause. CSS keeps
+       opacity at 1 so the still frame is always visible. */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08; // ~12-frame ease
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) {
+          raf = requestAnimationFrame(tick);
+        }
+      })();
+    }
+
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          // Autoplay blocked — fall through with opacity 1 so the still
+          // frame is at least visible.
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
 </script></body></html>"
 `;
@@ -393,16 +987,15 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
 <html lang="en" data-theme="dark"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Jane Doe — I build accessible, pixel-perfect experiences for the web.</title><meta name="description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="author" content="Jane Doe"/><link rel="canonical" href="https://jane.example.test"/><meta property="og:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta property="og:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta property="og:type" content="website"/><meta property="og:url" content="https://jane.example.test"/><meta property="og:image" content="/og.png"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="Jane Doe — portfolio"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Jane Doe — I build accessible, pixel-perfect experiences for the web."/><meta name="twitter:description" content="Jane builds accessible, pixel-perfect interfaces for large-scale products."/><meta name="twitter:image" content="/og.png"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Instrument+Serif:ital@0;1&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><style>/* fixture */</style><script>(function(){try{var t=localStorage.getItem('kinetic-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script></head><body><div class="kinetic-shell"><nav class="kinetic-nav liquid-glass" aria-label="Primary navigation"><a href="/" class="kinetic-nav-brand">jane<em>·</em></a><div class="kinetic-nav-links"><a href="/" class="kinetic-nav-link ">Work</a><a href="/about/" class="kinetic-nav-link ">About</a><a href="/projects/" class="kinetic-nav-link active">Index</a><a href="/contact/" class="kinetic-nav-link ">Contact</a></div><a href="mailto:jane@example.test" class="kinetic-nav-cta">Let&#x27;s work together</a></nav><main class="kinetic-main"><section aria-label="All projects"><div class="section-head animate-blur-fade-up" style="--d:0ms"><span class="section-eyebrow">Index</span><h2>All <em>work</em></h2></div><ol class="case-list"><li class="case-card scroll-reveal" data-magnet="true"><div class="case-num">01</div><div class="case-body"><h3 class="case-title"><a href="/projects/signal-forge/">Signal Forge</a></h3><p class="case-byline">Open-source project · 4.2k stars · 23 contributors</p><p class="case-desc">Signal Forge assembles GitHub evidence into a defensible portfolio.</p><ul class="case-outcomes" aria-label="Project outcomes"><li class="outcome-pill"><b>4.2k</b><span>GitHub stars</span></li><li class="outcome-pill"><b>500+</b><span>Active users</span></li></ul><ul class="case-tags" aria-label="Tech stack"><li class="case-tag">TypeScript</li><li class="case-tag">Next.js</li><li class="case-tag">Drizzle</li></ul></div></li></ol></section></main><footer class="kinetic-footer"><span>© 2026 Jane Doe</span><span>Built kinetic — proof-backed portfolio</span></footer></div><button type="button" class="kinetic-theme-toggle" aria-label="Toggle theme" data-kinetic-theme-toggle="true"><span aria-hidden="true">◐</span></button><script>/**
  * Kinetic template — progressive enhancement bootstrap.
  *
- * Bundle (≤5 KB):
+ * Bundle (≤5 KB before adding video; ≤5 KB target overall):
  *   1. §2.12 Theme toggle wiring (data-kinetic-theme-toggle)
  *   2. §2.9  Magnetic hover on [data-magnet] cards
  *   3. §2.3  BlurText IO observer for below-the-fold instances
+ *   4. §2.4  rAF video fade loop (only when basics.heroVideoUrl set)
+ *   5. §2.5  HLS bootstrap (Safari-native first, then hls.js UMD fallback)
  *
- * Above-the-fold .blur-text instances animate from CSS on parse — no JS
- * gating needed. The IO observer is for any instance with .blur-text-gated
- * which means "wait until in view".
- *
- * All motion respects prefers-reduced-motion.
+ * Each block is self-contained — a missing element / unsupported API
+ * silently no-ops without short-circuiting the rest of the bundle.
  */
 (function () {
   "use strict";
@@ -412,8 +1005,9 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
     matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.12 Theme toggle ──────────────────────────────────────────── */
-  var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
-  if (toggleBtn) {
+  (function () {
+    var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
+    if (!toggleBtn) return;
     toggleBtn.addEventListener("click", function () {
       var html = document.documentElement;
       var next = html.getAttribute("data-theme") === "light" ? "dark" : "light";
@@ -424,7 +1018,7 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
         /* private mode / sandboxed iframe — silently ignore */
       }
     });
-  }
+  })();
 
   /* ── §2.9 Magnetic hover ─────────────────────────────────────────── */
   if (!reducedMotion) {
@@ -443,30 +1037,109 @@ exports[`Template snapshots — 8 templates × 5 pages = 40 outputs template: ki
   }
 
   /* ── §2.3 BlurText IO observer (below-the-fold gating) ───────────── */
-  if (!("IntersectionObserver" in window)) return;
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var gated = document.querySelectorAll(".blur-text-gated");
+    if (gated.length === 0) return;
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("blur-text--visible");
+          io.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0 }
+    );
+    gated.forEach(function (el) {
+      io.observe(el);
+    });
+  })();
 
-  var gated = document.querySelectorAll(".blur-text-gated");
-  if (gated.length === 0) return;
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ───────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
 
-  // Words inside a gated .blur-text start with animation-play-state:paused
-  // (set inline via the markup) and toggle to running when the wrapper
-  // enters the viewport.
-  var io = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("blur-text--visible");
-        io.unobserve(entry.target);
-      });
-    },
-    {
-      rootMargin: "0px 0px -10% 0px",
-      threshold: 0,
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+      // No-op when neither path available — the .hero-backdrop CSS
+      // gradient remains visible behind the empty <video>.
     }
-  );
-  gated.forEach(function (el) {
-    io.observe(el);
-  });
+    // For .mp4 sources the <source> child is in the markup already.
+
+    /* prefers-reduced-motion: paint first frame, then pause. CSS keeps
+       opacity at 1 so the still frame is always visible. */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08; // ~12-frame ease
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) {
+          raf = requestAnimationFrame(tick);
+        }
+      })();
+    }
+
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          // Autoplay blocked — fall through with opacity 1 so the still
+          // frame is at least visible.
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
 </script></body></html>"
 `;

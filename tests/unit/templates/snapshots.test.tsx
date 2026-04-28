@@ -418,13 +418,14 @@ const fixture: ProfileData = {
 function renderPage(
   LayoutComponent: React.ComponentType<any>,
   currentPage: string,
-  children: React.ReactNode
+  children: React.ReactNode,
+  profileData: ProfileData = fixture
 ): string {
   const markup = renderToStaticMarkup(
     React.createElement(
       LayoutComponent,
       {
-        profileData: fixture,
+        profileData,
         currentPage,
         cssContent: "/* fixture */",
       },
@@ -433,6 +434,21 @@ function renderPage(
   );
   return `<!DOCTYPE html>\n${markup}`;
 }
+
+/**
+ * Phase R5d — fixture with `basics.heroVideoUrl` set, used to snapshot the
+ * cinematic video-bg branch of the studio (and kinetic, once it consumes
+ * the same field) hero. Without this variant the main suite never exercises
+ * the video-rendering code path; a regression there would slip through
+ * because the default fixture leaves the field empty.
+ */
+const fixtureCinematic: ProfileData = {
+  ...fixture,
+  basics: {
+    ...fixture.basics,
+    heroVideoUrl: "https://example.test/hero.m3u8",
+  },
+};
 
 /**
  * Bundle one template's five page renderers under a single descriptor
@@ -574,6 +590,38 @@ describe("Template snapshots — 8 templates × 5 pages = 40 outputs", () => {
         );
         expect(html).toMatchSnapshot();
       });
+    });
+  }
+});
+
+/**
+ * Phase R5d — cinematic video-bg branch coverage.
+ *
+ * The default fixture leaves `basics.heroVideoUrl` empty, so the main suite
+ * never exercises the video-rendering code path. This block re-renders the
+ * home page for each template that consumes the field (currently studio +
+ * kinetic) using `fixtureCinematic`, locking in the rendered markup so a
+ * future regression in the cinematic branch can't slip through silently.
+ *
+ * Templates that don't consume `heroVideoUrl` are intentionally excluded —
+ * adding them here would just duplicate the main suite's snapshots.
+ */
+const CINEMATIC_TEMPLATES: TemplateBundle[] = TEMPLATES.filter((t) =>
+  ["studio", "kinetic"].includes(t.id)
+);
+
+describe("Cinematic video-bg variant — templates that consume heroVideoUrl", () => {
+  for (const bundle of CINEMATIC_TEMPLATES) {
+    it(`${bundle.id} home page renders the cinematic variant`, () => {
+      const html = renderPage(
+        bundle.Layout,
+        "home",
+        React.createElement(bundle.HomePage, {
+          profileData: fixtureCinematic,
+        }),
+        fixtureCinematic
+      );
+      expect(html).toMatchSnapshot();
     });
   }
 });

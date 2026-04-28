@@ -188,7 +188,15 @@ export function Layout({
           />
         )}
 
-        {/* enhance.js — magnetic hover + theme toggle wire + BlurText IO */}
+        {/* §2.5 HLS bootstrap — load hls.js UMD only when basics.heroVideoUrl
+            is an .m3u8 stream. Browsers with native HLS (Safari) skip this
+            script via canPlayType in enhance.js. */}
+        {basics.heroVideoUrl && /\.m3u8(\?.*)?$/i.test(basics.heroVideoUrl) && (
+          <script src="/scripts/hls.min.js" defer />
+        )}
+
+        {/* enhance.js — theme toggle + magnetic hover + BlurText IO + (when
+            heroVideoUrl set) §2.4 rAF video fade + §2.5 HLS bootstrap. */}
         {enhanceScript && (
           <script dangerouslySetInnerHTML={{ __html: enhanceScript }} />
         )}

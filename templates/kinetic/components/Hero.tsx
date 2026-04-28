@@ -69,12 +69,19 @@ function BlurTextHeading({ text, accentIndex }: BlurTextHeadingProps) {
  *     subhead → "Previously at" line → anchor stat pill → CTAs
  *   - .kinetic-partners — z:1, partners marquee at the bottom
  *
- * Future: when basics.heroVideoUrl is added (Phase #5), the
- * .hero-backdrop element becomes a real <video> and enhance.js wires
- * the §2.4 rAF fade loop. Layout / z-stack stays identical.
+ * When basics.heroVideoUrl is set, the .hero-backdrop element is
+ * replaced with a real <video data-video="hero">. enhance.js wires
+ * §2.4 rAF fade loop + §2.5 HLS bootstrap; Layout conditionally
+ * loads scripts/hls.min.js when the URL ends in .m3u8. The CSS
+ * gradient backdrop remains the fallback when the video can't load.
  */
+function isHls(url: string): boolean {
+  return /\.m3u8(\?.*)?$/i.test(url);
+}
+
 export function Hero({ basics, namedEmployers }: HeroProps) {
-  const { name, positioning, label, anchorStat, hiring, summary } = basics;
+  const { name, positioning, label, anchorStat, hiring, summary, heroVideoUrl } =
+    basics;
   const headlineText = positioning ?? label ?? `${name}, building things on the web`;
   const employers = namedEmployers ?? basics.namedEmployers ?? [];
   // Render a generous-enough partners list (>= 4 marquee items) by
@@ -86,9 +93,30 @@ export function Hero({ basics, namedEmployers }: HeroProps) {
         : [...employers, ...employers, ...employers].slice(0, 8)
       : [];
 
+  const hasVideo = Boolean(heroVideoUrl);
+  const videoIsHls = hasVideo && isHls(heroVideoUrl!);
+
   return (
-    <section className="kinetic-hero" aria-label="Introduction">
-      <div className="hero-backdrop" aria-hidden="true" />
+    <section
+      className={`kinetic-hero${hasVideo ? " kinetic-hero--video" : ""}`}
+      aria-label="Introduction"
+    >
+      {hasVideo ? (
+        <video
+          className="kinetic-hero__video"
+          data-video="hero"
+          aria-hidden="true"
+          muted
+          playsInline
+          {...(videoIsHls ? { "data-hls-src": heroVideoUrl } : {})}
+        >
+          {!videoIsHls && (
+            <source src={heroVideoUrl} type="video/mp4" />
+          )}
+        </video>
+      ) : (
+        <div className="hero-backdrop" aria-hidden="true" />
+      )}
 
       <div className="kinetic-hero-content">
         <span

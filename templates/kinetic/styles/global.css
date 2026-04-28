@@ -117,6 +117,57 @@ a:hover { color: var(--color-accent); }
     var(--color-bg);
 }
 
+/* ─── §2.4 / §2.5 Hero video variant ───────────────────────────────── */
+/* Active only when basics.heroVideoUrl is set; the section gains       */
+/* .kinetic-hero--video. The CSS gradient backdrop is replaced by a     */
+/* real <video data-video="hero">. enhance.js handles the rAF fade in   */
+/* (opacity 0 → 1 on loadeddata) so the initial paint isn't a hard cut. */
+
+.kinetic-hero--video {
+  /* Force the cinematic dark palette regardless of theme — the video
+     dictates the backdrop, and switching to light mid-video breaks
+     contrast. */
+  background: #0a0a0a;
+  color: #ffffff;
+}
+.kinetic-hero--video::before {
+  /* Dark veil over the video so text remains AA-readable regardless of
+     what the visitor's video shows. White text on this veil = 19.5:1. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.65) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+.kinetic-hero__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  /* enhance.js manages opacity via the §2.4 fade loop. Initial 1 keeps
+     the still frame visible if JS is disabled. */
+  opacity: 1;
+}
+/* Lift hero content above the video + veil (gradient-only path uses
+   the same class, hence redundant z-index here is intentional). */
+.kinetic-hero--video > .kinetic-hero-content,
+.kinetic-hero--video > .kinetic-partners {
+  position: relative;
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* enhance.js pauses the video after the first frame; keep it visible. */
+  .kinetic-hero__video { opacity: 1 !important; }
+}
+
 /* ─── Layout shell ──────────────────────────────────────────────────── */
 
 .kinetic-shell {

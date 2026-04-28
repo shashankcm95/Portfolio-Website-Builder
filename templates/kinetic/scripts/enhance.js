@@ -1,16 +1,15 @@
 /**
  * Kinetic template — progressive enhancement bootstrap.
  *
- * Bundle (≤5 KB):
+ * Bundle (≤5 KB before adding video; ≤5 KB target overall):
  *   1. §2.12 Theme toggle wiring (data-kinetic-theme-toggle)
  *   2. §2.9  Magnetic hover on [data-magnet] cards
  *   3. §2.3  BlurText IO observer for below-the-fold instances
+ *   4. §2.4  rAF video fade loop (only when basics.heroVideoUrl set)
+ *   5. §2.5  HLS bootstrap (Safari-native first, then hls.js UMD fallback)
  *
- * Above-the-fold .blur-text instances animate from CSS on parse — no JS
- * gating needed. The IO observer is for any instance with .blur-text-gated
- * which means "wait until in view".
- *
- * All motion respects prefers-reduced-motion.
+ * Each block is self-contained — a missing element / unsupported API
+ * silently no-ops without short-circuiting the rest of the bundle.
  */
 (function () {
   "use strict";
@@ -20,8 +19,9 @@
     matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ── §2.12 Theme toggle ──────────────────────────────────────────── */
-  var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
-  if (toggleBtn) {
+  (function () {
+    var toggleBtn = document.querySelector("[data-kinetic-theme-toggle]");
+    if (!toggleBtn) return;
     toggleBtn.addEventListener("click", function () {
       var html = document.documentElement;
       var next = html.getAttribute("data-theme") === "light" ? "dark" : "light";
@@ -32,7 +32,7 @@
         /* private mode / sandboxed iframe — silently ignore */
       }
     });
-  }
+  })();
 
   /* ── §2.9 Magnetic hover ─────────────────────────────────────────── */
   if (!reducedMotion) {
@@ -51,28 +51,107 @@
   }
 
   /* ── §2.3 BlurText IO observer (below-the-fold gating) ───────────── */
-  if (!("IntersectionObserver" in window)) return;
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var gated = document.querySelectorAll(".blur-text-gated");
+    if (gated.length === 0) return;
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("blur-text--visible");
+          io.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -10% 0px", threshold: 0 }
+    );
+    gated.forEach(function (el) {
+      io.observe(el);
+    });
+  })();
 
-  var gated = document.querySelectorAll(".blur-text-gated");
-  if (gated.length === 0) return;
+  /* ── §2.4 / §2.5 Hero video bootstrap + fade loop ───────────────── */
+  (function () {
+    var v = document.querySelector('[data-video="hero"]');
+    if (!v) return;
 
-  // Words inside a gated .blur-text start with animation-play-state:paused
-  // (set inline via the markup) and toggle to running when the wrapper
-  // enters the viewport.
-  var io = new IntersectionObserver(
-    function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add("blur-text--visible");
-        io.unobserve(entry.target);
-      });
-    },
-    {
-      rootMargin: "0px 0px -10% 0px",
-      threshold: 0,
+    /* §2.5 HLS bootstrap */
+    var hlsSrc = v.getAttribute("data-hls-src");
+    if (hlsSrc) {
+      if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = hlsSrc;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        var hls = new window.Hls();
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(v);
+      }
+      // No-op when neither path available — the .hero-backdrop CSS
+      // gradient remains visible behind the empty <video>.
     }
-  );
-  gated.forEach(function (el) {
-    io.observe(el);
-  });
+    // For .mp4 sources the <source> child is in the markup already.
+
+    /* prefers-reduced-motion: paint first frame, then pause. CSS keeps
+       opacity at 1 so the still frame is always visible. */
+    if (reducedMotion) {
+      v.addEventListener(
+        "loadeddata",
+        function () {
+          v.pause();
+        },
+        { once: true }
+      );
+      return;
+    }
+
+    /* §2.4 rAF fade loop */
+    v.style.opacity = "0";
+    var raf = 0;
+    var fadingOut = false;
+
+    function fadeTo(target) {
+      cancelAnimationFrame(raf);
+      (function tick() {
+        var cur = parseFloat(v.style.opacity || "0");
+        var delta = (target - cur) * 0.08; // ~12-frame ease
+        var next = Math.abs(delta) < 0.005 ? target : cur + delta;
+        v.style.opacity = String(next);
+        if (next !== target) {
+          raf = requestAnimationFrame(tick);
+        }
+      })();
+    }
+
+    v.addEventListener(
+      "loadeddata",
+      function () {
+        v.style.opacity = "0";
+        v.play().catch(function () {
+          // Autoplay blocked — fall through with opacity 1 so the still
+          // frame is at least visible.
+          v.style.opacity = "1";
+        });
+        fadeTo(1);
+      },
+      { once: true }
+    );
+
+    v.addEventListener("timeupdate", function () {
+      if (fadingOut) return;
+      var remaining = v.duration - v.currentTime;
+      if (remaining > 0 && remaining <= 0.55) {
+        fadingOut = true;
+        fadeTo(0);
+      }
+    });
+
+    v.addEventListener("ended", function () {
+      v.style.opacity = "0";
+      setTimeout(function () {
+        v.currentTime = 0;
+        fadingOut = false;
+        v.play().catch(function () {});
+        fadeTo(1);
+      }, 100);
+    });
+  })();
 })();
