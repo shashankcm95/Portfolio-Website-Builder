@@ -156,6 +156,37 @@ async function getTemplateComponents(templateId: string) {
         ContactPage,
       };
     }
+    // Phase R — Kinetic: cinematic / motion-rich design-engineer template.
+    // Floating-pill nav, BlurText word-reveal hero, italic-serif accent,
+    // liquid-glass anchor stat, partners marquee, magnetic project cards,
+    // 1 KB theme toggle. References: Velorah, Aethera, generic cinematic
+    // streaming heroes (motionsites.ai corpus). All motion respects
+    // prefers-reduced-motion via docs/motion-patterns.md primitives.
+    case "kinetic": {
+      const [
+        { Layout },
+        { HomePage },
+        { AboutPage },
+        { ProjectsPage },
+        { ProjectDetailPage },
+        { ContactPage },
+      ] = await Promise.all([
+        import("@/templates/kinetic/components/Layout"),
+        import("@/templates/kinetic/pages/index"),
+        import("@/templates/kinetic/pages/about"),
+        import("@/templates/kinetic/pages/projects"),
+        import("@/templates/kinetic/pages/project-detail"),
+        import("@/templates/kinetic/pages/contact"),
+      ]);
+      return {
+        Layout,
+        HomePage,
+        AboutPage,
+        ProjectsPage,
+        ProjectDetailPage,
+        ContactPage,
+      };
+    }
     // Phase 7 — typography-forward editorial for senior engineers /
     // technical leaders / designer-developer hybrids.
     case "editorial": {
@@ -227,6 +258,7 @@ function resolveTemplateDir(templateId: string): string {
     case "editorial":
     case "signal":
     case "studio":
+    case "kinetic":
       return templateId;
     default:
       return "minimal";

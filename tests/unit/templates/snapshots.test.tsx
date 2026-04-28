@@ -80,6 +80,13 @@ import * as studioProjects from "../../../templates/studio/pages/projects";
 import * as studioDetail from "../../../templates/studio/pages/project-detail";
 import * as studioContact from "../../../templates/studio/pages/contact";
 
+import * as kineticLayout from "../../../templates/kinetic/components/Layout";
+import * as kineticIndex from "../../../templates/kinetic/pages/index";
+import * as kineticAbout from "../../../templates/kinetic/pages/about";
+import * as kineticProjects from "../../../templates/kinetic/pages/projects";
+import * as kineticDetail from "../../../templates/kinetic/pages/project-detail";
+import * as kineticContact from "../../../templates/kinetic/pages/contact";
+
 // ─── Fixture ────────────────────────────────────────────────────────────────
 
 const fixtureProject: Project = {
@@ -505,11 +512,20 @@ const TEMPLATES: TemplateBundle[] = [
     ProjectDetailPage: studioDetail.ProjectDetailPage,
     ContactPage: studioContact.ContactPage,
   },
+  {
+    id: "kinetic",
+    Layout: kineticLayout.Layout,
+    HomePage: kineticIndex.HomePage,
+    AboutPage: kineticAbout.AboutPage,
+    ProjectsPage: kineticProjects.ProjectsPage,
+    ProjectDetailPage: kineticDetail.ProjectDetailPage,
+    ContactPage: kineticContact.ContactPage,
+  },
 ];
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
-describe("Template snapshots — 7 templates × 5 pages = 35 outputs", () => {
+describe("Template snapshots — 8 templates × 5 pages = 40 outputs", () => {
   for (const bundle of TEMPLATES) {
     describe(`template: ${bundle.id}`, () => {
       it("renders the home page", () => {

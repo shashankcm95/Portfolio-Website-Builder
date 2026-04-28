@@ -512,6 +512,7 @@ borrow the column's primitives.
 | **securify** | Dark SaaS | Big stagger headline + green accent | Floating glass pill | Pre-headline label "Cybersecurity" |
 | **Michael Smith** | Personal portfolio | "{role} lives in Chicago" cycler | Sidebar nav | Role-cycle CSS animation |
 | **Generic cinematic streaming** | Dark streaming | Video + center-screen H1 | Search + profile glass pills | rAF fade-in/out on loop |
+| **Kinetic** *(in this repo)* | Cinematic agency | CSS-animated radial gradient (placeholder for §2.4 video) + BlurText H1 with italic-serif accent + liquid-glass anchor pill + partners marquee | Floating-pill nav (§2.6) | All §-numbered primitives composed; theme toggle (§2.12); magnetic cards |
 
 When the user says "make it like X" pick the row, lift the column primitives,
 and translate to static SSR per Section 0.

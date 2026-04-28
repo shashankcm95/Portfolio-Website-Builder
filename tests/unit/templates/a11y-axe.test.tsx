@@ -53,6 +53,10 @@ import * as studioLayout from "../../../templates/studio/components/Layout";
 import * as studioIndex from "../../../templates/studio/pages/index";
 import * as studioAbout from "../../../templates/studio/pages/about";
 
+import * as kineticLayout from "../../../templates/kinetic/components/Layout";
+import * as kineticIndex from "../../../templates/kinetic/pages/index";
+import * as kineticAbout from "../../../templates/kinetic/pages/about";
+
 // ─── Fixture (same shape as snapshots.test.tsx but minimal) ────────────────
 
 const fixtureProject: Project = {
@@ -161,6 +165,7 @@ const TEMPLATES = [
   { name: "editorial", layout: editorialLayout, index: editorialIndex, about: editorialAbout },
   { name: "signal", layout: signalLayout, index: signalIndex, about: signalAbout },
   { name: "studio", layout: studioLayout, index: studioIndex, about: studioAbout },
+  { name: "kinetic", layout: kineticLayout, index: kineticIndex, about: kineticAbout },
 ];
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
