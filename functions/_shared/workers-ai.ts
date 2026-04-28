@@ -21,7 +21,13 @@
 
 /** Model IDs — pinned so server-side changes are visible in code review. */
 export const EMBEDDING_MODEL = "@cf/baai/bge-base-en-v1.5";
-export const GENERATION_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+// Phase E8f — switched from llama-3.1-8b-instruct (5–10s first-token
+// latency on Workers AI's free tier) to llama-3.2-3b-instruct.
+// 3B is roughly 4× faster and produces equivalent quality for the
+// 1–3 sentence visitor answers we're asking for. The instruction-
+// following on greetings + meta-questions also matches the new
+// permissive-by-default system prompt better than 8B did.
+export const GENERATION_MODEL = "@cf/meta/llama-3.2-3b-instruct";
 
 /** BGE-base dimensionality. Keep in sync with `types.EMBEDDING_DIM_BGE`. */
 export const BGE_DIMENSIONS = 768;
@@ -82,7 +88,13 @@ export async function runGeneration(
   const result = await env.AI.run(GENERATION_MODEL as any, {
     messages,
     stream: true,
-    max_tokens: options.maxTokens ?? 600,
+    // Phase E8f — capped at 250 tokens for visitor answers. The system
+    // prompt asks for "1-3 sentences"; 250 tokens is ~180 words which
+    // comfortably covers that. Pre-fix the cap was 600 tokens; the
+    // model would happily ramble even when concise was requested.
+    // Cutting the cap shaves up to a couple of seconds off worst-case
+    // generation on top of the 3B model swap.
+    max_tokens: options.maxTokens ?? 250,
     temperature: options.temperature ?? 0.2,
   } as any);
 

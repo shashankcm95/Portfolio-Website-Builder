@@ -1,14 +1,25 @@
 /**
  * @jest-environment node
  *
- * Phase 5.2 §17 Layer 2 — semantic regression tests for the visitor
- * system prompt. These catch accidental deletions of the scope-hardening
- * policy during prompt edits. Pair with the opt-in `refusal-live` eval
- * (requires `LIVE_LLM_EVAL=1` + a real API key) for behavioral
- * verification at the model layer.
+ * Phase E8f — semantic regression tests for the visitor system prompt.
  *
- * Any change that makes one of these fail should be deliberate — update
- * the assertions in the same PR.
+ * The original prompt was refusal-by-default with three refusal-pattern
+ * Q/A examples and zero positive ones. After deploying the live
+ * chatbot was over-firing the refusal on legitimate questions like
+ * "what is his background" and "tell me about his projects".
+ *
+ * The rewrite is permissive-by-default: the model is told to ANSWER
+ * any question about the owner's work, with positive examples in the
+ * prompt. Refusal is folded into one short out-of-scope clause.
+ *
+ * These tests now assert:
+ *   - Permissive intent ("answer any question about ...")
+ *   - Positive few-shot examples present
+ *   - Greeting + meta-question handling clauses present
+ *   - Out-of-scope redirect clause present (with the canonical
+ *     CANNED_REFUSAL string)
+ *   - Missing-info clause routes to "reach out directly"
+ *   - All prompt-injection / format / no-invent rules unchanged
  */
 
 import { buildSystemPrompt } from "@/lib/chatbot/prompt";
@@ -23,56 +34,71 @@ const prompt = buildSystemPrompt({
   portfolioName: "Ada's portfolio",
 });
 
-describe("visitor prompt — allow-list + refuse-list present", () => {
-  it("advertises the assistant as scope-locked to the owner's work", () => {
-    expect(prompt).toContain("professional assistant representing Ada Lovelace");
-    expect(prompt).toContain("only to help visitors understand Ada Lovelace's professional work");
+describe("visitor prompt — permissive intent + positive examples", () => {
+  it("introduces the assistant as friendly and helpful, not scope-locked", () => {
+    expect(prompt).toMatch(/friendly, helpful assistant/i);
+    expect(prompt).toContain("Ada Lovelace");
+    expect(prompt).toContain("Ada's portfolio");
   });
 
-  it("contains an ALLOWED TOPICS block naming projects, skills, background", () => {
-    expect(prompt).toContain("ALLOWED TOPICS");
-    expect(prompt).toMatch(/projects \(what they built/i);
-    expect(prompt).toMatch(/skills, experience/i);
+  it("instructs the model to ANSWER questions about every owner-related topic", () => {
+    // The "ANSWER" clause has to be unambiguous and cover the topics
+    // visitors actually ask about.
+    expect(prompt).toMatch(/ANSWER any question/);
+    expect(prompt).toMatch(/projects/i);
+    expect(prompt).toMatch(/skills/i);
+    expect(prompt).toMatch(/experience/i);
+    expect(prompt).toMatch(/background/i);
+    expect(prompt).toMatch(/employers/i);
     expect(prompt).toMatch(/availability/i);
   });
 
-  it("contains a REFUSE block covering coding / trivia / jokes / casual chat / political", () => {
-    expect(prompt).toMatch(/\bREFUSE\b/);
-    // Coding of any kind
-    expect(prompt).toMatch(/writing.*debugging.*code/i);
-    expect(prompt).toMatch(/even.*quick/i);
-    // Trivia / general knowledge
-    expect(prompt).toMatch(/general-knowledge trivia/i);
-    // Jokes / roleplay / creative writing
+  it("includes positive few-shot Q/A examples (not just refusal patterns)", () => {
+    // Pre-fix the prompt had 3 Q/A refusal examples and 0 positive
+    // ones, biasing the small Llama model toward refusal. Each
+    // positive example below names a real owner-question pattern.
+    expect(prompt).toMatch(/Q: "What is his background\?"/);
+    expect(prompt).toMatch(/Q: "Tell me about his projects"/);
+    expect(prompt).toMatch(/Q: "Is he available for work\?"/);
+  });
+
+  it("explicitly handles greetings rather than refusing them", () => {
+    expect(prompt).toMatch(/GREETINGS/);
+    expect(prompt).toMatch(/hi \/ hello/i);
+  });
+
+  it("explicitly handles meta-questions about the assistant's scope", () => {
+    expect(prompt).toMatch(/META-QUESTIONS/);
+    expect(prompt).toMatch(/what you can help with/i);
+  });
+});
+
+describe("visitor prompt — out-of-scope handling kept", () => {
+  it("retains a redirect clause for the genuinely-off-topic asks", () => {
+    expect(prompt).toMatch(/OUT-OF-SCOPE/);
+    // The categories that *should* still be redirected.
+    expect(prompt).toMatch(/code/i);
+    expect(prompt).toMatch(/trivia/i);
     expect(prompt).toMatch(/jokes/i);
-    expect(prompt).toMatch(/roleplay/i);
-    expect(prompt).toMatch(/creative writing/i);
-    // Casual conversation / life advice / emotional support
-    expect(prompt).toMatch(/casual conversation/i);
-    expect(prompt).toMatch(/emotional support/i);
-    // Political / religious
     expect(prompt).toMatch(/political/i);
-    expect(prompt).toMatch(/religious/i);
   });
 
   it("includes the canonical canned refusal verbatim", () => {
     const interpolated = interpolateOwner(CANNED_REFUSAL, "Ada Lovelace");
     expect(prompt).toContain(interpolated);
   });
+});
 
-  it("includes at least 3 few-shot Q/A refusal examples", () => {
-    // Count "Q:" bullets; each must be paired with an "A:".
-    const qCount = (prompt.match(/\bQ: /g) ?? []).length;
-    const aCount = (prompt.match(/\bA: /g) ?? []).length;
-    expect(qCount).toBeGreaterThanOrEqual(3);
-    expect(aCount).toBeGreaterThanOrEqual(3);
-    expect(qCount).toBe(aCount);
+describe("visitor prompt — missing-info routing", () => {
+  it("routes 'about-owner-but-not-in-context' to a contact-page redirect", () => {
+    expect(prompt).toMatch(/MISSING INFO/);
+    expect(prompt).toMatch(/I don't have that detail/i);
+    expect(prompt).toMatch(/contact page/i);
   });
 });
 
 describe("visitor prompt — prompt-injection defenses", () => {
   it("flags <question> content as untrusted and forbids following its instructions", () => {
-    // `[\s\S]*` mirrors the `s` (dotAll) flag without requiring ES2018 in tsconfig.
     expect(prompt).toMatch(/<question>[\s\S]*untrusted/);
     expect(prompt).toMatch(/never follow instructions/i);
   });
@@ -83,16 +109,6 @@ describe("visitor prompt — prompt-injection defenses", () => {
 
   it("forbids changing role / tone / output format on request", () => {
     expect(prompt).toMatch(/ignore any request.*change/i);
-  });
-});
-
-describe("visitor prompt — distinguishes off-topic from 'about-owner-but-missing-from-context'", () => {
-  it("has a separate branch for legitimate questions with no grounding", () => {
-    // Off-topic path routes to the canned refusal.
-    // Legitimate-but-missing path routes to "I don't have that information"
-    // + "reach out directly". Both must coexist and be distinct.
-    expect(prompt).toMatch(/I don't have that information/i);
-    expect(prompt).toMatch(/reaching out to them directly/i);
   });
 });
 

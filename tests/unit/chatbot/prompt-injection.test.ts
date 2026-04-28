@@ -52,9 +52,16 @@ describe("visitor system prompt — injection guardrails", () => {
   });
 
   it("binds answers to the <context> block", () => {
-    // The model is told to ONLY answer using the retrieved <context>.
+    // The model is told to ground its answers in the retrieved <context>.
+    // Phase E8f rewrote the prompt to be permissive-by-default; the
+    // anti-fabrication guard now sits in the FORMAT clause ("never
+    // invent ... If <context> doesn't carry the answer, say so") rather
+    // than the old "REFUSE" block.
     expect(prompt).toMatch(/<context>/);
-    expect(prompt).toMatch(/not grounded in the <context>/i);
+    expect(prompt).toMatch(/<context>.*verified facts/i);
+    expect(prompt).toMatch(
+      /If <context> doesn't carry the answer, say so/i
+    );
   });
 });
 
