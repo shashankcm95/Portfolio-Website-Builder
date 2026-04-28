@@ -83,6 +83,29 @@ export async function POST(
     );
     const cfProjectName = generateProjectName(session.user.id, portfolio.slug);
 
+    // Phase E8e — provision the Workers AI binding on the Pages project
+    // BEFORE the deploy. Cloudflare scopes bindings to a deployment at
+    // create time; setting the binding via API here ensures the next
+    // deploy lands with `env.AI` populated. Best-effort: the deploy
+    // still succeeds without the binding (the chatbot just stays in
+    // "Workers AI binding missing" mode until a republish). Only run
+    // for self-hosted chatbot portfolios — bindings are irrelevant
+    // for the cross-origin Phase 8.5 path.
+    let aiBindingWarning: string | null = null;
+    if (portfolio.selfHostedChatbot && portfolio.chatbotEnabled) {
+      const { provisionAiBinding } = await import(
+        "@/lib/deployer/cf-pages-bindings"
+      );
+      const ab = await provisionAiBinding(cfProjectName);
+      if (!ab.ok) {
+        aiBindingWarning = ab.reason ?? "Could not configure Workers AI binding";
+        logger.warn("[deploy] Workers AI binding not provisioned", {
+          portfolioId: params.portfolioId,
+          reason: aiBindingWarning,
+        });
+      }
+    }
+
     const result = await deployToCloudflare(outputDir, cfProjectName);
 
     // Record deployment
@@ -149,6 +172,7 @@ export async function POST(
       url: result.url,
       error: result.error,
       rateLimitWarning,
+      aiBindingWarning,
     });
   } catch (error: unknown) {
     logger.error("[deploy] Deployment error", {

@@ -167,9 +167,26 @@ export async function buildChatbotBundleIfEnabled(
 
 // ─── Template rendering ────────────────────────────────────────────────────
 
+// Phase E8e — Cloudflare Pages project config, auto-generated at publish.
+// Binds Cloudflare Workers AI to the Pages Functions under functions/**.
+// The chatbot Function reads this binding as `env.AI`.
+//
+// CRITICAL: `pages_build_output_dir` is what tells wrangler this is a
+// Pages config (not a Workers config). Without it, wrangler silently
+// drops every binding declared below — the deploy succeeds but the
+// Function gets `env.AI === undefined`, which surfaces in the chat
+// widget as "Workers AI binding missing".
+//
+// `name` is set to a placeholder; the actual project name comes from
+// `--project-name` on the deploy command. Wrangler uses the flag value;
+// the toml's `name` is just present so wrangler doesn't refuse to
+// validate the file.
 const WRANGLER_TOML = `# Phase 9 — Cloudflare Pages project config, auto-generated at publish.
 # Binds Cloudflare Workers AI to the Pages Functions under functions/**.
 # The chatbot Function reads this binding as \`env.AI\`.
+
+name = "portfolio-builder"
+pages_build_output_dir = "./"
 compatibility_date = "2024-10-01"
 compatibility_flags = ["nodejs_compat"]
 
