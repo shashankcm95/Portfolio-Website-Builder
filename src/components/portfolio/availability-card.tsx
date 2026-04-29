@@ -48,6 +48,10 @@ interface RoleTypes {
   remote?: boolean;
   hybrid?: boolean;
   onsite?: boolean;
+  // Phase R8 — relocation willingness. Independent of remote/hybrid/
+  // onsite (someone can be open to onsite + open to relocating; or
+  // remote-first but also willing to relocate for the right role).
+  openToRelocation?: boolean;
 }
 
 interface LocationOverride {
@@ -103,6 +107,7 @@ const ROLE_TYPE_FLAGS: Array<{
   { key: "remote", label: "Remote" },
   { key: "hybrid", label: "Hybrid" },
   { key: "onsite", label: "Onsite" },
+  { key: "openToRelocation", label: "Open to relocation" },
 ];
 
 function emptyState(): State {

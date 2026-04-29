@@ -128,6 +128,10 @@ function formatRoleTypes(
   if (roleTypes.remote) place.push("Remote");
   if (roleTypes.hybrid) place.push("Hybrid");
   if (roleTypes.onsite) place.push("Onsite");
+  // Phase R8 — relocation is its own segment so "Onsite + Open to
+  // relocation" reads as two distinct preferences rather than being
+  // squashed into the place bucket.
+  if (roleTypes.openToRelocation) place.push("Open to relocation");
 
   const segments: string[] = [];
   if (role.length > 0) segments.push(role.join(" / "));

@@ -146,6 +146,11 @@ export interface ProfileData {
       remote?: boolean;
       hybrid?: boolean;
       onsite?: boolean;
+      // Phase R8 — relocation willingness. Recruiters often want to know
+      // this independently of remote/hybrid/onsite (someone can be open
+      // to onsite + open to relocating to a new city). Stored on the
+      // same jsonb so no migration needed.
+      openToRelocation?: boolean;
     };
 
     /**

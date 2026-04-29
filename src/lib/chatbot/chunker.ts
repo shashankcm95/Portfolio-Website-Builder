@@ -89,6 +89,42 @@ export interface ChunkerProfileInput {
     summary?: string | null;
     highlights?: string[] | null;
   }> | null;
+  /**
+   * Phase R8 — location surfaced into the chatbot corpus so visitors
+   * asking "where is he based" get the city / region / country instead
+   * of the canned "I don't have that detail" refusal. Source matches
+   * what `assembleProfileData` reads (portfolios.locationOverride →
+   * resumeJson.basics.location).
+   */
+  location?: {
+    city?: string | null;
+    region?: string | null;
+    country?: string | null;
+  } | null;
+  /**
+   * Phase R8 — Tier-1 recruiter signals about role preferences. Each
+   * flag is independently optional. `ic`, `fullTime`, `remote` etc. all
+   * `true` ⇒ the chunk emits "Open to IC, full-time, remote roles".
+   */
+  roleTypes?: {
+    ic?: boolean;
+    manager?: boolean;
+    fullTime?: boolean;
+    contract?: boolean;
+    remote?: boolean;
+    hybrid?: boolean;
+    onsite?: boolean;
+    // Phase R8 — relocation willingness. When true the availability
+    // chunk surfaces "Open to relocation" so the bot can answer
+    // "would he relocate?" / "is he willing to move".
+    openToRelocation?: boolean;
+  } | null;
+  /**
+   * Phase R8 — work-eligibility regions. Free-form strings ("US", "UK",
+   * "TN visa", "EU"). Surfaces the right answer to "is he authorized to
+   * work in X" and "does he need sponsorship".
+   */
+  workEligibility?: string[] | null;
 }
 
 export interface ChunkerInput {
@@ -158,7 +194,14 @@ function buildProfileChunk(profile: ChunkerProfileInput): EmbeddingChunk {
   const bio = (profile.bio ?? "").trim();
   const skills = (profile.topSkills ?? []).filter(Boolean).join(", ");
 
-  const parts: string[] = [profile.ownerName];
+  // Phase R8 — identity sentence as the first line. Eval surfaced "tell
+  // me about him" returning a literal "[insert details from context]"
+  // template leak because there was no clean identity statement in the
+  // corpus. This composes one from the live fields so retrieval has a
+  // crisp single sentence to anchor on.
+  const identity = buildIdentitySentence(profile);
+
+  const parts: string[] = [identity];
   if (bio) parts.push(bio);
   if (skills) parts.push(`Skills: ${skills}`);
 
@@ -168,6 +211,70 @@ function buildProfileChunk(profile: ChunkerProfileInput): EmbeddingChunk {
     sourceRef: `profile:${profile.portfolioId}`,
     metadata: { portfolioId: profile.portfolioId },
   };
+}
+
+/**
+ * Phase R8 — compose an identity sentence from the live fields. Skips
+ * any clause that has no data so the sentence stays grammatical:
+ *
+ *   "Shashank C M is a Backend Engineer at Abbott Labs based in Plano,
+ *   TX, with 6+ years of professional experience."
+ *
+ * Falls back to "<Name>." when nothing else is set.
+ */
+function buildIdentitySentence(profile: ChunkerProfileInput): string {
+  const name = profile.ownerName;
+  const role = profile.currentRole?.trim();
+  const company = profile.currentCompany?.trim();
+  const place = formatLocation(profile.location);
+  const years = computeYearsOfExperience(profile.experience);
+
+  const clauses: string[] = [];
+  if (role && company) clauses.push(`is a ${role} at ${company}`);
+  else if (role) clauses.push(`is a ${role}`);
+  else if (company) clauses.push(`works at ${company}`);
+
+  if (place) clauses.push(`based in ${place}`);
+  if (years) clauses.push(`with ${years}+ years of professional experience`);
+
+  if (clauses.length === 0) return `${name}.`;
+  return `${name} ${clauses.join(", ")}.`;
+}
+
+function formatLocation(
+  loc: ChunkerProfileInput["location"]
+): string | null {
+  if (!loc) return null;
+  const city = loc.city?.trim();
+  const region = loc.region?.trim();
+  const country = loc.country?.trim();
+  // Common shapes: "Plano, TX" / "London, UK" / "Berlin, Germany" / "TX"
+  if (city && region) return `${city}, ${region}`;
+  if (city && country) return `${city}, ${country}`;
+  return city || region || country || null;
+}
+
+function computeYearsOfExperience(
+  experience: ChunkerProfileInput["experience"]
+): number | null {
+  if (!experience || experience.length === 0) return null;
+  // Pick the earliest startDate. Each entry has a YYYY-MM-DD or YYYY string.
+  let earliestYear: number | null = null;
+  for (const e of experience) {
+    const sd = e.startDate?.slice(0, 4);
+    if (!sd) continue;
+    const y = Number.parseInt(sd, 10);
+    if (Number.isFinite(y) && (earliestYear === null || y < earliestYear)) {
+      earliestYear = y;
+    }
+  }
+  if (earliestYear === null) return null;
+  const currentYear = new Date().getUTCFullYear();
+  const diff = currentYear - earliestYear;
+  // Sanity bounds: 1..50. Anything else is a data error; skip rather
+  // than emit "with 0+ years" or "with 73+ years".
+  if (diff < 1 || diff > 50) return null;
+  return diff;
 }
 
 /**
@@ -192,11 +299,16 @@ function buildCareerChunk(
   const parts: string[] = [`${profile.ownerName}'s career and work history.`];
 
   if (employers.length > 0) {
-    // Two phrasings — the embedding picks up both "previously at" and
-    // "companies he worked for" phrasings of the same query.
+    // Phase R8 — three phrasings instead of two. Eval found "where has
+    // he worked" was retrieving project_summary chunks that mention
+    // Abbott (his current company) over the career chunk that has all
+    // four employers, because "Previously at" is awkward phrasing for
+    // that query. Adding a "Where has he worked" anchor sentence fixes
+    // it without enlarging the chunk meaningfully.
     parts.push(
       `Previously at: ${employers.join(", ")}. ` +
-        `Companies ${profile.ownerName} has worked for: ${employers.join(", ")}.`
+        `Companies ${profile.ownerName} has worked for: ${employers.join(", ")}. ` +
+        `Where has ${profile.ownerName} worked: ${employers.join(", ")}.`
     );
   }
 
@@ -213,6 +325,18 @@ function buildCareerChunk(
       return tail ? `${head} — ${tail}` : head;
     });
     parts.push(`Roles:\n${lines.join("\n")}`);
+
+    // Phase R8 — also append a one-line "Companies: A (yyyy–yyyy), B
+    // (current), …" summary so a query like "list his companies" or
+    // "all his employers" lands on a single readable line rather than
+    // having to assemble pieces from the per-role block above.
+    const summaryLine = experience
+      .map((e) => {
+        const range = formatExperienceRange(e.startDate, e.endDate);
+        return range ? `${e.company} (${range})` : e.company;
+      })
+      .join(", ");
+    parts.push(`Companies: ${summaryLine}.`);
   }
 
   return {
@@ -271,6 +395,41 @@ function buildAvailabilityChunk(
     lines.push(`Positioning: ${profile.positioning}`);
   }
 
+  // Phase R8 — location surfaces "where is he based" / "where does he
+  // live" queries. Eval found these were hitting the canned refusal
+  // because the field never made it into the corpus.
+  const place = formatLocation(profile.location);
+  if (place) {
+    lines.push(`${profile.ownerName} is based in ${place}.`);
+  }
+
+  // Phase R8 — role types. Compose a single human sentence from the
+  // boolean flags so embedding matches "is he open to remote" /
+  // "interested in IC roles" / "contract or full-time" cleanly.
+  const roleTypePhrase = formatRoleTypes(profile.roleTypes);
+  if (roleTypePhrase) {
+    lines.push(`Open to: ${roleTypePhrase}.`);
+  }
+
+  // Phase R8 — work eligibility. "Authorized to work in X" matches
+  // recruiter visa / sponsorship questions.
+  const eligibility = (profile.workEligibility ?? []).filter((e) => e?.trim());
+  if (eligibility.length > 0) {
+    lines.push(
+      `${profile.ownerName} is authorized to work in: ${eligibility.join(", ")}.`
+    );
+  }
+
+  // Phase R8 — total years of experience. Computed from earliest
+  // experience.startDate. Eval found "how many years" hitting the
+  // canned refusal because nothing in the corpus said it.
+  const years = computeYearsOfExperience(profile.experience);
+  if (years) {
+    lines.push(
+      `${profile.ownerName} has ${years}+ years of professional software-engineering experience.`
+    );
+  }
+
   if (lines.length === 0) {
     return null;
   }
@@ -284,6 +443,34 @@ function buildAvailabilityChunk(
 }
 
 /**
+ * Phase R8 — format the seven-bool roleTypes object as a comma list
+ * of human-readable terms. Returns null when nothing is set / all
+ * false so the caller can drop the line entirely.
+ */
+function formatRoleTypes(
+  rt: ChunkerProfileInput["roleTypes"]
+): string | null {
+  if (!rt) return null;
+  const out: string[] = [];
+  if (rt.ic) out.push("IC roles");
+  if (rt.manager) out.push("manager roles");
+  if (rt.fullTime) out.push("full-time");
+  if (rt.contract) out.push("contract");
+  // Combine remote+hybrid+onsite into a "<x>/<y>" group when multiple
+  // are set so the output reads naturally.
+  const locModes: string[] = [];
+  if (rt.remote) locModes.push("remote");
+  if (rt.hybrid) locModes.push("hybrid");
+  if (rt.onsite) locModes.push("onsite");
+  if (locModes.length > 0) out.push(locModes.join("/"));
+  // Phase R8 — relocation flag is independent: someone can be open to
+  // onsite + open to relocating, or remote-only + open to relocating.
+  // Append as a separate clause rather than mixing with the loc modes.
+  if (rt.openToRelocation) out.push("relocation");
+  return out.length > 0 ? out.join(", ") : null;
+}
+
+/**
  * Format a YYYY-MM-DD or YYYY date range as "2021 — 2024" / "2024 — Present".
  * Tolerates partial / ISO / unparseable dates and falls back to the raw
  * string rather than producing "NaN — NaN".
@@ -293,7 +480,14 @@ function formatExperienceRange(
   endDate?: string | null
 ): string {
   const start = (startDate ?? "").slice(0, 4);
-  const end = endDate ? endDate.slice(0, 4) : "Present";
+  // R8 — endDate may legitimately be the string "Present" or "Current" in
+  // some resume JSON shapes (rather than null). Only slice when it looks
+  // like a date — i.e. starts with 4 digits — otherwise pass through.
+  const end = endDate
+    ? /^\d{4}/.test(endDate)
+      ? endDate.slice(0, 4)
+      : endDate
+    : "Present";
   if (!start) return "";
   if (start === end) return start;
   return `${start} — ${end}`;

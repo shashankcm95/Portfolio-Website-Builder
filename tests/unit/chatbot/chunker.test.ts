@@ -51,7 +51,10 @@ describe("buildChunks", () => {
     const out = buildChunks(
       makeInput({ profile: { portfolioId: "pf-1", ownerName: "Ada" } })
     );
-    expect(out[0].chunkText).toBe("Ada");
+    // Phase R8 — when no role/company/location/experience are set the
+    // identity sentence collapses to "<Name>." (period only). Bio +
+    // skills lines remain absent.
+    expect(out[0].chunkText).toBe("Ada.");
   });
 
   it("emits per-project summary chunks with name/desc/stack", () => {
@@ -395,6 +398,107 @@ describe("buildChunks", () => {
     );
     const avail = out.find((c) => c.chunkType === "availability");
     expect(avail).toBeUndefined();
+  });
+
+  // ─── Phase R8 — identity sentence + location + role types + years ──────────
+
+  it("profile chunk leads with an identity sentence composed from live fields", () => {
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Shashank C M",
+          bio: "Backend engineer building distributed systems.",
+          currentRole: "Backend Engineer",
+          currentCompany: "Abbott Labs",
+          location: { city: "Plano", region: "TX" },
+          experience: [
+            { company: "Amazon", position: "SDE I", startDate: "2021-06-01" },
+            { company: "Abbott Labs", position: "Backend Engineer", startDate: "2024-01-01" },
+          ],
+        },
+      })
+    );
+    const profile = out.find((c) => c.chunkType === "profile");
+    expect(profile).toBeDefined();
+    // Identity sentence is the first line — anchor for "tell me about him" queries.
+    const firstLine = profile!.chunkText.split("\n")[0];
+    expect(firstLine).toContain("Shashank C M");
+    expect(firstLine).toContain("is a Backend Engineer at Abbott Labs");
+    expect(firstLine).toContain("based in Plano, TX");
+    expect(firstLine).toMatch(/with \d+\+ years of professional experience/);
+  });
+
+  it("identity sentence falls back gracefully when fields are missing", () => {
+    const out = buildChunks(
+      makeInput({
+        profile: { portfolioId: "pf-1", ownerName: "Ada Lovelace" },
+      })
+    );
+    const profile = out.find((c) => c.chunkType === "profile");
+    expect(profile!.chunkText.split("\n")[0]).toBe("Ada Lovelace.");
+  });
+
+  it("availability chunk surfaces location, role types, and work eligibility", () => {
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Shashank",
+          hiring: { status: "available" },
+          location: { city: "Plano", region: "TX" },
+          roleTypes: { ic: true, fullTime: true, remote: true, hybrid: true },
+          workEligibility: ["US"],
+        },
+      })
+    );
+    const avail = out.find((c) => c.chunkType === "availability");
+    expect(avail).toBeDefined();
+    expect(avail!.chunkText).toContain("based in Plano, TX");
+    expect(avail!.chunkText).toContain("Open to: IC roles, full-time, remote/hybrid");
+    expect(avail!.chunkText).toContain("authorized to work in: US");
+  });
+
+  it("availability chunk emits years-of-experience derived from earliest startDate", () => {
+    // Use a fixed startDate well in the past so the test is stable
+    // regardless of when it runs. Since the test runs in 2026+, even
+    // a 2010 start gives a sane double-digit year count.
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Shashank",
+          hiring: { status: "available" },
+          experience: [
+            { company: "First", position: "Junior Eng", startDate: "2010-01-01" },
+            { company: "Latest", position: "Senior Eng", startDate: "2024-01-01" },
+          ],
+        },
+      })
+    );
+    const avail = out.find((c) => c.chunkType === "availability");
+    expect(avail!.chunkText).toMatch(
+      /Shashank has \d+\+ years of professional software-engineering experience/
+    );
+  });
+
+  it("career chunk includes the 'Where has X worked' anchor + Companies summary", () => {
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Shashank",
+          namedEmployers: ["Amazon", "Abbott Labs"],
+          experience: [
+            { company: "Amazon", position: "SDE", startDate: "2021-06-01", endDate: "2024-01-01" },
+            { company: "Abbott Labs", position: "Backend Eng", startDate: "2024-01-01" },
+          ],
+        },
+      })
+    );
+    const career = out.find((c) => c.chunkType === "career");
+    expect(career!.chunkText).toContain("Where has Shashank worked: Amazon, Abbott Labs");
+    expect(career!.chunkText).toContain("Companies: Amazon (2021 — 2024), Abbott Labs (2024 — Present)");
   });
 
   it("orders career + availability immediately after the profile chunk", () => {

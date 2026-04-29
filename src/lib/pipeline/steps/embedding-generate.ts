@@ -313,6 +313,50 @@ function buildProfileInput(
       ? (portfolioRow.availability as ChunkerProfileInput["availability"])
       : null;
 
+  // Phase R8 — location, role types, work eligibility. Mirror
+  // assembleProfileData's precedence: portfolios.locationOverride takes
+  // priority, falling back to resumeJson.basics.location. Eval found
+  // shashank-cm's portfolio had locationOverride=null but resume_json
+  // had {"city": "Plano", "region": "TX"} — without the fallback the
+  // chunker emitted no location and "where is he based" hit the canned
+  // refusal even after R6.
+  const overrideLoc =
+    portfolioRow.locationOverride && typeof portfolioRow.locationOverride === "object"
+      ? (portfolioRow.locationOverride as Record<string, unknown>)
+      : null;
+  const resumeBasics =
+    (ownerRow?.resumeJson as Record<string, unknown> | null)?.basics as
+      | Record<string, unknown>
+      | undefined;
+  const resumeLoc =
+    resumeBasics && typeof resumeBasics.location === "object" && resumeBasics.location !== null
+      ? (resumeBasics.location as Record<string, unknown>)
+      : null;
+  const sourceLoc = overrideLoc || resumeLoc;
+  const location: ChunkerProfileInput["location"] = sourceLoc
+    ? {
+        city: typeof sourceLoc.city === "string" ? sourceLoc.city : null,
+        region: typeof sourceLoc.region === "string" ? sourceLoc.region : null,
+        country:
+          typeof sourceLoc.country === "string"
+            ? sourceLoc.country
+            : typeof sourceLoc.countryCode === "string"
+              ? sourceLoc.countryCode
+              : null,
+      }
+    : null;
+
+  const roleTypes =
+    portfolioRow.roleTypes && typeof portfolioRow.roleTypes === "object"
+      ? (portfolioRow.roleTypes as ChunkerProfileInput["roleTypes"])
+      : null;
+
+  const workEligibility = Array.isArray(portfolioRow.workEligibility)
+    ? (portfolioRow.workEligibility as unknown[]).filter(
+        (e): e is string => typeof e === "string" && e.trim().length > 0
+      )
+    : [];
+
   // ── Experience from the resume JSON ────────────────────────────────────
   // The user's resumeJson lives on the users table; assembleProfileData
   // reads from `resumeJson.work[]` and maps it through extractExperience.
@@ -335,6 +379,9 @@ function buildProfileInput(
     hiring,
     availability,
     experience: experience.length > 0 ? experience : null,
+    location,
+    roleTypes,
+    workEligibility: workEligibility.length > 0 ? workEligibility : null,
   };
 }
 

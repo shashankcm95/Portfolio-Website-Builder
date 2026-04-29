@@ -160,6 +160,8 @@ export const identityPatchSchema = z
         remote: z.boolean().optional(),
         hybrid: z.boolean().optional(),
         onsite: z.boolean().optional(),
+        // Phase R8 — relocation willingness; independent of remote/hybrid/onsite.
+        openToRelocation: z.boolean().optional(),
       })
       .nullable()
       .optional(),
