@@ -57,9 +57,13 @@ describe("visitor prompt — permissive intent + positive examples", () => {
     // Pre-fix the prompt had 3 Q/A refusal examples and 0 positive
     // ones, biasing the small Llama model toward refusal. Each
     // positive example below names a real owner-question pattern.
-    expect(prompt).toMatch(/Q: "What is his background\?"/);
+    // R8.2 — first example was renamed to "Tell me about him / What's
+    // his background?" to anchor the model on identity sentences for
+    // the most common recruiter opener.
+    expect(prompt).toMatch(/Q: "Tell me about him"/);
+    expect(prompt).toMatch(/What's his background/);
     expect(prompt).toMatch(/Q: "Tell me about his projects"/);
-    expect(prompt).toMatch(/Q: "Is he available for work\?"/);
+    expect(prompt).toMatch(/Is he available for work/);
   });
 
   it("explicitly handles greetings rather than refusing them", () => {

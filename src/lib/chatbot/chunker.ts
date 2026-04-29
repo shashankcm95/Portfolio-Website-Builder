@@ -291,6 +291,55 @@ function computeYearsOfExperience(
 }
 
 /**
+ * R8.2 — pull the current-company tenure in months out of the
+ * experience array (the most recent role with no endDate / endDate
+ * past today). Used to answer "how long at <company>" without
+ * conflating it with the career total. Returns null when no current
+ * role can be identified.
+ */
+function computeCurrentTenureMonths(
+  experience: ChunkerProfileInput["experience"]
+): number | null {
+  if (!experience || experience.length === 0) return null;
+  const now = new Date();
+  let bestStart: Date | null = null;
+  for (const e of experience) {
+    const end = parseRoleDate(e.endDate);
+    // Current role = no parseable endDate (null / "Present" / "Current") OR
+    // an endDate in the future.
+    const isCurrent = end === null || end > now;
+    if (!isCurrent) continue;
+    const start = parseRoleDate(e.startDate);
+    if (start === null) continue;
+    // Pick the role with the LATEST start (the actual "current" role
+    // when there are multiple rows tagged as ongoing).
+    if (bestStart === null || start > bestStart) bestStart = start;
+  }
+  if (bestStart === null || bestStart > now) return null;
+  const months =
+    (now.getUTCFullYear() - bestStart.getUTCFullYear()) * 12 +
+    (now.getUTCMonth() - bestStart.getUTCMonth());
+  return months > 0 ? months : null;
+}
+
+/**
+ * Format a month count as a human-readable tenure string. Picks the
+ * smallest unit that doesn't lose information:
+ *   3   → "3 months"
+ *   12  → "1 year"
+ *   18  → "1 year and 6 months"
+ *   36  → "3 years"
+ */
+function formatTenure(months: number): string {
+  if (months < 12) return `${months} month${months === 1 ? "" : "s"}`;
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
+  const yearPart = `${years} year${years === 1 ? "" : "s"}`;
+  if (remMonths === 0) return yearPart;
+  return `${yearPart} and ${remMonths} month${remMonths === 1 ? "" : "s"}`;
+}
+
+/**
  * Parse a resume-style date — accepts "YYYY", "YYYY-MM", "YYYY-MM-DD",
  * or null/"Present"/"Current"/etc. Returns a Date for valid inputs,
  * null for "Present"-style strings or unparseable values. Defaults
@@ -332,19 +381,21 @@ function buildCareerChunk(
     return null;
   }
 
-  const parts: string[] = [`${profile.ownerName}'s career and work history.`];
+  // R8.2 — lead with a Q&A-shaped sentence so the embedding similarity
+  // for the literal recruiter query "Where has he worked?" anchors on
+  // THIS chunk, not the project_summary chunks that mention only his
+  // current company. Eval v2 confirmed the v1 phrasing still under-
+  // performed; the literal-question phrasing is the highest-leverage
+  // fix without resorting to retrieval re-ranking.
+  const employerList = employers.length > 0 ? employers.join(", ") : null;
+  const leadLine = employerList
+    ? `Where has ${profile.ownerName} worked? Companies he has worked for: ${employerList}. Previously at: ${employerList}. ${profile.ownerName}'s career and work history.`
+    : `${profile.ownerName}'s career and work history.`;
+  const parts: string[] = [leadLine];
 
   if (employers.length > 0) {
-    // Phase R8 — three phrasings instead of two. Eval found "where has
-    // he worked" was retrieving project_summary chunks that mention
-    // Abbott (his current company) over the career chunk that has all
-    // four employers, because "Previously at" is awkward phrasing for
-    // that query. Adding a "Where has he worked" anchor sentence fixes
-    // it without enlarging the chunk meaningfully.
     parts.push(
-      `Previously at: ${employers.join(", ")}. ` +
-        `Companies ${profile.ownerName} has worked for: ${employers.join(", ")}. ` +
-        `Where has ${profile.ownerName} worked: ${employers.join(", ")}.`
+      `Companies ${profile.ownerName} has worked for: ${employerList}.`
     );
   }
 
@@ -456,13 +507,24 @@ function buildAvailabilityChunk(
     );
   }
 
-  // Phase R8 — total years of experience. Computed from earliest
-  // experience.startDate. Eval found "how many years" hitting the
-  // canned refusal because nothing in the corpus said it.
+  // Phase R8 — total years of experience. R8.2 — explicitly phrased as
+  // "career total" / "across multiple roles" so the model doesn't
+  // conflate this with tenure at the current company (eval v2 caught
+  // the bot answering "9+ years at Abbott Labs" by mashing the
+  // adjacent currentCompany line with the years count).
   const years = computeYearsOfExperience(profile.experience);
   if (years) {
     lines.push(
-      `${profile.ownerName} has ${years}+ years of professional software-engineering experience.`
+      `Across his career, ${profile.ownerName} has ${years}+ years of total professional software-engineering experience (summed across multiple roles, not tenure at any single company).`
+    );
+  }
+  // R8.2 — explicit current-company tenure as its own line so questions
+  // like "how long at Abbott" land on a precise number rather than the
+  // career total.
+  const currentTenure = computeCurrentTenureMonths(profile.experience);
+  if (currentTenure !== null && profile.currentCompany) {
+    lines.push(
+      `${profile.ownerName} has been at ${profile.currentCompany} for ${formatTenure(currentTenure)}.`
     );
   }
 
@@ -488,8 +550,10 @@ function formatRoleTypes(
 ): string | null {
   if (!rt) return null;
   const out: string[] = [];
-  if (rt.ic) out.push("IC roles");
-  if (rt.manager) out.push("manager roles");
+  // R8.2 — expand "IC" so the model doesn't mis-decode it as "in-house"
+  // (eval v2 caught the bot saying "open to IC (in-house) roles only").
+  if (rt.ic) out.push("Individual Contributor (IC) roles");
+  if (rt.manager) out.push("Engineering Manager / lead roles");
   if (rt.fullTime) out.push("full-time");
   if (rt.contract) out.push("contract");
   // Combine remote+hybrid+onsite into a "<x>/<y>" group when multiple

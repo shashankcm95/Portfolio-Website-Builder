@@ -455,7 +455,9 @@ describe("buildChunks", () => {
     const avail = out.find((c) => c.chunkType === "availability");
     expect(avail).toBeDefined();
     expect(avail!.chunkText).toContain("based in Plano, TX");
-    expect(avail!.chunkText).toContain("Open to: IC roles, full-time, remote/hybrid");
+    expect(avail!.chunkText).toContain(
+      "Open to: Individual Contributor (IC) roles, full-time, remote/hybrid"
+    );
     expect(avail!.chunkText).toContain("authorized to work in: US");
   });
 
@@ -486,7 +488,9 @@ describe("buildChunks", () => {
     const avail = out.find((c) => c.chunkType === "availability");
     // Two roles × 2 years each = 4 years total. Whatever the test's
     // current year is, this should always be exactly 4.
-    expect(avail!.chunkText).toContain("Eng has 4+ years of professional software-engineering experience");
+    expect(avail!.chunkText).toContain(
+      "Across his career, Eng has 4+ years of total professional software-engineering experience"
+    );
   });
 
   it("years-of-experience handles current ('Present') endDate by using today", () => {
@@ -524,8 +528,12 @@ describe("buildChunks", () => {
       })
     );
     const career = out.find((c) => c.chunkType === "career");
-    expect(career!.chunkText).toContain("Where has Shashank worked: Amazon, Abbott Labs");
-    expect(career!.chunkText).toContain("Companies: Amazon (2021 — 2024), Abbott Labs (2024 — Present)");
+    // R8.2 — career chunk leads with a Q&A-shaped sentence so embedding
+    // similarity for the literal recruiter query "Where has he worked?"
+    // anchors here over project_summary chunks.
+    expect(career!.chunkText).toContain(
+      "Where has Shashank worked? Companies he has worked for: Amazon, Abbott Labs"
+    );
   });
 
   it("orders career + availability immediately after the profile chunk", () => {
