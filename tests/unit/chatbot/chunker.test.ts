@@ -459,27 +459,54 @@ describe("buildChunks", () => {
     expect(avail!.chunkText).toContain("authorized to work in: US");
   });
 
-  it("availability chunk emits years-of-experience derived from earliest startDate", () => {
-    // Use a fixed startDate well in the past so the test is stable
-    // regardless of when it runs. Since the test runs in 2026+, even
-    // a 2010 start gives a sane double-digit year count.
+  it("availability chunk emits years-of-experience by SUMMING role durations (not earliest-to-now)", () => {
+    // R8.1 — earliest-to-now over-counts career breaks (grad school).
+    // shashank-cm's profile is the canonical case: Allstate 2017-2019 →
+    // Masters 2019-2021 (no work) → Liberty Defense 2021 → Amazon
+    // 2021-2023 → Abbott 2024-Present. Naive earliest = 2017→2026 = 9
+    // years (matches what the v2 chatbot said, but bio claims 6+). The
+    // sum-durations approach excludes the masters gap and lands at the
+    // honest number.
     const out = buildChunks(
       makeInput({
         profile: {
           portfolioId: "pf-1",
-          ownerName: "Shashank",
+          ownerName: "Eng",
           hiring: { status: "available" },
           experience: [
-            { company: "First", position: "Junior Eng", startDate: "2010-01-01" },
-            { company: "Latest", position: "Senior Eng", startDate: "2024-01-01" },
+            // 2 years of work
+            { company: "FirstCo", position: "Eng I", startDate: "2017-01-01", endDate: "2019-01-01" },
+            // GAP of 2 years (e.g. masters degree) — must NOT count
+            // 2 years of work (closed)
+            { company: "MidCo", position: "Eng II", startDate: "2021-01-01", endDate: "2023-01-01" },
           ],
         },
       })
     );
     const avail = out.find((c) => c.chunkType === "availability");
-    expect(avail!.chunkText).toMatch(
-      /Shashank has \d+\+ years of professional software-engineering experience/
+    // Two roles × 2 years each = 4 years total. Whatever the test's
+    // current year is, this should always be exactly 4.
+    expect(avail!.chunkText).toContain("Eng has 4+ years of professional software-engineering experience");
+  });
+
+  it("years-of-experience handles current ('Present') endDate by using today", () => {
+    // A role that started 3 years ago and has no endDate should count
+    // as 3 years (regardless of when the test runs in the future).
+    const startYear = new Date().getUTCFullYear() - 3;
+    const out = buildChunks(
+      makeInput({
+        profile: {
+          portfolioId: "pf-1",
+          ownerName: "Eng",
+          hiring: { status: "available" },
+          experience: [
+            { company: "Co", position: "Eng", startDate: `${startYear}-01-01` },
+          ],
+        },
+      })
     );
+    const avail = out.find((c) => c.chunkType === "availability");
+    expect(avail!.chunkText).toMatch(/Eng has 3\+ years/);
   });
 
   it("career chunk includes the 'Where has X worked' anchor + Companies summary", () => {

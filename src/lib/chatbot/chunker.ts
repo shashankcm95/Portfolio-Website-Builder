@@ -254,27 +254,63 @@ function formatLocation(
   return city || region || country || null;
 }
 
+/**
+ * R8.1 — sum actual role durations rather than `currentYear -
+ * earliestStart`. The naive earliest-start subtraction over-counts
+ * career breaks (grad school, sabbatical, parental leave), which made
+ * shashank-cm's 6+-years bio render as "9+ years" because his Allstate
+ * → masters → Liberty Defense gap was rolled in.
+ *
+ * Algorithm: for each experience entry compute (end - start) in months,
+ * with `endDate` falling back to today when null/"Present". Sum, divide
+ * by 12, floor. Overlapping roles (rare but possible — moonlighting,
+ * advisory) are summed naively — slight over-count is acceptable; the
+ * alternative (interval-merging) is more code than it's worth here.
+ */
 function computeYearsOfExperience(
   experience: ChunkerProfileInput["experience"]
 ): number | null {
   if (!experience || experience.length === 0) return null;
-  // Pick the earliest startDate. Each entry has a YYYY-MM-DD or YYYY string.
-  let earliestYear: number | null = null;
+  let totalMonths = 0;
+  const now = new Date();
   for (const e of experience) {
-    const sd = e.startDate?.slice(0, 4);
-    if (!sd) continue;
-    const y = Number.parseInt(sd, 10);
-    if (Number.isFinite(y) && (earliestYear === null || y < earliestYear)) {
-      earliestYear = y;
-    }
+    const start = parseRoleDate(e.startDate);
+    if (start === null) continue;
+    const end = parseRoleDate(e.endDate) ?? now;
+    if (end <= start) continue;
+    const months =
+      (end.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+      (end.getUTCMonth() - start.getUTCMonth());
+    if (months > 0) totalMonths += months;
   }
-  if (earliestYear === null) return null;
-  const currentYear = new Date().getUTCFullYear();
-  const diff = currentYear - earliestYear;
+  const years = Math.floor(totalMonths / 12);
   // Sanity bounds: 1..50. Anything else is a data error; skip rather
   // than emit "with 0+ years" or "with 73+ years".
-  if (diff < 1 || diff > 50) return null;
-  return diff;
+  if (years < 1 || years > 50) return null;
+  return years;
+}
+
+/**
+ * Parse a resume-style date — accepts "YYYY", "YYYY-MM", "YYYY-MM-DD",
+ * or null/"Present"/"Current"/etc. Returns a Date for valid inputs,
+ * null for "Present"-style strings or unparseable values. Defaults
+ * the day to the 1st of the month so partial dates compare cleanly.
+ */
+function parseRoleDate(raw: string | null | undefined): Date | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  // Reject "Present" / "Current" / other non-date strings.
+  if (!/^\d{4}/.test(trimmed)) return null;
+  // YYYY → YYYY-01-01. YYYY-MM → YYYY-MM-01. YYYY-MM-DD passes through.
+  const m = trimmed.match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/);
+  if (!m) return null;
+  const year = Number.parseInt(m[1], 10);
+  const month = m[2] ? Number.parseInt(m[2], 10) - 1 : 0;
+  const day = m[3] ? Number.parseInt(m[3], 10) : 1;
+  if (year < 1900 || year > 2100) return null;
+  if (month < 0 || month > 11) return null;
+  return new Date(Date.UTC(year, month, day));
 }
 
 /**
