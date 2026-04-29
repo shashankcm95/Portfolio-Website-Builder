@@ -450,37 +450,46 @@ function buildAvailabilityChunk(
 ): EmbeddingChunk | null {
   const lines: string[] = [];
 
-  if (profile.currentRole || profile.currentCompany) {
-    const where = [profile.currentRole, profile.currentCompany]
-      .filter(Boolean)
-      .join(" at ");
-    lines.push(`${profile.ownerName} is currently working as ${where}.`);
-  }
+  // R8.4 — current employment is intentionally NOT surfaced in the
+  // availability chunk anymore. Putting "currently working at <X>" next
+  // to "currently available for new work" was being read as logically
+  // contradictory by the model (eval v4 caught the bot refusing
+  // "is he available?" because of the apparent conflict). Current
+  // employment is already in the profile chunk's identity sentence and
+  // in the career chunk's roles list, so the availability chunk can
+  // focus purely on what's *new-work-related*.
+  //
+  // Earlier R8.4 emitted two lines (one from hiring.status, one from
+  // availability.kind) which became a duplicate when both were set.
+  // The fix below picks ONE canonical openness sentence using the
+  // strongest available signal: hiring.status "available" wins over
+  // anything else, then availability.kind, then hiring.status "open".
 
   const h = profile.hiring;
-  if (h && h.status !== "not-looking") {
-    if (h.status === "available") {
-      lines.push(
-        `${profile.ownerName} is currently available for new work.` +
-          (h.ctaText ? ` Hire CTA: "${h.ctaText}".` : "")
-      );
-    } else if (h.status === "open") {
-      lines.push(`${profile.ownerName} is open to conversations about new work.`);
-    }
-  }
-
   const a = profile.availability;
-  if (a && a.kind !== "not_looking") {
-    const phrasing: Record<string, string> = {
-      available_now: `${profile.ownerName} is available for work now.`,
-      available_after: a.startDate
-        ? `${profile.ownerName} will be available starting ${a.startDate}.`
-        : `${profile.ownerName} will be available soon.`,
-      open_to_chat: `${profile.ownerName} is open to having a conversation.`,
-      not_looking: "",
-    };
-    const sentence = phrasing[a.kind];
-    if (sentence) lines.push(sentence);
+  const employed = profile.currentCompany?.trim() || null;
+  const at = employed ? ` (employed at ${employed} and exploring)` : "";
+  const ctaSuffix = h?.ctaText ? ` His preferred contact CTA: "${h.ctaText}".` : "";
+
+  if (h?.status === "available") {
+    // Strongest "actively looking" signal. Phrasing emphasises OPENNESS,
+    // not present-tense availability — avoids the "but he's at Abbott
+    // right now" contradiction the model was tripping on. Drops the
+    // duplicate availability.kind line entirely; this single sentence
+    // covers both signals.
+    lines.push(
+      `${profile.ownerName} is open to new job opportunities${at}.${ctaSuffix}`
+    );
+  } else if (a?.kind === "available_after" && a.startDate) {
+    // Future-dated availability — surface the start date.
+    lines.push(
+      `${profile.ownerName} will be ready to start a new role around ${a.startDate}.`
+    );
+  } else if (h?.status === "open" || a?.kind === "open_to_chat") {
+    // Soft signal — open to conversations but not actively looking.
+    lines.push(
+      `${profile.ownerName} is open to conversations about new opportunities${at}.`
+    );
   }
 
   if (profile.positioning) {

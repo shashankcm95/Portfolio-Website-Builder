@@ -362,11 +362,24 @@ describe("buildChunks", () => {
     );
     const avail = out.find((c) => c.chunkType === "availability");
     expect(avail).toBeDefined();
-    expect(avail!.chunkText).toContain(
+    // R8.4 — current employment is no longer surfaced in the availability
+    // chunk (it lives in the profile chunk's identity sentence instead).
+    // Putting "currently working at X" next to "available for new work"
+    // was being read as logically contradictory by the model.
+    expect(avail!.chunkText).not.toContain(
       "Ada is currently working as Senior Engineer at Klaviyo"
     );
-    expect(avail!.chunkText).toContain("Ada is currently available for new work");
+    // Single canonical openness line: includes the "(employed at X
+    // and exploring)" parenthetical when currentCompany is set,
+    // matching the user's exact spec.
+    expect(avail!.chunkText).toContain(
+      "Ada is open to new job opportunities (employed at Klaviyo and exploring)"
+    );
     expect(avail!.chunkText).toContain('"Let\'s chat"');
+    // Drop the duplicate "is available for work now" line — the single
+    // openness sentence above covers both hiring.status and
+    // availability.kind signals.
+    expect(avail!.chunkText).not.toContain("available for work now");
     expect(avail!.sourceRef).toBe("availability:pf-1");
   });
 
@@ -383,7 +396,7 @@ describe("buildChunks", () => {
     const avail = out.find((c) => c.chunkType === "availability");
     expect(avail).toBeDefined();
     expect(avail!.chunkText).toContain(
-      "Ada is open to conversations about new work"
+      "Ada is open to conversations about new opportunities"
     );
   });
 
