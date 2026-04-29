@@ -104,9 +104,11 @@ function primeHappyPath(options: {
   //   1. select project by id (.limit)
   //   2. select portfolio by id (.limit)
   //   3. select owner by id (.limit)
-  //   4. select facts by projectId (awaited)
-  //   5. select derivedFacts by projectId (awaited)
-  //   6. select sections by projectId (awaited)
+  //   4. R8.3 — select all projects on portfolio (techStack-only, for
+  //      portfolio-wide skills aggregation in the profile chunk)
+  //   5. select facts by projectId (awaited)
+  //   6. select derivedFacts by projectId (awaited)
+  //   7. select sections by projectId (awaited)
   mockSelectQueues.push([
     {
       id: "pr-1",
@@ -131,6 +133,9 @@ function primeHappyPath(options: {
   mockSelectQueues.push([
     { id: "u-1", name: "Ada Lovelace", githubUsername: "ada" },
   ]);
+  // R8.3 — portfolio-wide tech stack aggregation. Returns one row per
+  // project on this portfolio (the test only has one).
+  mockSelectQueues.push([{ techStack: ["Go", "Postgres"] }]);
   mockSelectQueues.push(
     Array.from({ length: factCount }, (_, i) => ({
       id: `f-${i}`,

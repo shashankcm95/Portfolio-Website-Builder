@@ -199,11 +199,16 @@ function buildProfileChunk(profile: ChunkerProfileInput): EmbeddingChunk {
   // template leak because there was no clean identity statement in the
   // corpus. This composes one from the live fields so retrieval has a
   // crisp single sentence to anchor on.
+  // R8.3 — prefix with "Background:" so "What's his background?" /
+  // "Tell me about his background" queries match this chunk over the
+  // project_summary chunks (eval v3 still had Q2 returning project
+  // lists). The keyword is the highest-leverage retrieval anchor for
+  // that specific phrasing.
   const identity = buildIdentitySentence(profile);
 
-  const parts: string[] = [identity];
+  const parts: string[] = [`Background: ${identity}`];
   if (bio) parts.push(bio);
-  if (skills) parts.push(`Skills: ${skills}`);
+  if (skills) parts.push(`Skills and tech stack: ${skills}`);
 
   return {
     chunkType: "profile",
@@ -521,10 +526,14 @@ function buildAvailabilityChunk(
   // R8.2 — explicit current-company tenure as its own line so questions
   // like "how long at Abbott" land on a precise number rather than the
   // career total.
+  // R8.3 — phrase WITHOUT the verb "worked" / "has been at" so the line
+  // doesn't compete with the career chunk for "where has he worked"
+  // queries (eval v3 caught this regression). "<Name>'s tenure at <X>
+  // is Y" is unambiguous about what's being asked.
   const currentTenure = computeCurrentTenureMonths(profile.experience);
   if (currentTenure !== null && profile.currentCompany) {
     lines.push(
-      `${profile.ownerName} has been at ${profile.currentCompany} for ${formatTenure(currentTenure)}.`
+      `${profile.ownerName}'s tenure at ${profile.currentCompany} is ${formatTenure(currentTenure)}.`
     );
   }
 

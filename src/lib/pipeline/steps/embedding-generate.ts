@@ -83,6 +83,24 @@ export async function runEmbeddingGenerate(
       .where(eq(users.id, portfolioRow.userId))
       .limit(1);
 
+    // R8.3 — pull tech stacks from ALL projects on this portfolio so
+    // the profile chunk's skill aggregation lists every language /
+    // framework the owner has touched, not just whatever's in the
+    // stale profileData JSONB. Eval v3 had "What languages?" missing
+    // TypeScript because the JSONB skills snapshot was empty.
+    // R8.3.1 — also pull repoMetadata so we can include the GitHub-
+    // detected primary language for projects whose techStack array is
+    // empty (most repos in the wild — techStack is only populated by
+    // the analyse-repo pipeline step which doesn't always run).
+    const allPortfolioProjects = await db
+      .select({
+        techStack: projects.techStack,
+        repoMetadata: projects.repoMetadata,
+      })
+      .from(projects)
+      .where(eq(projects.portfolioId, portfolioRow.id));
+    const portfolioWideSkills = aggregatePortfolioSkills(allPortfolioProjects);
+
     // ── Load project content ─────────────────────────────────────────────
     const factRows = await db
       .select()
@@ -142,7 +160,8 @@ export async function runEmbeddingGenerate(
 
     const profile: ChunkerProfileInput = buildProfileInput(
       portfolioRow,
-      ownerRow
+      ownerRow,
+      portfolioWideSkills
     );
 
     const chunks = buildChunks({
@@ -246,9 +265,56 @@ function summarizeStack(raw: unknown): string | null {
  * resume `summary` → empty. Skills come from `profileData.skills` if
  * present, else a best-effort pull from the resume JSON.
  */
+/**
+ * R8.3 — aggregate every distinct tech / language across all projects
+ * for this portfolio. Used to populate the profile chunk's skills line
+ * (eval v3 found "what languages does he use?" returning incomplete
+ * answers because the profileData.skills JSONB was empty). Falls back
+ * gracefully when no project has a tech stack.
+ */
+function aggregatePortfolioSkills(
+  rows: Array<{ techStack?: unknown; repoMetadata?: unknown }>
+): string[] {
+  const seen = new Map<string, string>(); // lowercase → original casing
+  const addOne = (value: string | null | undefined) => {
+    if (!value) return;
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase();
+    if (!seen.has(key)) seen.set(key, trimmed);
+  };
+  for (const row of rows) {
+    // 1. techStack array (set by analyse-repo / fact-extract pipeline
+    //    steps). Often the richest source when it's populated.
+    if (Array.isArray(row.techStack)) {
+      for (const t of row.techStack as unknown[]) {
+        if (typeof t === "string") addOne(t);
+      }
+    }
+    // 2. repoMetadata.language — GitHub's detected primary language for
+    //    the repo. Single string per project; covers the case where
+    //    techStack is empty (most projects). For shashank-cm's portfolio
+    //    this is what surfaces TypeScript / Python / Java / C# from
+    //    the repos that don't have a techStack array filled in.
+    if (
+      row.repoMetadata &&
+      typeof row.repoMetadata === "object" &&
+      row.repoMetadata !== null
+    ) {
+      const meta = row.repoMetadata as Record<string, unknown>;
+      if (typeof meta.language === "string") addOne(meta.language);
+    }
+  }
+  // Cap at 20 — keeps the profile chunk under the embedding token budget
+  // and avoids a wall-of-text. Recruiters care about the top dozen
+  // anyway; if more than 20 are surfaced it's noise.
+  return Array.from(seen.values()).slice(0, 20);
+}
+
 function buildProfileInput(
   portfolioRow: typeof portfolios.$inferSelect,
-  ownerRow: typeof users.$inferSelect | undefined
+  ownerRow: typeof users.$inferSelect | undefined,
+  portfolioWideSkills: string[] = []
 ): ChunkerProfileInput {
   // Phase R6 fix — read career fields from the LIVE columns on portfolioRow,
   // not from the stale `profile_data` JSONB snapshot. The pipeline never
@@ -281,10 +347,18 @@ function buildProfileInput(
       basicsSnapshot.summary.trim()) ||
     null;
 
-  const topSkills = skillsSnapshot
-    .map((s) => (typeof s.name === "string" ? s.name : ""))
-    .filter((n) => n.length > 0)
-    .slice(0, 12);
+  // R8.3 — prefer the portfolio-wide aggregation passed in; the JSONB
+  // snapshot is often stale (eval v3: empty for shashank-cm even though
+  // his projects list TypeScript, Java, Python everywhere). The
+  // snapshot is only used as a fallback if aggregation came back empty
+  // (e.g., a portfolio with no projects yet).
+  const topSkills =
+    portfolioWideSkills.length > 0
+      ? portfolioWideSkills
+      : skillsSnapshot
+          .map((s) => (typeof s.name === "string" ? s.name : ""))
+          .filter((n) => n.length > 0)
+          .slice(0, 12);
 
   // ── Live-column reads ──────────────────────────────────────────────────
   const positioning = portfolioRow.positioning ?? null;

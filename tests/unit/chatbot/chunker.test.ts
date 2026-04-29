@@ -44,7 +44,7 @@ describe("buildChunks", () => {
     expect(out[0].sourceRef).toBe("profile:pf-1");
     expect(out[0].chunkText).toContain("Ada Lovelace");
     expect(out[0].chunkText).toContain("Mathematician.");
-    expect(out[0].chunkText).toContain("Skills: Algebra");
+    expect(out[0].chunkText).toContain("Skills and tech stack: Algebra");
   });
 
   it("skips empty bio / skills in the profile chunk", () => {
@@ -54,7 +54,8 @@ describe("buildChunks", () => {
     // Phase R8 — when no role/company/location/experience are set the
     // identity sentence collapses to "<Name>." (period only). Bio +
     // skills lines remain absent.
-    expect(out[0].chunkText).toBe("Ada.");
+    // R8.3 — profile chunk now leads with "Background: " keyword.
+    expect(out[0].chunkText).toBe("Background: Ada.");
   });
 
   it("emits per-project summary chunks with name/desc/stack", () => {
@@ -436,7 +437,7 @@ describe("buildChunks", () => {
       })
     );
     const profile = out.find((c) => c.chunkType === "profile");
-    expect(profile!.chunkText.split("\n")[0]).toBe("Ada Lovelace.");
+    expect(profile!.chunkText.split("\n")[0]).toBe("Background: Ada Lovelace.");
   });
 
   it("availability chunk surfaces location, role types, and work eligibility", () => {
