@@ -44,3 +44,8 @@ next-env.d.ts
 
 # drizzle
 /src/lib/db/migrations/meta/
+
+# Chatbot eval battery — timestamped per-run JSONLs. The script and
+# question set under tests/eval/chatbot/ are tracked; the results
+# directory is local-only (re-runnable, owner-specific).
+/tests/eval/chatbot/results/

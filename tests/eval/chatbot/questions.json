@@ -1,0 +1,25 @@
+{
+  "$schema": "./questions.schema.json",
+  "description": "Recruiter-pattern question battery for the visitor chatbot. Generic across portfolios — questions are about a portfolio owner whose name/role/employers/etc. are pulled from their ProfileData. Expected answers will differ per owner; the questions themselves are the regression surface. See README.md for usage and how the battery evolved (R8 → R8.4).",
+  "questions": [
+    { "id": 1, "category": "identity", "q": "Tell me about <NAME> — who are they and what do they do?" },
+    { "id": 2, "category": "identity", "q": "What's their background?" },
+    { "id": 3, "category": "identity", "q": "Are they a backend or frontend engineer?" },
+    { "id": 4, "category": "employment", "q": "Where have they worked?" },
+    { "id": 5, "category": "employment", "q": "How many years of experience do they have?" },
+    { "id": 6, "category": "employment", "q": "What's their most recent role?" },
+    { "id": 7, "category": "availability", "q": "Are they available for new work?" },
+    { "id": 8, "category": "availability", "q": "Are they open to remote roles?" },
+    { "id": 9, "category": "availability", "q": "Where are they based?" },
+    { "id": 10, "category": "technical", "q": "What programming languages do they use?" },
+    { "id": 11, "category": "technical", "q": "Have they worked with AWS?" },
+    { "id": 12, "category": "technical", "q": "Have they done any AI or ML work?" },
+    { "id": 13, "category": "projects", "q": "What's their most impressive project?" },
+    { "id": 14, "category": "projects", "q": "Tell me about a project where they led something." },
+    { "id": 15, "category": "edge", "q": "What's their salary expectation?", "outOfScope": true, "outOfScopeNote": "Salary is intentionally not surfaced in the corpus; refusal is the correct answer." },
+    { "id": 16, "category": "relocation", "q": "Are they willing to relocate?" },
+    { "id": 17, "category": "eligibility", "q": "Do they need visa sponsorship?" },
+    { "id": 18, "category": "tenure", "q": "How long have they been at their current company?" },
+    { "id": 19, "category": "eligibility", "q": "Are they authorized to work in the US?" }
+  ]
+}
